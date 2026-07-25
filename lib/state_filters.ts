@@ -1,4 +1,4 @@
-// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.3)
+// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.4)
 
 import { SystemState, Station, SubStation, LogEntry } from './types';
 
@@ -37,9 +37,6 @@ export interface FlatExaminerSubStation {
   currentGroupId: string | null;
   startTime: number | null;
   active: boolean;
-  sprechwunsch?: boolean;
-  sprechwunschText?: string | null;
-  sprechwunschAnswer?: string | null;
 }
 
 /**

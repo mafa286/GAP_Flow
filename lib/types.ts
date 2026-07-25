@@ -1,4 +1,4 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.0)
+// Version Tracker: lib/types.ts (GAP-Flow v1.0.1)
 
 /**
  * Repräsentiert einen registrierten Anwärter.
@@ -24,9 +24,6 @@ export interface SubStation {
   active?: boolean;
   reservedGroupId?: string | null;
   deviceToken?: string | null;
-  sprechwunsch?: boolean;
-  sprechwunschText?: string | null;
-  sprechwunschAnswer?: string | null;
 }
 
 /**
@@ -76,7 +73,6 @@ export interface LogEntry {
   durationMinutes: number;
   examiner: string;
   cancelled?: boolean;
-  text?: string;
 }
 
 /**

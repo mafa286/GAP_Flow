@@ -1,4 +1,4 @@
-// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.61)
+// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.62)
 
 import fs from 'fs';
 import path from 'path';
@@ -13,12 +13,9 @@ import * as dbModule from './db';
  */
 export interface FileProcessorOptions {
   systemState: SystemState;
-  dbDir?: string;
-  DB_DIR?: string;
-  backupDir?: string;
-  BACKUP_DIR?: string;
-  appDir?: string;
-  APP_DIR?: string;
+  dbDir: string;
+  backupDir: string;
+  appDir: string;
   shutdown: () => void;
 }
 
@@ -35,9 +32,9 @@ let shutdown: () => void = () => {};
  */
 export function init(options: FileProcessorOptions): void {
   systemState = options.systemState;
-  dbDir = options.dbDir || options.DB_DIR || '';
-  backupDir = options.backupDir || options.BACKUP_DIR || '';
-  appDir = options.appDir || options.APP_DIR || '';
+  dbDir = options.dbDir || '';
+  backupDir = options.backupDir || '';
+  appDir = options.appDir || '';
   shutdown = options.shutdown;
 }
 
