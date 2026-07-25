@@ -10,8 +10,14 @@ Echtzeit-Prüfungs-Management-System für Hilfsorganisationen (THW, Feuerwehr, D
 ## 🚀 Wichtige Befehle
 
 ### Entwicklung (Lokal)
-1. Abhängigkeiten installieren: `npm install`
-2. Frontend kompilieren & Server starten: `npm start`
+1. Abhängigkeiten installieren:
+```bash
+npm install
+```
+2. Frontend kompilieren & Server starten:
+```bash
+npm start
+```
 *(Führt im Hintergrund `npm run build:frontend && npx tsx server.ts` aus)*
 
 📂 Projektstruktur
@@ -21,4 +27,6 @@ Echtzeit-Prüfungs-Management-System für Hilfsorganisationen (THW, Feuerwehr, D
 
 ### Deployment (Docker)
 Container im Hintergrund starten und neu bauen:
-```bash docker compose up -d --build
+```bash
+docker compose up -d --build
+```
