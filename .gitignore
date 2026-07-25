@@ -1,0 +1,13 @@
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.log
+ToDo.txt
+Thumbs.db
+node_modules/
+data/
+dist/
+.git/
+public/*.js
+public/js/*.js

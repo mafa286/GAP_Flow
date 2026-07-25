@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.80) -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prüfer-Panel</title>
+  
+  <!-- PWA-Manifest und iOS-spezifische App-Integration -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#00387B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GF Prüfer">
+  <link rel="apple-touch-icon" href="/icon-192.png?v=1.1.80">
+  
+  <script src="/js/theme_config.js?v=1.1.68"></script>
+  <script src="/js/audio_engine.js?v=1.1.61"></script>
+  <script src="/js/gap_flow_utils.js?v=1.1.62"></script>
+  <script src="/js/pruefer_pwa_helper.js?v=1.1.2"></script>
+  <script src="/js/pruefer_core.js?v=1.1.6"></script>
+  <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
+  <script src="/socket.io/socket.io.js?v=4.0.0"></script>
+  <style>
+    html, body {
+      /* Deaktiviert das mobile Pull-to-Refresh (Swipe-to-Refresh) Verhalten im Browser, */
+      /* da dies zu gravierenden Viewport-Berechnungsfehlern (Höhen-Verschiebung) führt */
+      /* und das native App-Gefühl (Immersion) stört. */
+      overscroll-behavior-y: none !important;
+      overflow: hidden !important;
+      height: 100dvh !important;
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      /* Erzwingt das Hochformat auf dem Quer-Bildschirm zur besseren mobilen Bedienbarkeit */
+      .landscape-rotator {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        
+        /* Maße invertieren */
+        width: 100dvh !important; 
+        height: 100dvw !important;
+        max-width: none !important;
+        
+        /* Um die Mitte rotieren und übersetzen */
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
+        transform-origin: center center !important;
+        overflow: hidden !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="app-bg h-dvh select-none transition-colors duration-200" x-data="examiner()">
+
+  <!-- 1. AUTHENTIFIZIERUNGSMELDUNG -->
+  <template x-if="!token">
+    <div class="flex items-center justify-center h-full p-6 text-center">
+      <div class="app-card p-8 max-w-sm space-y-4">
+        <div class="text-4xl text-sig-warning">⚠</div>
+        <h1 class="text-xl font-bold text-main">Authentifizierung fehlt</h1>
+        <p class="text-muted text-sm">Bitte scannen Sie den für Ihre Station bereitgestellten QR-Code, um das Interface zu aktivieren.</p>
+      </div>
+    </div>
+  </template>
+
+  <!-- SITZUNGS-FEHLER OVERLAY (Sichert Resilienz im Funkloch bei transienten Gateway-Fehlern) -->
+  <template x-if="token && tokenError && !isDeactivated">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-6" style="background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(4px);">
+      <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main">
+        <div class="text-4xl animate-bounce">📡</div>
+        <h2 class="text-base font-black text-main uppercase tracking-wide">Verbindung eingeschränkt</h2>
+        <p class="text-muted text-xs leading-relaxed">
+          Die Autorisierung konnte vorübergehend nicht bestätigt werden (HTTP 401). Dies kann an einer schlechten Netzabdeckung im Gelände oder einer Portal-Umleitung Ihres Routers liegen. Das System versucht im Hintergrund automatisch, die Sitzung wiederherzustellen.
+        </p>
+        <div class="space-y-2">
+          <button @click="fetchStatus()" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider shadow">
+            🔄 Sofort wiederholen
+          </button>
+          <button @click="token = ''; localStorage.removeItem('examiner_token'); tokenError = false;" class="w-full py-2 btn-sig-red text-[11px] uppercase font-bold">
+            Abmelden &amp; QR-Code neu scannen
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- DEAKTIVIERT OVERLAY -->
+  <template x-if="token && isDeactivated">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-6" style="background-color: rgba(3, 7, 18, 0.95); backdrop-filter: blur(4px);">
+      <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main animate-fade-in">
+        <div class="text-4xl animate-bounce">⛔</div>
+        <h2 class="text-base font-black text-main uppercase tracking-wide">Unterstation deaktiviert</h2>
+        <p class="text-muted text-xs leading-relaxed">
+          Diese Unterstation wurde durch die Prüfungsleitung deaktiviert. Bitte kontaktieren Sie die Leitstelle, falls dies ein Versehen ist.
+        </p>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="token && !tokenError">
+  <!-- Viewport-Höhe festgesetzt auf h-full zur Erzwingung eines scrollfreien Layouts -->
+  <div class="landscape-rotator h-full max-w-md mx-auto p-4 flex flex-col justify-between transition-all duration-300 relative select-none overflow-hidden" 
+       :style="isPaused && isRegistered && isAuthorized ? 'background-color: var(--sig-warning-bg) !important;' : ''">
+              
+      <!-- 2.A: REGISTRIERUNGSMASKE (Standard-Anmeldung - Falls kein Geräte-Token auf dem Server registriert ist) (DSGVO) -->
+      <div x-show="!isClaimed && !renderLock" class="app-card p-6 text-center space-y-5 border-main my-auto flex flex-col justify-center items-center h-full relative">
+        <!-- Integrierter Theme-Toggle in der oberen rechten Ecke der Karte -->
+        <div class="absolute top-3 right-3">
+          <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+            <svg class="w-3.5 h-3.5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <svg class="w-3.5 h-3.5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+          </button>
+        </div>
+
+        <div class="text-5xl animate-bounce">✍</div>
+        <h2 class="text-lg font-black text-main uppercase tracking-wide">Prüfer-Registrierung</h2>
+        <p class="text-muted text-xs leading-normal max-w-[280px]">Gegen Sie Ihren Namen an, um sich als aktiver Prüfer für diese Unterstation anzumelden.</p>
+        
+        <form @submit.prevent="registerExaminer()" class="w-full space-y-4">
+          <div class="space-y-3">
+            <input type="text" id="examiner-firstname-input" name="firstname" x-model="regFirstName" @change="regFirstName = $el.value" @input="regFirstName = $el.value" maxlength="16" autocomplete="given-name" placeholder="Vorname" class="w-full px-3 py-2.5 input-text text-sm">
+            <input type="text" id="examiner-lastname-input" name="lastname" x-model="regLastName" @change="regLastName = $el.value" @input="regLastName = $el.value" maxlength="16" autocomplete="family-name" placeholder="Nachname" class="w-full px-3 py-2.5 input-text text-sm">
+          </div>
+
+          <button type="submit" 
+                  :disabled="isSubmitting || !regFirstName.trim() || !regLastName.trim()"
+                  class="w-full py-3.5 btn-brand text-xs font-black uppercase tracking-wider shadow disabled:opacity-40">
+            Station belegen
+          </button>
+        </form>
+      </div>
+
+      <!-- 2.B: GESPERRT-ANZEIGE (Falls Station besetzt & an ein anderes Gerät gekoppelt ist) (DSGVO) -->
+      <template x-if="isClaimed && !isAuthorized && !renderLock">
+        <div class="app-card p-6 text-center space-y-5 border-main my-auto flex flex-col justify-center items-center h-full relative card-sig-danger">
+          <!-- Integrierter Theme-Toggle in der oberen rechten Ecke der Karte -->
+          <div class="absolute top-3 right-3">
+            <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+              <svg class="w-3.5 h-3.5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+              <svg class="w-3.5 h-3.5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            </button>
+          </div>
+
+          <div class="text-5xl animate-pulse">🔒</div>
+          <h2 class="text-base font-black uppercase tracking-wide" style="color: var(--sig-danger-text) !important;">Station besetzt</h2>
+          <p class="font-bold text-xs leading-relaxed max-w-[280px]" style="color: var(--sig-danger-text) !important;">
+            Diese Station hat bereits einen zugewiesenen Prüfer. Die Zuweisung kann durch den zugewiesenen Prüfer oder die Leitstelle aufgehoben werden.
+          </p>
+          <p class="text-[10px] text-muted font-extrabold" x-text="'Aktuell belegt von: ' + examinerName"></p>
+        </div>
+      </template>
+
+      <!-- 2.C: REGULÄRES PRÜFER-PANEL (Falls registriert und autorisiert) -->
+      <template x-if="isRegistered && isAuthorized && !renderLock">
+        <div class="h-full flex flex-col justify-between">
+          <!-- HEADER: Flache, informationsreiche Oberzeile (Row 1) -->
+          <div class="app-card p-3 flex justify-between items-center shrink-0 gap-2">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-1">
+              <span class="w-3 h-3 rounded-full shrink-0" 
+                    :style="connected ? 'background-color: var(--sig-success-text) !important;' : 'background-color: var(--sig-danger-text) !important;'"
+                    :class="connected ? 'animate-pulse' : 'animate-ping'"></span>
+              <h1 class="text-base font-black text-main tracking-wide whitespace-normal break-words" x-text="masterName + ' (' + subId + ')'"></h1>
+            </div>
+                  
+            <div class="flex items-center gap-2 shrink-0">
+              <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+                <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+              </button>
+
+              <!-- Abmelden Button (Weg 1 - Selbstbedienung) -->
+              <button @click="deregisterExaminer()"
+                      :disabled="isSubmitting"
+                      class="p-2 btn-sig-red text-xs font-black uppercase tracking-wider rounded-lg" 
+                      title="Station freigeben und abmelden">
+                Abmelden
+              </button>
+            </div>
+          </div>
+
+          <!-- WORKLOAD-DASHBOARD-STRIP -->
+          <div class="app-card p-2 text-center border-main text-xs font-black uppercase tracking-wider shrink-0 mt-3" x-show="totalActiveGroups > 0">
+            <span class="text-muted">Ausstehend:</span> <span class="text-brand font-mono text-sm" x-text="remainingGroups"></span>
+            <span class="text-muted mx-2">•</span>
+            <span class="text-muted">Wartend:</span> <span class="font-mono text-sm" style="color: var(--sig-warning-border) !important;" x-text="waitingGroups"></span>
+            <span class="text-muted mx-2">•</span>
+            <span class="text-muted">Fertig:</span> <span class="font-mono text-sm" style="color: var(--sig-success-border) !important;" x-text="completedThisMaster"></span>
+          </div>
+
+          <!-- PROGRESSBAR -->
+          <div class="w-full h-4 progress-track rounded-full overflow-hidden border border-main shrink-0 mt-2" x-show="totalActiveGroups > 0">
+            <div class="h-full progress-fill transition-all duration-500" 
+                 :style="'width: ' + (totalActiveGroups > 0 ? ((completedThisMaster / totalActiveGroups) * 100) : 0) + '%'"></div>
+          </div>
+
+          <!-- DER HAUPT-WORKSPACE -->
+          <div class="flex-1 min-h-0 flex flex-col justify-center my-3 relative">
+            
+            <!-- Zustand 1: Ein Team ist aktiv in der Prüfung -->
+            <template x-if="currentGroup && !renderLock">
+              <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden">
+                <div class="flex justify-between items-start text-sm md:text-base text-muted uppercase font-black tracking-wide border-b border-main pb-2">
+                  <div class="flex flex-col text-left leading-tight">
+                    <span>Gruppe:</span>
+                    <span class="text-main" x-text="currentGroup.name"></span>
+                  </div>
+                  <div class="flex flex-col text-right leading-tight">
+                    <span>Seit</span>
+                    <span class="text-brand font-mono font-black" x-text="getElapsedMinutes() + ' Min.'"></span>
+                  </div>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto flex flex-col justify-center gap-3 py-4 px-2">
+                  <template x-for="m in currentGroup.members" :key="m.name">
+                    <div class="flex items-start gap-3 py-1.5">
+                      <span class="text-3xl shrink-0 pt-0.5" x-text="m.active ? '👤' : '❌'"></span>
+                      <span class="text-2xl md:text-3xl font-black text-main tracking-wide whitespace-normal break-words" 
+                            :class="m.active ? 'text-main' : 'line-through text-muted opacity-30'"
+                            x-text="m.name"></span>
+                    </div>
+                  </template>
+                </div>
+
+                <div x-show="isPaused && !freezeUI" class="p-2.5 mb-3 text-center border rounded-lg border-main shrink-0 animate-fade-in" style="background-color: var(--sig-warning-bg) !important;">
+                  <span class="font-black text-xs uppercase tracking-wider block" style="color: var(--sig-warning-text) !important;">⏳ Pause angekündigt ⏳</span>
+                  <span class="text-[11px] text-muted block mt-1 leading-normal font-semibold">Die Station pausiert nach dieser Gruppe.</span>
+                </div>
+                
+                <!-- Normaler Abschluss-Button -->
+                <template x-if="!freezeUI">
+                  <button @click="completeGroup()" :disabled="isSubmitting" class="w-full py-3.5 btn-sig-green active:scale-95 font-black text-base shadow uppercase tracking-wider transition-all duration-200 shrink-0">Prüfung abschließen</button>
+                </template>
+
+                <!-- Grace-Period / Countdown Buttons (7 Sekunden) -->
+                <template x-if="freezeUI">
+                  <div class="space-y-3 shrink-0 w-full animate-fade-in">
+                    <!-- Pause Toggle-Button -->
+                    <button @click="pauseOnComplete = !pauseOnComplete"
+                            class="w-full py-3 font-black text-sm rounded-lg transition-all"
+                            :class="pauseOnComplete ? 'btn-sig-orange animate-pulse' : 'app-card-accent text-main'">
+                      <span x-text="pauseOnComplete ? '⏳ Pause aktiv' : '⏸️ Station pausieren'"></span>
+                    </button>
+
+                    <!-- Rückgängig-Button mit linear animierter Hintergrund-Breite -->
+                    <button @click="undoGracePeriod()"
+                            class="relative overflow-hidden w-full py-3.5 btn-sig-red active:scale-95 font-black text-base shadow uppercase tracking-wider transition-all duration-200 shrink-0">
+                      <!-- Animierter Timer-Hintergrund (100% -> 0% Breite) -->
+                      <div class="absolute top-0 left-0 h-full bg-black/20 transition-all linear duration-100"
+                           :style="'width: ' + (graceTicks / 70 * 100) + '%'"></div>
+                      <span class="relative z-10" x-text="'Rückgängig machen (' + Math.ceil(graceTicks / 10) + 's)'"></span>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </template>
+              
+            <!-- Zustand 2: Keine Zuweisung & Wartend -->
+            <template x-if="!currentGroup && !isPaused && remainingGroups > 0 && !renderLock">
+              <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden">
+                <div class="flex-1 flex flex-col justify-center items-center space-y-4 py-8">
+                  <template x-if="reservedGroupName">
+                    <div class="flex flex-col items-center space-y-4">
+                      <div class="text-4xl animate-bounce">⏳</div>
+                      <div>
+                        <span class="text-brand font-black text-base block tracking-wide uppercase text-center" x-text="'Reserviert für ' + reservedGroupName"></span>
+                        <p class="text-muted text-[11px] leading-relaxed max-w-[250px] mx-auto mt-2 text-center">Diese Station wurde fest für die oben genannte Gruppe vorab reserviert. Bitte warten Sie, bis die Gruppe eintrifft.</p>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template x-if="!reservedGroupName">
+                    <div class="flex flex-col items-center space-y-4">
+                      <div class="w-10 h-10 rounded-full border-4 animate-spin loader-spinner"></div>
+                      <div>
+                        <span class="text-brand font-black text-base block tracking-wide uppercase text-center">Warte auf Zuweisung...</span>
+                        <p class="text-muted text-[11px] leading-relaxed max-w-[250px] mx-auto mt-2 text-center">Das System teilt Ihnen automatisch die nächste freie Gruppe aus dem Sammelraum zu.</p>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+                
+                <button @click="executeTogglePause(true)" :disabled="isSubmitting" class="w-full py-3.5 btn-sig-orange active:scale-95 font-black text-base shadow uppercase tracking-wider transition-all duration-200 shrink-0">⏸️ Station pausieren</button>
+              </div>
+            </template>
+                        
+            <!-- Zustand 3: Alle Prüfungen beendet -->
+            <template x-if="!currentGroup && remainingGroups === 0 && !renderLock">
+              <div class="app-card p-6 text-center space-y-4 border-main py-12 flex flex-col justify-center items-center h-full">
+                <div class="text-5xl animate-bounce">🎉</div>
+                <div>
+                  <span class="font-black text-base block tracking-wide uppercase" style="color: var(--sig-success-border) !important;">Prüfungen Beendet</span>
+                  <p class="text-muted text-[11px] leading-relaxed max-w-[250px] mx-auto mt-2">Alle Anwärter haben diese Station erfolgreich absolviert.</p>
+                </div>
+              </div>
+            </template>
+                
+            <!-- Zustand 4: Manuell pausiert -->
+            <template x-if="!currentGroup && isPaused && remainingGroups > 0 && !renderLock">
+              <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden" style="background-color: var(--sig-warning-bg) !important;">
+                <div class="flex-1 flex flex-col justify-center items-center space-y-2 py-8">
+                  <div class="text-4xl">⛔</div>
+                  <span class="font-black text-base uppercase tracking-wider block text-center" style="color: var(--sig-warning-text) !important;">Station Pausiert</span>
+                  <p class="text-muted text-[11px] max-w-[250px] mx-auto text-center">Die automatische Zuweisung ist blockiert.</p>
+                </div>
+
+                <button @click="showStartSetup = true" :disabled="isSubmitting" class="w-full py-3.5 btn-sig-green active:scale-95 font-black text-base shadow uppercase tracking-wider transition-all duration-200 shrink-0">▶️ Pause beenden</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- OVERLAYS / INLINE-MODALS (REINE STANDARDKLASSEN AUS THEME-CONFIG) -->
+      
+  <!-- 1. BESTÄTIGUNG: PRÜFUNG ABSCHLIESSEN -->
+  <div x-show="showConfirmComplete" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center">
+      <div class="text-4xl">🏁</div>
+      <h2 class="text-base font-black text-main uppercase tracking-wide">Prüfung abschließen</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Wollen Sie die Prüfung für <strong class="text-main" x-text="currentGroup ? currentGroup.name : 'diese Gruppe'"></strong> abschließen?
+      </p>
+      <div class="flex gap-3">
+        <button @click="showConfirmComplete = false" 
+                class="flex-1 py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
+          Abbrechen
+        </button>
+        <button @click="startGracePeriod()" 
+                class="flex-1 py-2.5 btn-sig-green text-xs font-bold uppercase tracking-wider shadow">
+          Bestätigen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ALLGEMEINER FEHLER-DIALOG (ALERT-ERSATZ - DYNAMISCH FÜR NETZWERKFEHLER & AUTO-RETRY) -->
+  <div x-show="showErrorAlert" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center">
+      <!-- Reaktiv wechselndes Icon -->
+      <div class="text-4xl" 
+           :style="isNetworkErrorAlert ? 'color: var(--sig-warning-border) !important;' : 'color: var(--sig-danger-border) !important;'"
+           x-text="isNetworkErrorAlert ? '📡' : '❌'"></div>
+      
+      <!-- Reaktiv wechselnder Titel -->
+      <h2 class="text-base font-black text-main uppercase tracking-wide"
+          x-text="isNetworkErrorAlert ? 'Netzempfang eingeschränkt' : 'Fehler aufgetreten'"></h2>
+      
+      <p class="text-muted text-xs leading-relaxed" x-text="errorMessage"></p>
+      
+      <!-- Dynamischer Button-Bereich -->
+      <div class="flex flex-col gap-2 w-full mt-4">
+        <button @click="isNetworkErrorAlert ? triggerRetry() : showErrorAlert = false" 
+                class="w-full py-2.5 text-xs font-bold uppercase tracking-wider shadow"
+                :class="isNetworkErrorAlert ? 'btn-sig-orange' : 'btn-brand'"
+                x-text="isNetworkErrorAlert ? '🔄 Erneut versuchen' : 'Ok'">
+        </button>
+        
+        <!-- Abbrechen-Button (Nur bei Netzwerkfehlern sichtbar) -->
+        <button x-show="isNetworkErrorAlert"
+                @click="showErrorAlert = false; isNetworkErrorAlert = false; retryAction = null;"
+                class="w-full py-2 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. BESTÄTIGUNG: BEREITSCHAFT HERSTELLEN (Audio/WakeLock-Freigabe fangen) -->
+  <div x-show="showStartSetup" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+    <div class="app-card p-6 md:p-8 max-w-sm w-full space-y-5 text-center border-main">
+      <div class="text-5xl animate-bounce">⚡</div>
+      <h2 class="text-lg font-black text-main uppercase tracking-wide">Bereitschaft hergestellt?</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Bestätigen Sie hier, dass Ihre Station bereit zur Prüfung ist. Ohne bestätigung, werden Ihnen keine Anwärter automatisch zugewiesen.
+      </p>
+      <div class="flex gap-3">
+        <button @click="showStartSetup = false" 
+                class="flex-1 py-3.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
+          Abbrechen
+        </button>
+        <button @click="triggerReadySetup()" 
+                class="flex-1 py-3.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg transform active:scale-95 transition">
+          Station bereit!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. PWA-INSTALLATIONSERZWINGUNG (Sperrmaske falls im ungesicherten Browser-Tab aufgerufen) -->
+  <div x-show="!isInstalled" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-bg text-main app-overlay-modal">
+    <div class="app-card p-6 md:p-8 max-w-sm w-full space-y-6 text-center border-main shadow-2xl flex flex-col items-center justify-center">
+      
+      <!-- Zustand A: App wird gerade im Hintergrund kompiliert und eingerichtet -->
+      <template x-if="isCompiling">
+        <div class="space-y-5 animate-fade-in flex flex-col items-center justify-center w-full">
+          <!-- Rotierender Loader-Ring um das App-Icon -->
+          <div class="relative w-20 h-20 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-4 border-t-brand animate-spin" style="border-color: var(--org-border); border-top-color: var(--org-brand);"></div>
+            <img src="/icon-192.png" alt="GAP-Flow" class="w-14 h-14 rounded-xl shadow-inner relative z-10">
+          </div>
+          <h2 class="text-lg font-black text-brand uppercase tracking-wide animate-pulse">Richte App ein...</h2>
+          <p class="text-muted text-xs leading-relaxed max-w-[280px] mx-auto">
+            Bitte warten Sie einen kurzen Moment, während Ihr System die Anwendung auf Ihrem Gerät einrichtet.
+          </p>
+        </div>
+      </template>
+
+      <!-- Zustand B: App wurde erfolgreich installiert oder ist bereits vorhanden -->
+      <template x-if="appInstalledSuccessfully && !isCompiling">
+        <div class="space-y-5 animate-fade-in flex flex-col items-center justify-center w-full">
+          <!-- Erzieltes App-Icon als Such-Referenz für den Homescreen -->
+          <div class="relative">
+            <img src="/icon-192.png" alt="GAP-Flow App" class="w-20 h-20 rounded-2xl shadow-lg border border-main mx-auto">
+            <div class="absolute -bottom-2 -right-2 text-3xl">🎉</div>
+          </div>
+          <h2 class="text-xl font-black text-sig-success-text uppercase tracking-wide">App ist eingerichtet!</h2>
+          <p class="text-muted text-xs leading-relaxed max-w-[280px] mx-auto">
+            Die App ist auf Ihrem Gerät eingerichtet. Sie können dieses Browserfenster nun schließen und GAP-Flow direkt über das Symbol auf Ihrem Home-Bildschirm starten.
+          </p>
+        </div>
+      </template>
+
+      <!-- Zustand C: App ist noch nicht installiert (Anleitung zeigen) -->
+      <template x-if="!appInstalledSuccessfully && !isCompiling">
+        <div class="space-y-6 flex flex-col items-center justify-center w-full">
+          <div class="text-5xl animate-bounce">📲</div>
+          <h2 class="text-xl font-black text-brand uppercase tracking-wide">App-Installation erforderlich</h2>
+          <p class="text-muted text-xs leading-relaxed max-w-[280px]">
+            Um die Stabilität der Verbindung im Gelände und den Empfang wichtiger Benachrichtigungen im Standby zu sichern, muss das Prüfer-Panel als App installiert werden.
+          </p>
+
+          <!-- Dynamische Anleitung je nach Betriebssystem -->
+          <div class="w-full space-y-4 text-left border-t border-main pt-4">
+            <!-- Android-Anleitung -->
+            <template x-if="!isIOS()">
+              <div class="space-y-3">
+                <span class="text-xs font-black uppercase tracking-wider text-muted block text-center">Installation für Android:</span>
+                <button @click="triggerAndroidInstallPrompt()" 
+                        :disabled="!isInstallPromptReady"
+                        class="w-full py-3.5 btn-brand text-xs font-black uppercase tracking-wider shadow disabled:opacity-40">
+                  <span x-text="isInstallPromptReady ? '📲 App installieren' : 'Bitte warten...'"></span>
+                </button>
+                <p class="text-[10px] text-muted text-center leading-normal">
+                  Falls der Button inaktiv bleibt, tippen Sie oben rechts auf die drei Punkte <span class="font-extrabold">⋮</span> und wählen Sie <span class="font-extrabold">„App installieren“</span> oder <span class="font-extrabold">„Zum Startbildschirm hinzufügen“</span>.
+                </p>
+              </div>
+            </template>
+
+            <!-- iOS-Anleitung -->
+            <template x-if="isIOS()">
+              <div class="space-y-3 text-xs leading-normal">
+                <span class="text-xs font-black uppercase tracking-wider text-muted block text-center">Installation für iPhone/iPad:</span>
+                <div class="flex items-start gap-2.5 p-2 app-card-accent">
+                  <span class="text-lg">1️⃣</span>
+                  <p class="text-muted">Tippen Sie in Safari unten auf das <span class="font-extrabold">Teilen-Symbol</span> (Kästchen mit Pfeil nach oben).</p>
+                </div>
+                <div class="flex items-start gap-2.5 p-2 app-card-accent">
+                  <span class="text-lg">2️⃣</span>
+                  <p class="text-muted">Scrollen Sie nach unten und wählen Sie <span class="font-extrabold">„Zum Home-Bildschirm“</span> (Plus-Symbol).</p>
+                </div>
+                <div class="flex items-start gap-2.5 p-2 app-card-accent">
+                  <span class="text-lg">3️⃣</span>
+                  <p class="text-muted">Tippen Sie oben rechts auf <span class="font-extrabold text-brand">Hinzufügen</span>.</p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+    </div>
+  </div>
+
+  <!-- Controller wurde in das externe Skript public/js/pruefer-core.js ausgelagert -->
+</body>
+</html>

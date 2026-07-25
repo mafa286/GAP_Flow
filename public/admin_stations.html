@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.64) -->
+  <meta charset="UTF-8">
+  <title>Admin-Leitstand - Stationen</title>
+  <script src="/js/theme_config.js?v=1.1.65"></script>
+  <script src="/js/gap_flow_utils.js?v=1.1.62"></script>
+  <script src="/js/admin_core.js?v=1.1.64"></script>
+  <script src="/js/admin_stations_popups.js?v=1.1.4"></script>
+  <script src="/js/admin_stations.js?v=1.1.7"></script>
+  <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
+  <script src="/socket.io/socket.io.js?v=4.0.0"></script>
+  <!-- PapaParse für RFC-konformen CSV-Import -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js?v=5.4.1" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous"></script>
+  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- PapaParse für RFC-konformen CSV-Import -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous"></script>
+</head>
+
+<body class="app-bg min-h-screen p-6 transition-colors duration-200" x-data="adminPanel()">
+
+  <!-- PASSWORD WALL -->
+  <div x-show="!authenticated" class="fixed inset-0 app-bg z-50 flex items-center justify-center p-6 transition-colors duration-200">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-main transition-colors duration-200">
+      <h1 class="text-xl font-black text-center text-brand uppercase tracking-wide">Admin-Leitstand</h1>
+      <input type="password" id="admin-password-input" name="adminPassword" x-model="passwordInput" maxlength="128" @keydown.enter="login()" autocomplete="current-password" placeholder="Admin-Passwort" class="w-full px-4 py-3 input-text focus:outline-none">
+      <button @click="login()" class="w-full py-3 btn-brand text-sm">Einloggen</button>
+      <p x-show="authError" class="text-xs text-center font-bold text-sig-danger">Falsches Passwort!</p>
+    </div>
+  </div>
+
+  <!-- INACTIVITY WARNING MODAL -->
+  <div x-show="showInactivityWarning" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-center animate-pulse">
+      <div class="text-4xl">⚠️</div>
+      <h2 class="text-lg font-black text-brand uppercase tracking-wide">Inaktivität festgestellt</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Sie waren für 14 Minuten inaktiv. Das System meldet Sie in **1 Minute** automatisch ab. Bewegen Sie die Maus oder drücken Sie eine Taste, um aktiv zu bleiben.
+      </p>
+      <button @click="resetInactivityTimer()" class="w-full py-3 btn-sig-green uppercase tracking-wider text-xs shadow-lg">
+        Aktiv bleiben
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN CONTAINER -->
+  <div x-show="authenticated" class="max-w-[1700px] mx-auto space-y-6">
+    
+    <!-- Header mit globalem Startschuss -->
+    <div class="flex justify-between items-center border-b border-main pb-4">
+      <div>
+        <h1 class="text-3xl font-black text-brand uppercase tracking-wide">Prüfungsleitung & Administration</h1>
+        <p class="text-muted text-sm">Stationen erstellen, skalieren und Prüferverantwortlichkeiten zuweisen</p>
+      </div>
+      <div class="flex gap-4 items-center">
+        <!-- GLOBALER STARTSCHUSS-SCHALTER -->
+        <div class="flex items-center gap-2.5 px-3 py-1.5 app-card-accent shadow-inner">
+          <span class="text-xs font-bold text-muted tracking-wide uppercase">Autom. Zuteilung:</span>
+          <button @click="toggleAutoAllocation(!autoAllocationActive)" 
+                  class="px-3.5 py-1.5 rounded-md font-black text-xs uppercase tracking-wider transition-all duration-300 shadow"
+                  :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
+            <span x-text="autoAllocationActive ? 'AKTIV' : 'DEAKTIVIERT'"></span>
+          </button>
+        </div>
+
+        <button @click="exportCSV()" class="px-4 py-2.5 btn-brand text-xs">Protokoll-CSV exportieren</button>
+        <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+          <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <button @click="logout()" class="px-4 py-2.5 btn-sig-red text-xs font-bold" title="Vom Admin-Bereich abmelden">Abmelden</button>
+      </div>
+    </div>
+
+    <!-- SUB-NAVIGATION -->
+    <nav class="flex gap-4 border-b border-main pb-4">
+      <a href="/admin_dashboard.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Live-Dashboard</a>
+      <a href="/admin_groups.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Anwärter &amp; Gruppen</a>
+      <a href="/admin_stations.html" class="px-4 py-2 btn-brand text-sm transition">Stationen &amp; Skalierung</a>
+    </nav>
+
+    <!-- CONTENT: STATIONS MANAGEMENT -->
+    <div class="app-card p-6 space-y-6">
+    
+      <!-- Neue Master-Station -->
+      <div class="p-4 app-card-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="flex-1 w-full space-y-3">
+          <h2 class="text-sm font-bold text-muted uppercase">Neue Master-Station anlegen</h2>
+          <div class="flex gap-2 text-xs">
+            <input type="text" id="new-station-name-input" name="newStationName" x-model="newStationName" maxlength="16" :disabled="isSubmitting" @keydown.enter="addStation()" placeholder="Stationsname (z. B. Station 4)" class="flex-1 px-3 py-2 input-text text-sm disabled:opacity-50">
+            <button @click="addStation()" :disabled="isSubmitting" class="px-4 py-2 btn-brand text-sm disabled:opacity-50 disabled:cursor-not-allowed">Hinzufügen</button>
+          </div>
+        </div>
+        <div class="flex-shrink-0 w-full md:w-auto pt-2 md:pt-6">
+          <!-- Button zum selektiven Leeren der Stationstafel -->
+          <button @click="clearAllStations()" :disabled="isSubmitting" class="w-full md:w-auto px-4 py-2.5 btn-sig-red text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+            ⚠️ Alle löschen
+          </button>
+        </div>
+      </div>
+
+      <!-- STATIONS-CSV-IMPORT BOX -->
+      <div class="p-4 app-card-accent space-y-3">
+        <h3 class="text-sm font-bold text-muted uppercase">Stationen per CSV importieren</h3>
+        <p class="text-[10px] text-muted leading-normal">
+          Erstellen Sie eine einfache CSV/TXT-Datei (Trennzeichen: Semikolon <code>;</code>).<br>
+          Format 1: <code>Stationsnummer; Stationsname; Prüfername1; Prüfername2; Prüfername3...</code> (Jeder Prüfer eine eigene Spalte)<br>
+          Format 2: <code>Stationsnummer; Stationsname; Prüfername1, Prüfername2, Prüfername3...</code> (Prüfer Komma-getrennt in Spalte 3)<br>
+          Unterstationen und Multiplikatoren werden automatisch anhand der Anzahl der eingetragenen Prüfer berechnet.
+        </p>
+        <div class="p-2.5 sig-badge-red text-[10px] leading-normal shadow-sm">
+          ⚠️ <strong>Achtung:</strong> Der Import setzt alle Stationen, Unterstationen und Protokolle zurück, um das neue Setup sauber aufzubauen! Ihre registrierten Anwärter und Gruppen bleiben vollständig erhalten.
+        </div>
+        <input type="file" id="stations-csv-import-file" name="stationsCsvFile" @change="handleCSVImport($event)" :disabled="isSubmitting" accept=".csv,.txt" class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
+      </div>
+
+      <!-- Master-Stationen Konfiguration -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <template x-for="st in stationDetailsList" :key="st.id">
+          <div class="p-4 app-card-accent space-y-4 shadow-inner">
+            
+            <!-- Master-Station Titel -->
+            <div class="border-b border-main pb-3">
+              <h3 class="text-lg font-black text-main" x-text="st.name"></h3>
+            </div>
+
+            <!-- Parallelstationen Hinzufügen -->
+            <div class="flex items-center justify-between app-card p-3 shadow-inner">
+              <div>
+                <span class="text-xs font-bold text-muted">Parallelstationen (Aktiv: </span>
+                <span class="text-xs font-black text-brand font-mono" x-text="st.multiplier"></span>
+                <span class="text-xs font-bold text-muted">)</span>
+              </div>
+              
+              <!-- Button blendet sich automatisch aus, wenn die maximale Parallelität von 5 erreicht ist -->
+              <button @click="addSubStation(st.id, st.multiplier)"
+                      x-show="st.multiplier < 5"
+                      :disabled="isSubmitting"
+                      class="px-3 py-1.5 btn-brand text-[10px] uppercase transition flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span>＋</span> Unterstation hinzufügen
+              </button>
+            </div>
+
+            <!-- Liste der generierten Sub-Stationen -->
+            <div class="space-y-2.5 pl-4 border-l-2 border-main">
+              <template x-for="sub in st.subList" :key="sub.id">
+                <div class="p-2.5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-2 text-xs border rounded-lg transition"
+                     :class="sub.active ? 'app-card border-main' : 'app-card-accent border-main'">
+                  
+                  <div class="flex flex-wrap items-center gap-2">
+                    <!-- Station ID -->
+                    <span class="font-bold text-brand text-xs shrink-0" 
+                          :class="!sub.active ? 'opacity-30 line-through' : ''" 
+                          x-text="'Station ' + sub.id"></span>
+
+                    <!-- Prüfer Name -->
+                    <span class="badge-name-active text-[11px] select-all cursor-text font-bold"
+                          :class="!sub.active ? 'opacity-30 line-through' : ''"
+                          x-text="'Prüfer: ' + sub.examiner"></span>
+                    
+                    <!-- Statusanzeige für Pause -->
+                    <span class="px-1.5 py-0.5 sig-badge-red text-[11px]"
+                          :class="sub.currentGroupId ? 'animate-pulse' : ''"
+                          x-show="sub.paused && sub.active"
+                          x-text="sub.currentGroupId ? 'Pause angekündigt ⏳' : 'Pausiert ⛔'"></span>
+
+                    <!-- Badge der zugewiesenen Gruppe -->
+                    <span class="px-1.5 py-0.5 sig-badge-orange text-[11px] font-black"
+                          x-show="sub.currentGroupId && sub.activeGroup && sub.active"
+                          x-text="sub.activeGroup ? 'Aktiv: ' + sub.activeGroup.name : ''"></span>
+
+                    <!-- Badge der Folgegruppe -->
+                    <span class="px-1.5 py-0.5 sig-badge-red text-[11px] font-black animate-pulse"
+                          x-show="sub.reservedGroupId && sub.active && getGroupName(sub.reservedGroupId)"
+                          x-text="'Folgegruppe: ' + getGroupName(sub.reservedGroupId)"></span>
+                  </div>
+                  
+                  <div class="flex items-center gap-2.5">
+                    <!-- Fernsteuern Link -->
+                    <a :href="'/pruefer.html?token=' + sub.token" target="_blank" 
+                       x-show="sub.active"
+                       class="btn-link font-black">
+                      Fernsteuern 🔗
+                    </a>
+
+                    <!-- FUNKTIONEN DROPDOWN -->
+                    <div class="relative" x-data="{ open: false }">
+                      <button @click="open = !open" 
+                              :disabled="isSubmitting"
+                              class="px-2 py-1 btn-brand text-[10px] uppercase font-bold disabled:opacity-50">
+                        Funktionen ⚙
+                      </button>
+                      <div x-show="open" 
+                           @click.outside="open = false" 
+                           class="absolute right-0 mt-1 w-52 app-card shadow-xl z-30 text-[11px] font-bold flex flex-col py-1.5 app-bg border border-main text-left hidden">
+                        
+                        <!-- Zuweisen / Freigeben -->
+                        <button @click="open = false; openManualAssignPopup(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active && !sub.currentGroupId && (!sub.paused || sub.currentGroupId)"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-brand disabled:opacity-40">
+                          ⚡ Gruppe manuell zuweisen
+                        </button>
+                        
+                        <!-- Freigeben -->
+                        <button @click="open = false; releaseSub(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active && sub.currentGroupId"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-danger-text disabled:opacity-40">
+                          ❌ Zuweisung aufheben (Freigeben)
+                        </button>
+
+                        <!-- Prüfung abschließen (Fertig) -->
+                        <button @click="open = false; completeSub(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active && sub.currentGroupId"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-success-text border-b border-main pb-1.5 mb-1.5 disabled:opacity-40">
+                          ✔ Prüfung abschließen (Fertig)
+                        </button>
+
+                        <!-- Aktivieren / Deaktivieren -->
+                        <template x-if="sub.active">
+                          <button @click="open = false; toggleSubActive(st.id, sub.id, false)"
+                                  :disabled="isSubmitting || sub.currentGroupId || !sub.paused"
+                                  class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-danger-text disabled:opacity-40">
+                            Deaktivieren
+                          </button>
+                        </template>
+                        <template x-if="!sub.active">
+                          <button @click="open = false; toggleSubActive(st.id, sub.id, true)"
+                                  :disabled="isSubmitting"
+                                  class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-success-text disabled:opacity-40">
+                            Aktivieren
+                          </button>
+                        </template>
+
+                        <!-- Prüfer ändern -->
+                        <button @click="open = false; openExaminerPopup(st.id, sub.id, sub.examiner)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-main disabled:opacity-40">
+                          Prüfer ändern
+                        </button>
+
+                        <!-- Prüfer entfernen -->
+                        <button @click="open = false; removeExaminer(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active && sub.examiner"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-danger-text disabled:opacity-40">
+                          Prüfer entfernen
+                        </button>
+
+                        <!-- Feste Folgegruppe zuweisen -->
+                        <button @click="open = false; openReservationPopup(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-main disabled:opacity-40">
+                          Folgegruppe zuweisen
+                        </button>
+
+                        <!-- Feste Folgegruppe aufheben -->
+                        <button @click="open = false; removeReservation(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                x-show="sub.active && sub.reservedGroupId"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-sig-danger-text disabled:opacity-40">
+                          Folgegruppe aufheben
+                        </button>
+
+                        <!-- Rückmeldung hinzufügen -->
+                        <button @click="open = false; openAddLogPopup(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-main disabled:opacity-40">
+                          Rückmeldung hinzufügen
+                        </button>
+
+                        <!-- Rückmeldungen stornieren -->
+                        <button @click="open = false; openRevertLogPopup(st.id, sub.id)"
+                                :disabled="isSubmitting"
+                                class="w-full text-left px-3 py-1.5 hover:opacity-85 text-main disabled:opacity-40">
+                          Rückmeldungen stornieren
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- SEKTION: SYSTEM-AKTUALISIERUNG & BACKUP -->
+      <div class="app-card p-6 space-y-6 mt-6">
+        <h2 class="text-xl font-bold text-main">3. System-Aktualisierung &amp; Backup (Live-Verwaltung)</h2>
+        <p class="text-xs text-muted leading-relaxed">
+          Laden Sie den aktuellen Stand des Programms (Backend-Logik, package.json-Abhängigkeiten und den vollständigen public/-Frontendordner) herunter, um lokale Anpassungen vorzunehmen, oder spielen Sie ein modifiziertes Update-ZIP-Paket ein. Der Server führt nach dem Upload automatisch ein <code>npm install</code> aus und startet sich neu.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Download Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-muted uppercase text-brand">Code herunterladen</h3>
+              <p class="text-[10px] text-muted leading-normal">
+                Erstellt ein Live-ZIP-Backup mit der aktuellen <code>server.js</code>, der <code>package.json</code> und dem vollständigen <code>public/</code>-Verzeichnis.
+              </p>
+            </div>
+            <button @click="downloadSystemBackup()" 
+                    :disabled="isSubmitting"
+                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50">
+              📥 Code-ZIP herunterladen
+            </button>
+          </div>
+
+          <!-- Upload Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-muted uppercase text-brand">Update-ZIP hochladen</h3>
+              <p class="text-[10px] text-muted leading-normal">
+                Wählen Sie ein geändertes ZIP-Paket aus. Nach dem Upload sichert der Server die Vorgängerversion als <code>backup_previous.zip</code> und startet sich neu.
+              </p>
+            </div>
+            <input type="file" id="system-update-zip-file" name="systemUpdateZipFile" @change="uploadSystemUpdate($event)" 
+                   :disabled="isSubmitting" 
+                   accept=".zip" 
+                   class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
+          </div>
+
+          <!-- Neustart Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-muted uppercase text-brand">System neustarten</h3>
+              <p class="text-[10px] text-muted leading-normal">
+                Beendet den Serverprozess sofort kontrolliert. Docker startet den Container daraufhin automatisch neu (Dauer: ca. 5–10 Sek.).
+              </p>
+            </div>
+            <button @click="triggerSystemRestart()" 
+                    :disabled="isSubmitting"
+                    class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50">
+              🔄 Server neustarten
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MODAL: UPDATE STATUS MONITOR -->
+    <div x-show="showUpdateStatusModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-5 text-center border-main">
+        
+        <!-- Icons je nach Status-Schritt -->
+        <template x-if="updateStep === 'upload' || updateStep === 'extract'">
+          <div class="text-4xl animate-bounce">📦</div>
+        </template>
+        <template x-if="updateStep === 'restarting'">
+          <div class="text-4xl animate-spin">🔄</div>
+        </template>
+        <template x-if="updateStep === 'reconnecting'">
+          <div class="text-4xl animate-ping">📡</div>
+        </template>
+        <template x-if="updateStep === 'ready'">
+          <div class="text-4xl">🎉</div>
+        </template>
+        <template x-if="updateStep === 'failed'">
+          <div class="text-4xl">❌</div>
+        </template>
+
+        <!-- Titel -->
+        <h3 class="text-base font-black text-main uppercase tracking-wide" x-text="getUpdateTitle()"></h3>
+        
+        <!-- Beschreibung -->
+        <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+
+        <!-- Aktionstasten -->
+        <template x-if="updateStep === 'ready'">
+          <button @click="reloadAfterUpdate()" 
+                  class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg">
+            Update abschließen
+          </button>
+        </template>
+        <template x-if="updateStep === 'failed'">
+          <button @click="showUpdateStatusModal = false" 
+                  class="w-full py-2.5 btn-sig-red text-xs font-black uppercase tracking-wider shadow">
+            Schließen
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- POPUP: GRUPPE MANUELL ZUWEISEN -->
+    <div x-show="showManualAssignPopup" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-sm font-bold text-muted uppercase">Gruppe manuell zuweisen</h3>
+        <select id="manual-assign-group-select" name="manualAssignGroupId" x-model="popupManualAssignGroupId" class="w-full px-3 py-2 input-select text-sm cursor-pointer">
+          <option value="">Wähle eine Gruppe...</option>
+          <template x-for="g in getAvailableGroupsForManualAssign()" :key="g.id">
+            <option :value="g.id" x-text="g.name"></option>
+          </template>
+        </select>
+        <div class="flex gap-3">
+          <button @click="showManualAssignPopup = false" class="flex-1 py-2 btn-sig-red text-xs">Abbrechen</button>
+          <button @click="saveManualAssignPopup()" :disabled="!popupManualAssignGroupId" class="flex-1 py-2 btn-brand text-xs disabled:opacity-40">Zuweisen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: PRÜFER ÄNDERN -->
+    <div x-show="showExaminerPopup" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-sm font-bold text-muted uppercase">Prüfername ändern</h3>
+        <input type="text" id="popup-examiner-name-input" name="popupExaminerName" x-model="popupExaminerName" maxlength="32" class="w-full px-3 py-2 input-text text-sm">
+        <div class="flex gap-3">
+          <button @click="showExaminerPopup = false" class="flex-1 py-2 btn-sig-red text-xs">Abbrechen</button>
+          <button @click="saveExaminerPopup()" class="flex-1 py-2 btn-brand text-xs">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: FOLGEGRUPPE VORGEBEN -->
+    <div x-show="showReservationPopup" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-sm font-bold text-muted uppercase">Feste Folgegruppe zuweisen</h3>
+        <select id="reservation-group-select" name="reservationGroupId" x-model="popupReservationGroupId" class="w-full px-3 py-2 input-select text-sm cursor-pointer">
+          <option value="">Wähle eine Folgegruppe...</option>
+          <template x-for="g in getReservationGroups()" :key="g.id">
+            <option :value="g.id" x-text="g.name"></option>
+          </template>
+        </select>
+        <div class="flex gap-3">
+          <button @click="showReservationPopup = false" class="flex-1 py-2 btn-sig-red text-xs">Abbrechen</button>
+          <button @click="saveReservationPopup()" :disabled="!popupReservationGroupId" class="flex-1 py-2 btn-brand text-xs disabled:opacity-40">Zuweisen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: RÜCKMELDUNG HINZUFÜGEN -->
+    <div x-show="showAddLogPopup" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-sm font-bold text-muted uppercase">Rückmeldung hinzufügen</h3>
+        <select id="add-log-group-select" name="addLogGroupId" x-model="popupAddLogGroupId" class="w-full px-3 py-2 input-select text-sm cursor-pointer">
+          <option value="">Wähle eine Gruppe...</option>
+          <template x-for="g in getAddLogGroups()" :key="g.id">
+            <option :value="g.id" x-text="g.name"></option>
+          </template>
+        </select>
+        <div class="flex gap-3">
+          <button @click="showAddLogPopup = false" class="flex-1 py-2 btn-sig-red text-xs">Abbrechen</button>
+          <button @click="saveAddLogPopup()" :disabled="!popupAddLogGroupId" class="flex-1 py-2 btn-sig-green text-xs disabled:opacity-40">Abschließen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP: RÜCKMELDUNG STORNIEREN -->
+    <div x-show="showRevertLogPopup" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+      <div class="app-card p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-sm font-bold text-muted uppercase">Rückmeldung stornieren</h3>
+        <select id="revert-log-group-select" name="revertLogGroupId" x-model="popupRevertLogGroupId" class="w-full px-3 py-2 input-select text-sm cursor-pointer">
+          <option value="">Wähle eine Gruppe...</option>
+          <template x-for="g in getRevertLogGroups()" :key="g.id">
+            <option :value="g.id" x-text="g.name"></option>
+          </template>
+        </select>
+        <div class="flex gap-3">
+          <button @click="showRevertLogPopup = false" class="flex-1 py-2 btn-sig-red text-xs">Abbrechen</button>
+          <button @click="saveRevertLogPopup()" :disabled="!popupRevertLogGroupId" class="flex-1 py-2 btn-brand text-xs disabled:opacity-40">Stornieren</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Controller wurde in das externe Skript public/js/admin-stations.js ausgelagert -->
+</body>
+</html>

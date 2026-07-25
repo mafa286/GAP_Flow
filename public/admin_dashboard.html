@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/admin_dashboard.html (GAP-Flow v1.1.64) -->
+  <meta charset="UTF-8">
+  <title>Admin-Leitstand - Dashboard</title>
+  <script src="/js/theme_config.js?v=1.1.66"></script>
+  <script src="/js/gap_flow_utils.js?v=1.1.62"></script>
+  <script src="/js/admin_core.js?v=1.1.64"></script>
+  <script src="/js/admin_dashboard.js?v=1.1.9"></script>
+  <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
+  <!-- Chart.js laden -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js?v=4.4.1" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
+  <script src="/socket.io/socket.io.js?v=4.0.0"></script>
+</head>
+
+<body class="app-bg min-h-screen p-6 transition-colors duration-200" x-data="adminPanel()">
+
+  <!-- PASSWORD WALL -->
+  <div x-show="!authenticated" class="fixed inset-0 app-bg z-50 flex items-center justify-center p-6 transition-colors duration-200">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-main transition-colors duration-200">
+      <h1 class="text-xl font-black text-center text-brand uppercase tracking-wide">Admin-Leitstand</h1>
+      <input type="password" id="admin-password-dashboard" name="adminPassword" x-model="passwordInput" maxlength="128" @keydown.enter="login()" autocomplete="current-password" placeholder="Admin-Passwort" class="w-full px-4 py-3 input-text focus:outline-none">
+      <button @click="login()" class="w-full py-3 btn-brand text-sm">Einloggen</button>
+      <p x-show="authError" class="text-xs text-center font-bold text-sig-danger">Falsches Passwort!</p>
+    </div>
+  </div>
+
+  <!-- INACTIVITY WARNING MODAL -->
+  <div x-show="showInactivityWarning" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-center animate-pulse">
+      <div class="text-4xl">⚠️</div>
+      <h2 class="text-lg font-black text-brand uppercase tracking-wide">Inaktivität festgestellt</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Sie waren für 14 Minuten inaktiv. Das System meldet Sie in **1 Minute** automatisch ab. Bewegen Sie die Maus oder drücken Sie eine Taste, um aktiv zu bleiben.
+      </p>
+      <button @click="resetInactivityTimer()" class="w-full py-3 btn-sig-green uppercase tracking-wider text-xs shadow-lg">
+        Aktiv bleiben
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN CONTAINER -->
+  <div x-show="authenticated" class="max-w-[1700px] mx-auto space-y-6">
+    
+    <!-- Header mit globalem Startschuss -->
+    <div class="flex justify-between items-center border-b border-main pb-4">
+      <div>
+        <h1 class="text-3xl font-black text-brand uppercase tracking-wide">Prüfungsleitung & Administration</h1>
+        <p class="text-muted text-sm">Zentraler Leitstand zur Überwachung des aktiven Prüfungsdurchlaufs</p>
+      </div>
+      <div class="flex gap-4 items-center">
+        <!-- GLOBALER STARTSCHUSS-SCHALTER -->
+        <div class="flex items-center gap-2.5 px-3 py-1.5 app-card-accent shadow-inner">
+          <span class="text-xs font-bold text-muted tracking-wide uppercase">Autom. Zuteilung:</span>
+          <button @click="toggleAutoAllocation(!autoAllocationActive)" 
+                  :disabled="isSubmitting"
+                  class="px-3.5 py-1.5 rounded-md font-black text-xs uppercase tracking-wider transition-all duration-300 shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
+            <span x-text="autoAllocationActive ? 'AKTIV' : 'DEAKTIVIERT'"></span>
+          </button>
+        </div>
+
+        <button @click="exportCSV()" class="px-4 py-2.5 btn-brand text-xs">Protokoll-CSV exportieren</button>
+        <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+          <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <button @click="logout()" class="px-4 py-2.5 btn-sig-red text-xs font-bold" title="Vom Admin-Bereich abmelden">Abmelden</button>
+      </div>
+    </div>
+
+    <!-- SUB-NAVIGATION -->
+    <nav class="flex gap-4 border-b border-main pb-4">
+      <a href="/admin_dashboard.html" class="px-4 py-2 btn-brand text-sm transition">Live-Dashboard</a>
+      <a href="/admin_groups.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Anwärter &amp; Gruppen</a>
+      <a href="/admin_stations.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Stationen &amp; Skalierung</a>
+    </nav>
+
+    <!-- ZEILE 1: ENGPASS-ANALYSE DIAGRAMMTIEFE (Volle Breite) -->
+    <div class="app-card p-6 space-y-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+        <div>
+          <h2 class="text-lg font-bold text-main">Theoretische Restlaufzeit der Stationen (Live)</h2>
+          <p class="text-xs text-muted">Berechnet aus: ((Ø Dauer × Ausstehend) - Aktive Zeit gesamt) / Unterstationen</p>
+        </div>
+        
+        <!-- INTERAKTIVES EINGABEFELD FÜR SOLL-ENDZEIT & LEGENDE -->
+        <div class="flex flex-wrap items-center gap-4 mt-2 md:mt-0 text-xs">
+          <!-- Zeitauswahlfeld -->
+          <div class="flex items-center gap-2 app-card-accent px-3 py-1.5 shadow-inner">
+            <span class="font-bold text-muted">SOLL-Endzeit:</span>
+            <input type="time" id="target-end-time-input" name="targetEndTime" x-model="targetEndTime" @change="saveTargetEndTime()" 
+                   class="px-2 py-0.5 input-text font-bold cursor-pointer">
+          </div>
+
+          <!-- Legende -->
+          <div class="flex gap-3 text-[10px] uppercase font-bold tracking-wider">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sig-success-border"></span> Im Zeitplan</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-sig-danger-border"></span> Überzieht Limit</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Canvas Container für Chart.js -->
+      <div class="relative h-[250px] w-full app-card-accent p-4 mt-4">
+        <canvas id="stationsChart"></canvas>
+      </div>
+
+      <!-- REAKTIVE BERECHNUNGSTABELLE -->
+      <div class="overflow-x-auto rounded-lg border border-main mt-4">
+        <table class="min-w-full divide-y border-main text-xs">
+          <thead class="app-card-accent font-bold">
+            <tr>
+              <th class="px-3 py-2 text-left font-bold text-muted">Station</th>
+              <th class="px-3 py-2 text-center font-bold text-muted">Ø Dauer gesamt</th>
+              <th class="px-3 py-2 text-center font-bold text-muted">Ausstehend (G_rem)</th>
+              <th class="px-3 py-2 text-center font-bold text-muted">Ø Aktive Zeit (aktuelle Gruppen)</th>
+              <th class="px-3 py-2 text-center font-bold text-muted">Unterstationen (N)</th>
+              <th class="px-3 py-2 text-right font-bold text-brand">Voraussichtliches Ende</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y border-main text-main">
+            <template x-for="row in calcTableData" :key="row.id">
+              <tr class="transition-colors">
+                <td class="px-3 py-2.5 font-bold text-main" x-text="row.name"></td>
+                <td class="px-3 py-2.5 text-center text-muted">
+                  <span class="font-semibold" x-text="row.avg + ' Min.'"></span>
+                  <span x-show="!row.hasLogs" class="text-[9px] text-muted block leading-none pt-0.5">(Standard-Richtwert)</span>
+                </td>
+                <td class="px-3 py-2.5 text-center text-main font-semibold" x-text="row.g_rem + ' Gruppen'"></td>
+                <td class="px-3 py-2.5 text-center font-semibold" 
+                    :style="row.t_active_avg > row.avg ? 'color: var(--sig-warning-text) !important;' : 'color: var(--org-text-muted) !important;'"
+                    x-text="row.t_active_avg > 0 ? row.t_active_avg + ' Min.' : '—'"></td>
+                <td class="px-3 py-2.5 text-center text-muted font-bold" x-text="row.n_subs"></td>
+                <td class="px-3 py-2.5 text-right font-black text-sm" 
+                    :style="row.isOvertime ? 'color: var(--sig-danger-text) !important;' : (row.isWarning ? 'color: var(--sig-warning-text) !important;' : 'color: var(--sig-success-text) !important;')">
+                  <span x-text="row.endTimeStr"></span>
+                  <span class="text-[10px] text-muted font-semibold block leading-none pt-0.5" x-text="'(' + row.total + ' Min. verbleibend)'"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ZEILE 2: LIVE-AKTIVITÄTEN -->
+    <div class="app-card p-6 space-y-4">
+      <h2 class="text-lg font-bold text-main">Aktivitäten &amp; Verlauf (Live)</h2>
+      
+      <!-- Spaltenaufteilung: Links Filter (1/3 Breite), Rechts das Log (2/3 Breite) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- LINKE SPALTE: FILTER ÜBEREINANDER -->
+        <div class="space-y-4 lg:col-span-1">
+          
+          <!-- Gruppen-Filter Kasten -->
+          <div class="flex flex-col app-card-accent p-4 space-y-2">
+            <div class="flex justify-between items-center border-b border-main pb-1.5 mb-1">
+              <span class="font-extrabold text-[10px] text-muted uppercase tracking-wider">Gruppen filtern</span>
+              <button @click="selectedGroups = []" 
+                      x-show="selectedGroups.length > 0"
+                      class="text-muted hover:text-main text-[10px] font-bold transition">Leeren</button>
+            </div>
+            <div class="space-y-1.5 overflow-y-auto h-40 pr-1">
+              <template x-for="gName in getGroupFilterOptions()" :key="gName">
+                <label class="flex items-center gap-2 py-0.5 px-1 rounded hover:opacity-85 cursor-pointer">
+                  <input type="checkbox" :id="'group-filter-' + gName.replace(/\s+/g, '-')" :name="'groupFilter_' + gName.replace(/\s+/g, '_')" :value="gName" x-model="selectedGroups" class="rounded text-brand focus:ring-0 app-bg border-main">
+                  <span class="text-main truncate font-semibold" x-text="gName"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <!-- Stationen-Filter Kasten -->
+          <div class="flex flex-col app-card-accent p-4 space-y-2">
+            <div class="flex justify-between items-center border-b border-main pb-1.5 mb-1">
+              <span class="font-extrabold text-[10px] text-muted uppercase tracking-wider">Stationen filtern</span>
+              <button @click="selectedStations = []" 
+                      x-show="selectedStations.length > 0"
+                      class="text-muted hover:text-main text-[10px] font-bold transition">Leeren</button>
+            </div>
+            <div class="space-y-1.5 overflow-y-auto h-40 pr-1">
+              <template x-for="sName in getStationFilterOptions()" :key="sName">
+                <label class="flex items-center gap-2 py-0.5 px-1 rounded hover:opacity-85 cursor-pointer">
+                  <input type="checkbox" :id="'station-filter-' + sName.replace(/\s+/g, '-')" :name="'stationFilter_' + sName.replace(/\s+/g, '_')" :value="sName" x-model="selectedStations" class="rounded text-brand focus:ring-0 app-bg border-main">
+                  <span class="text-main truncate font-semibold" x-text="sName"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECHTE SPALTE: LOG-DATEN -->
+        <div class="lg:col-span-2">
+          <div class="h-[472px] overflow-y-auto app-card-accent p-4 space-y-2.5">
+            <template x-for="log in filteredLogs" :key="log.timestamp">
+              <div class="flex justify-between items-start border-b border-main pb-2.5 leading-relaxed gap-4">
+                <!-- Linke Seite: Meldungstext -->
+                <div x-html="getLogText(log)" class="flex-1 min-w-0 pr-2 text-main"></div>
+                
+                <!-- Rechte Seite: Zeitstempel -->
+                <div class="flex items-center gap-2.5 flex-shrink-0">
+                  <span class="font-mono text-muted text-[10px] whitespace-nowrap pt-0.5" x-text="getLogTimeText(log)"></span>
+                </div>
+              </div>
+            </template>
+            <template x-if="filteredLogs.length === 0">
+              <p class="text-muted text-center italic py-12">Keine passenden Aktivitäten aufgezeichnet.</p>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controller und Chart.js-Konfiguration wurden in das externe Skript public/js/admin-dashboard.js ausgelagert -->
+</body>
+</html>

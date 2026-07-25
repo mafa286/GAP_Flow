@@ -1,0 +1,28 @@
+{
+  "name": "GAP-Flow",
+  "version": "0.0.0",
+  "description": "Echtzeit GA-Prüfungs-Management-System mit automatisierter Gruppenzuteilung",
+  "main": "server.ts",
+  "scripts": {
+    "start": "npm run build:frontend && npx tsx server.ts",
+    "build:frontend": "npx tsc -p tsconfig.frontend.json",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0",
+    "express": "^5.0.0",
+    "express-rate-limit": "^8.0.0",
+    "socket.io": "^4.0.0",
+    "sqlite3": "^6.0.0",
+    "tsx": "^4.23.1",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.11.0",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.1"
+  }
+}

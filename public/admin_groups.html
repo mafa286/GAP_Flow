@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/admin_groups.html (GAP-Flow v1.1.63) -->
+  <meta charset="UTF-8">
+  <title>Admin-Leitstand - Anwärter & Gruppen</title>
+  <script src="/js/theme_config.js"></script>
+  <script src="/js/gap_flow_utils.js"></script>
+  <script src="/js/admin_core.js"></script>
+  <script src="/js/admin_groups.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- PapaParse für RFC-konformen CSV-Import -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous"></script>
+</head>
+
+<body class="app-bg min-h-screen p-6 transition-colors duration-200" x-data="adminPanel()">
+
+  <!-- PASSWORD WALL -->
+  <div class="fixed inset-0 app-bg z-50 flex items-center justify-center p-6 transition-colors duration-200" x-show="!authenticated">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-main transition-colors duration-200">
+      <h1 class="text-xl font-black text-center text-brand uppercase tracking-wide">Admin-Leitstand</h1>
+      <input type="password" id="admin-password-groups" name="adminPassword" x-model="passwordInput" maxlength="128" @keydown.enter="login()" autocomplete="current-password" placeholder="Admin-Passwort" class="w-full px-4 py-3 input-text focus:outline-none">
+      <button @click="login()" class="w-full py-3 btn-brand text-sm">Einloggen</button>
+      <p x-show="authError" class="text-xs text-center font-bold text-sig-danger">Falsches Passwort!</p>
+    </div>
+  </div>
+
+  <!-- INACTIVITY WARNING MODAL -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" 
+       x-show="showInactivityWarning">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-center animate-pulse">
+      <div class="text-4xl">⚠️</div>
+      <h2 class="text-lg font-black text-brand uppercase tracking-wide">Inaktivität festgestellt</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Sie waren für 14 Minuten inaktiv. Das System meldet Sie in **1 Minute** automatisch ab. Bewegen Sie die Maus oder drücken Sie eine Taste, um aktiv zu bleiben.
+      </p>
+      <button @click="resetInactivityTimer()" class="w-full py-3 btn-sig-green uppercase tracking-wider text-xs shadow-lg">
+        Aktiv bleiben
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN CONTAINER -->
+  <div x-show="authenticated" class="max-w-[1700px] mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center border-b border-main pb-4">
+      <div>
+        <h1 class="text-3xl font-black text-brand uppercase tracking-wide">Prüfungsleitung & Administration</h1>
+        <p class="text-muted text-sm">Teilnehmer-Datenbank und statische Gruppenbildung</p>
+      </div>
+      <div class="flex gap-4 font-bold text-xs">
+        <!-- GLOBALER STARTSCHUSS-SCHALTER -->
+        <div class="flex items-center gap-2.5 px-3 py-1.5 app-card-accent shadow-inner">
+          <span class="text-xs font-bold text-muted tracking-wide uppercase">Autom. Zuteilung:</span>
+          <button @click="toggleAutoAllocation(!autoAllocationActive)" 
+                  class="px-3.5 py-1.5 rounded-md font-black text-xs uppercase tracking-wider transition-all duration-300 shadow"
+                  :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
+            <span x-text="autoAllocationActive ? 'AKTIV' : 'DEAKTIVIERT'"></span>
+          </button>
+        </div>
+        <button @click="exportCSV()" class="px-4 py-2.5 btn-brand text-xs">Protokoll-CSV exportieren</button>
+        <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+          <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <button @click="logout()" class="px-4 py-2.5 btn-sig-red text-xs font-bold" title="Vom Admin-Bereich abmelden">Abmelden</button>
+      </div>
+    </div>
+
+    <!-- SUB-NAVIGATION -->
+    <nav class="flex gap-4 border-b border-main pb-4">
+      <a href="/admin_dashboard.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Live-Dashboard</a>
+      <a href="/admin_groups.html" class="px-4 py-2 btn-brand text-sm transition">Anwärter &amp; Gruppen</a>
+      <a href="/admin_stations.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Stationen &amp; Skalierung</a>
+    </nav>
+
+    <!-- CONTENT: CRUD ANWAERTER & GROUPS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Anwärter-Datenbank -->
+      <div class="app-card p-6 space-y-6">
+        <h2 class="text-xl font-bold text-main">1. Anwärter-Datenbank</h2>
+        
+        <!-- Manueller Einzelimport -->
+        <div class="p-4 app-card-accent flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div class="flex-1 w-full space-y-3">
+            <h3 class="text-sm font-bold text-muted uppercase">Neuen Anwärter registrieren</h3>
+            <div class="flex gap-2 text-xs">
+              <input type="text" id="new-anwaerter-name-input" name="newAnwaerterName" x-model="newAnwaerterName" maxlength="32" :disabled="isSubmitting" @keydown.enter="addAnwaerter()" placeholder="Name des Anwärters" class="flex-1 px-3 py-2 input-text text-sm disabled:opacity-50">
+              <button @click="addAnwaerter()" :disabled="isSubmitting" class="px-4 py-2 btn-brand text-sm disabled:opacity-50 disabled:cursor-not-allowed">Anlegen</button>
+            </div>
+          </div>
+          <div class="flex-shrink-0 w-full md:w-auto pt-2 md:pt-6">
+            <!-- Button zum selektiven Leeren der Teilnehmer -->
+            <button @click="clearAllAnwaerter()" :disabled="isSubmitting" class="w-full md:w-auto px-4 py-2.5 btn-sig-red text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+              ⚠️ Alle löschen
+            </button>
+          </div>
+        </div>
+
+        <!-- CSV-DATEI-IMPORT -->
+        <div class="p-4 app-card-accent space-y-3">
+          <h3 class="text-sm font-bold text-muted uppercase">Anwärter per CSV importieren</h3>
+          <p class="text-[10px] text-muted leading-normal">Unterstützt ein- oder zweispaltige CSV/TXT-Dateien (Trennzeichen: Semicolon oder Komma). Zweispaltige Zeilen (Vorname;Nachname) werden automatisch zu "Nachname, Vorname" formatiert. Spaltenköpfe werden automatisch ignoriert.</p>
+          <div class="p-2.5 sig-badge-red text-[10px] leading-normal shadow-sm">
+            ⚠️ <strong>Achtung:</strong> Der Import bereinigt das System! Alle bestehenden Gruppen, Demo-Anwärter und Protokolle werden gelöscht. Ihre Stationen und Prüfernamen bleiben erhalten.
+          </div>
+          <input type="file" id="anwaerter-csv-import-file" name="anwaerterCsvFile" @change="handleCSVImport($event)" :disabled="isSubmitting" accept=".csv,.txt" class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
+        </div>
+
+        <!-- Registrierte Anwärter (Dynamisch nach unten wachsend) -->
+        <div class="p-4 app-card-accent space-y-3">
+          <h3 class="text-sm font-bold text-muted uppercase">Registrierte Anwärter (Alphabetisch sortiert)</h3>
+          <div class="space-y-2.5">
+            <template x-for="st in sortedAnwaerter" :key="st.id">
+              <div class="flex justify-between items-center p-3 border rounded-lg text-xs transition animate-fade-in"
+                   :class="st.active ? 'app-card border-main' : 'opacity-50 app-card-accent border-main'">
+                <div>
+                  <span class="font-bold text-sm block" x-text="st.name" :class="st.active ? 'text-main' : 'line-through text-muted'"></span>
+                  
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    <template x-if="st.groupId && groups[st.groupId]">
+                      <span class="badge-group-active text-[10px]"
+                            x-text="'Gruppe: ' + groups[st.groupId].name"></span>
+                    </template>
+                    <template x-if="!st.groupId">
+                      <span class="badge-name-inactive text-[10px]">Unzugeordnet</span>
+                    </template>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="toggleAnwaerterActive(st.id, !st.active)" 
+                          :disabled="isSubmitting"
+                          class="px-3 py-1.5 font-bold text-xs transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          :class="st.active ? 'btn-sig-red' : 'btn-sig-green'">
+                    <span x-text="st.active ? 'Deaktivieren' : 'Aktivieren'"></span>
+                  </button>
+                </div>
+              </div>
+            </template>
+            <template x-if="Object.keys(anwaerter).length === 0">
+              <p class="text-muted text-xs italic">Noch keine Anwärter registriert.</p>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPALTE 2: GRUPPENVERWALTUNG -->
+      <div class="app-card p-6 space-y-6">
+        <h2 class="text-xl font-bold text-main">2. Gruppenverwaltung</h2>
+
+        <!-- ZENTRALE PAUSENSTEUERUNG -->
+        <div class="p-4 app-card-accent flex justify-between items-center gap-4 shadow-inner">
+          <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-bold text-muted uppercase">Zentrale Pausensteuerung</h3>
+            <p class="text-[10px] text-muted leading-relaxed">Pausiert alle aktiven Gruppen sofort bzw. nach Abschluss ihrer aktuellen Station.</p>
+          </div>
+          <button @click="toggleAllGroupsPause()"
+                  :disabled="isSubmitting"
+                  class="px-4 py-2.5 font-bold text-xs uppercase tracking-wider transition duration-200 shadow disabled:opacity-50 shrink-0"
+                  :class="isAnyGroupActiveAndNotPaused() ? 'btn-sig-orange' : 'btn-sig-green'">
+            <span x-text="isAnyGroupActiveAndNotPaused() ? '⏸️ Alle pausieren' : '▶️ Pausen beenden'"></span>
+          </button>
+        </div>
+
+        <div class="p-4 app-card-accent space-y-3">
+          <h3 class="text-sm font-bold text-muted uppercase">Statische Gruppe bilden</h3>
+          <div class="space-y-3">
+            <input type="text" id="new-group-name-input" name="newGroupName" x-model="newGroupName" data-group-name-input maxlength="20" :disabled="isSubmitting" @keydown.enter="createGroup()" placeholder="Gruppenname (z. B. Gruppe 01)" class="w-full px-3 py-2 input-text text-sm disabled:opacity-50">
+        
+            <div class="space-y-1">
+              <span class="text-xs text-muted block">Mitglieder zuweisen (nur aktive & freie Anwärter sichtbar):</span>
+              <div class="grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto app-card p-2 text-main shadow-inner">
+                <template x-for="st in Object.values(anwaerter).filter(s => !s.groupId && s.active)" :key="st.id">
+                  <label class="flex items-center gap-2 text-xs hover:opacity-85 cursor-pointer">
+                    <input type="checkbox" :id="'anwaerter-select-' + st.id" :name="'anwaerterSelect_' + st.id" :value="st.id" :disabled="isSubmitting" x-model="selectedAnwaerterIds" class="rounded text-brand focus:ring-0 border-main app-bg">
+                    <span x-text="st.name" class="font-semibold"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
+
+            <button @click="createGroup()" :disabled="isSubmitting" class="w-full py-2 btn-brand text-sm disabled:opacity-50 disabled:cursor-not-allowed">Gruppe erstellen</button>
+          </div>
+        </div>
+
+        <div class="p-4 app-card-accent space-y-3">
+          <h3 class="text-sm font-bold text-muted uppercase">Aktive Gruppen (Alphabetisch sortiert)</h3>
+          <div class="space-y-2.5">
+            <template x-for="g in sortedGroups" :key="g.id">
+              <div class="flex justify-between items-center p-3 border rounded-lg text-xs transition animate-fade-in"
+                   :class="g.active ? 'app-card border-main' : 'opacity-50 app-card-accent border-main'">
+                <div>
+                  <span class="font-bold text-sm block" x-text="g.name" :class="g.active ? 'text-main' : 'line-through text-muted'"></span>
+                  
+                  <div class="flex flex-wrap gap-1.5 mt-2 animate-fade-in">
+                    <template x-for="member in g.members" :key="member">
+                      <span class="text-[10px] font-bold transition duration-300"
+                            :class="isMemberActive(member) ? 'badge-name-active' : 'badge-name-inactive'" x-text="member"></span>
+                    </template>
+                    <template x-if="g.members.length === 0">
+                      <span class="text-muted italic font-semibold">Leere Gruppe</span>
+                    </template>
+                  </div>
+
+                  <template x-if="g.paused && g.active">
+                    <span class="mt-2 px-1.5 py-0.5 sig-badge-orange text-[10px] inline-block animate-pulse">Pausiert</span>
+                  </template>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="toggleGroupPause(g.id)" 
+                          x-show="g.active"
+                          :disabled="isSubmitting"
+                          class="px-3 py-1.5 font-bold text-xs transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          :class="g.paused ? 'btn-sig-orange' : 'app-card-accent text-main'">
+                    <span x-text="g.paused ? 'Pause beenden' : 'Pause'"></span>
+                  </button>
+
+                  <button @click="toggleGroupActive(g.id, !g.active)" 
+                          :disabled="isSubmitting"
+                          class="px-3 py-1.5 font-bold text-xs transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          :class="g.active ? 'btn-sig-red' : 'btn-sig-green'">
+                    <span x-text="g.active ? 'Deaktivieren' : 'Aktivieren'"></span>
+                  </button>
+
+                  <!-- Gruppe auflösen: Nur solange sie noch keiner Station zugewiesen wurde und noch nichts absolviert hat -->
+                  <button @click="dissolveGroup(g.id)" 
+                          x-show="g.completedStations.length === 0 && !g.currentStation"
+                          :disabled="isSubmitting"
+                          class="px-3 py-1.5 btn-sig-red font-bold text-xs transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Auflösen
+                  </button>
+                </div>
+              </div>
+            </template>
+            <template x-if="Object.keys(groups).length === 0">
+              <p class="text-muted text-xs italic">Noch keine Gruppen definiert.</p>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controller wurde in das externe Skript public/js/admin-groups.js ausgelagert -->
+</body>
+</html>

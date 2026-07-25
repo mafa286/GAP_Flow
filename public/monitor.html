@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/monitor.html (GAP-Flow v1.1.68) -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prüfungs-Monitor (Beamer)</title>
+  <script src="/js/theme_config.js"></script>
+  <script src="/js/audio_engine.js"></script>
+  <script src="/js/gap_flow_utils.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* Richtet die Standard Tailwind Trennlinien farblich am Theme-Config System aus */
+    .divide-y > * + * {
+      border-color: var(--org-border) !important;
+    }
+    /* Laufschrift-Animation für kompakte Statusanzeigen auf dem Beamer-Monitor */
+    @keyframes marquee {
+      0% { transform: translate3d(100%, 0, 0); }
+      100% { transform: translate3d(-100%, 0, 0); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 10s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+  </style>
+</head>
+
+<body class="app-bg min-h-screen p-6 select-none transition-colors duration-200" x-data="dashboard()">
+
+  <div class="max-w-[1800px] mx-auto space-y-6">
+    
+    <!-- HEADER MIT INTERAKTIVEN BUTTONS -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-main pb-4 gap-4">
+      <div>
+        <h1 class="text-3xl font-black tracking-tight text-brand uppercase">Prüfungsablauf & Zuweisungen</h1>
+        <p class="text-muted text-sm">Automatisierte Echtzeit-Zuweisung • Bitte direkt zur zugewiesenen Station begeben.</p>
+      </div>
+      
+      <!-- INTERAKTIVE HEADER-ELEMENTE -->
+      <div class="flex flex-wrap items-center gap-3">
+        
+        <!-- Toggle-Sortierungs-Button -->
+        <button @click="toggleSort()" 
+                class="px-4 py-2.5 font-bold text-xs uppercase tracking-wider transition"
+                :class="sortBy === 'alphabetical' ? 'btn-brand' : 'app-card-accent hover:opacity-85 text-main'">
+          <span x-text="sortBy === 'alphabetical' ? 'Sortierung: Alphabetisch' : 'Sortierung: Letztes Update'"></span>
+        </button>
+        
+        <!-- Admin-Panel Direktlink -->
+        <a href="/admin_dashboard.html" target="_blank" 
+           class="px-4 py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
+          Admin-Leitstand ⚙
+        </a>
+
+        <!-- Theme-Toggle-Button (THW Design) -->
+        <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+          <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+
+        <!-- Uhrzeit-Kachel -->
+        <div class="text-right pl-4 border-l border-main">
+          <span class="text-[10px] text-muted uppercase block tracking-wider font-semibold">Aktuelle Uhrzeit</span>
+          <span class="text-xl font-mono font-bold text-brand" x-text="currentTime"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN MATRIX GRID (Symmetrisches fixed-width Design) -->
+    <div class="app-card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y border-main table-fixed">
+          <thead class="app-card-accent font-bold">
+            <tr>
+              <!-- Sichert eine gleichmäßige Verteilung aller Spalten mitsamt flexiblem Wortumbruch -->
+              <th class="px-6 py-3.5 text-left text-sm font-black uppercase text-muted tracking-wider whitespace-normal break-words">Gruppe</th>
+              <template x-for="station in activeStations" :key="station.id">
+                <th class="px-2 py-3.5 text-center text-xs font-black uppercase text-muted tracking-wider border-l border-main whitespace-normal break-words" x-text="station.name + ' (' + getStationOpenCount(station) + ')'"></th>
+              </template>
+              <th class="px-6 py-3.5 text-center text-sm font-black uppercase text-muted tracking-wider border-l border-main whitespace-normal break-words">Status / Zeit</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y border-main">
+            <template x-for="group in sortedGroups" :key="group.id">
+              <tr class="transition font-medium">
+                <!-- Group Name -->
+                <td class="px-6 py-3 font-black text-lg text-main whitespace-normal break-words" x-text="group.name + ' (' + getGroupOpenCount(group) + ')'"></td>
+                
+                <!-- Station Columns -->
+                <template x-for="station in activeStations" :key="station.id">
+                  <td class="px-4 py-3 text-center border-l border-main whitespace-normal break-words font-extrabold text-sm transition duration-500"
+                      :style="getCellStyle(group, station)">
+                    <span x-text="getCellValue(group, station)"></span>
+                  </td>
+                </template>
+
+                <!-- STATUS- UND ZEITANZEIGE -->
+                <td class="px-6 py-3 border-l border-main text-center whitespace-normal break-words">
+                  <div :class="getBadgeClass(group)" x-text="getActiveTimeText(group)"></div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+          <!-- ZUSÄTZLICHE ZEILE FÜR STATIONS-STATUS (Laufschrift & Restlaufzeit-Prognosen) -->
+          <tfoot class="app-card-accent font-bold border-t-2 border-main">
+            <tr>
+              <!-- Spalte 1: Label -->
+              <td class="px-6 py-3.5 font-black text-xs uppercase text-muted tracking-wider whitespace-normal break-words">Stationen-Info</td>
+              
+              <!-- Dynamische Stationen-Spalten -->
+              <template x-for="station in activeStations" :key="station.id">
+                <td class="px-2 py-3 text-center border-l border-main whitespace-normal break-words">
+                  <div class="overflow-hidden relative w-full min-h-[1.25rem] flex items-center justify-center">
+                    <div :class="getStationStatusClass(station)" class="w-full text-center font-bold px-1.5 py-0.5 rounded text-[11px] leading-tight">
+                      <span x-html="getStationStatusHtml(station)"></span>
+                    </div>
+                  </div>
+                </td>
+              </template>
+              
+              <!-- Letzte Spalte: Dynamischer Verbindungsstatus zum Server -->
+              <td class="px-6 py-3 border-l border-main text-center text-xs uppercase tracking-wider whitespace-normal break-words font-black">
+                <div class="flex items-center justify-center gap-1.5" :style="connected ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-danger-text) !important;'">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" 
+                        :style="connected ? 'background-color: var(--sig-success-text) !important;' : 'background-color: var(--sig-danger-text) !important;'"
+                        :class="connected ? '' : 'animate-ping'"></span>
+                  <span x-text="connected ? 'System OK' : 'Offline'"></span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEZENTER SOUND-AKTIVIERUNGS-SCHALTER -->
+  <div x-show="!soundUnlocked" class="fixed bottom-4 right-4 z-50 animate-pulse hidden">
+    <button @click="unlockSound()" class="px-4 py-2.5 btn-sig-orange flex items-center gap-2 text-xs font-black shadow-2xl uppercase tracking-wider">
+      🔊 Sound aktivieren
+    </button>
+  </div>
+
+  <script>
+    "use strict";
+
+    /**
+     * @typedef {Object} AlpineGroup
+     * @property {string} id - Eindeutige ID der Gruppe.
+     * @property {string} name - Name der Gruppe.
+     * @property {string[]} completedStations - IDs bereits absolvierter Hauptstationen.
+     * @property {string|null} currentStation - ID der aktuell belegten Unterstation.
+     * @property {string} status - Zustand ("waiting", "assigned", "paused").
+     * @property {number} lastStatusChange - Zeitstempel der letzten Statusänderung.
+     * @property {boolean} active - Status der Gruppe.
+     */
+
+    /**
+     * @typedef {Object} AlpineStation
+     * @property {string} id - ID der Hauptstation.
+     * @property {string} name - Name der Hauptstation.
+     * @property {boolean} active - Status der Hauptstation.
+     */
+
+    /**
+     * AlpineJS-Datenkomponente für den Read-Only Beamer-Monitor.
+     * @returns {Object} Das reaktive AlpineJS-Zustandsobjekt.
+     */
+    function dashboard() {
+      return {
+        // --- Reaktiver Zustand ---
+        groups: {},
+        stations: {},
+        now: Date.now(),
+        currentTime: '',
+        sortBy: 'alphabetical',
+        soundUnlocked: false,
+        wakeLock: null,
+        audioContext: null, // Verhindert AudioContext-Zensuslecks
+        renderLock: false,
+        connected: false,
+        _cachedSortedGroups: null,
+
+        /**
+         * Liefert alle verfügbaren Hauptstationen.
+         * DSGVO: Der Server filtert inaktive Stationen bereits vorab aus.
+         * @returns {AlpineStation[]} Liste der darzustellenden Stationen.
+         */
+        get activeStations() {
+          return Object.values(this.stations);
+        },
+
+        /**
+         * Ermittelt, wie viele Stationen für eine bestimmte Gruppe noch offen sind.
+         * @param {Object} group - Die betroffene Gruppe.
+         * @returns {number} Anzahl offener Stationen.
+         */
+        getGroupOpenCount(group) {
+          const activeIds = this.activeStations.map(s => s.id);
+          return activeIds.filter(id => !(group.completedStations || []).includes(id)).length;
+        },
+
+        getStationOpenCount(station) {
+          return Object.values(this.groups).filter(g => !(g.completedStations || []).includes(station.id)).length;
+        },
+
+        /**
+         * Liefert das semantische CSS-Design für das Statusfeld einer Station auf dem Beamer.
+         * @param {Object} station - Die betroffene Station.
+         * @returns {string} Tailwind CSS Klassen.
+         */
+        getStationStatusClass(station) {
+          if (!station.beamerStatus) return 'text-main';
+          const bs = station.beamerStatus;
+          if (bs.sprechwunsch) {
+            return 'sig-badge-red animate-pulse';
+          }
+          if (bs.isAnyPaused) {
+            return 'sig-badge-orange';
+          }
+          if (bs.remainingTime > 0) {
+            return 'badge-group-active';
+          }
+          return 'text-muted';
+        },
+
+        /**
+         * Erstellt den formatierten HTML-Inhalt für das Statusfeld einer Station inklusive Laufschrift.
+         * @param {Object} station - Die betroffene Station.
+         * @returns {string} Formatiertes HTML.
+         */
+        getStationStatusHtml(station) {
+          if (!station.beamerStatus) return 'Aktiv';
+          const bs = station.beamerStatus;
+          const parts = [];
+
+          if (bs.sprechwunsch) {
+            parts.push('<span class="text-sig-danger-text animate-pulse">🚨 SPRECHWUNSCH! 🚨</span>');
+          }
+          if (bs.isAnyPaused) {
+            parts.push(`<span>⛔ Pausiert (${bs.pausedCount}/${bs.totalActiveSubs})</span>`);
+          }
+          if (bs.remainingTime > 0) {
+            parts.push(`<span>⏳ Rest: ${bs.remainingTime} Min.</span>`);
+          }
+
+          if (parts.length === 0) {
+            return '<span>Bereit 🟢</span>';
+          }
+
+          // Wenn mehrere Statusinformationen vorliegen oder ein Sprechwunsch blinkt, nutzen wir die Laufschrift
+          if (parts.length > 1 || bs.sprechwunsch) {
+            return `<div class="animate-marquee inline-block">${parts.join(' • ')}</div>`;
+          }
+
+          return parts[0];
+        },
+
+        /**
+         * Sortiert und liefert alle aktiven Gruppen basierend auf dem gewählten Sortiermodus.
+         * @returns {AlpineGroup[]} Sortierte Gruppenliste.
+         */
+        get sortedGroups() {
+          if (this.renderLock && this._cachedSortedGroups) {
+            return this._cachedSortedGroups;
+          }
+          
+          const list = Object.values(this.groups);
+          let sorted;
+          
+          if (this.sortBy === 'lastUpdate') {
+            sorted = list.sort((a, b) => {
+              if (b.lastStatusChange !== a.lastStatusChange) {
+                return b.lastStatusChange - a.lastStatusChange;
+              }
+              return a.name.localeCompare(b.name, 'de', { numeric: true });
+            });
+          } else {
+            sorted = list.sort((a, b) => {
+              return a.name.localeCompare(b.name, 'de', { numeric: true });
+            });
+          }
+          this._cachedSortedGroups = sorted;
+          return sorted;
+        },
+
+        /**
+         * Initialisiert den Beamer-Monitor, baut den WebSocket-Kanal auf und startet die Uhr.
+         */
+        init() {
+          // WebSocket aufbauen und Handshake als Beamer deklarieren (anonymes Lesen)
+          window.beamerSocket = io({
+            auth: { role: 'beamer' }
+          });
+
+          const socket = window.beamerSocket;
+          let lastStateString = null;
+          let lastEntireExamFinished = null; // Verhindert Fehlalarmierungen bei Cold-Start
+
+          socket.on('connect', () => {
+            this.connected = true;
+          });
+
+          socket.on('disconnect', () => {
+            this.connected = false;
+          });
+
+          socket.on('stateUpdate', (state) => {
+            this.renderLock = true;
+            const currentStateString = JSON.stringify(state.groups);
+
+            this.groups = state.groups;
+            this.stations = state.stations;
+
+            const currentFinished = this.isEntireExamFinished();
+
+            // Soundeffekte auslösen, wenn sich der Zustand der Gruppen geändert hat
+            if (lastStateString && lastStateString !== currentStateString) {
+              // Besondere Siegesmelodie spielen, wenn der gesamte Prüfungstag beendet wurde
+              if (currentFinished && lastEntireExamFinished === false) {
+                this.playVictoryMelody();
+              } else {
+                this.playInfoSound(); // Standard Doppel-Beep
+              }
+            }
+
+            lastStateString = currentStateString;
+            
+            // Initialen Wert setzen, um Fehlstarts beim ersten Laden zu vermeiden
+            if (lastEntireExamFinished === null) {
+              lastEntireExamFinished = currentFinished;
+            } else {
+              lastEntireExamFinished = currentFinished;
+            }
+
+            this.$nextTick(() => {
+              this.renderLock = false;
+            });
+          });
+
+          // Sekundentakt für die Uhrzeit und die Live-Wartezeitberechnungen
+          setInterval(() => {
+            this.now = Date.now();
+            const d = new Date();
+            this.currentTime = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          }, 1000);
+
+          // Wake-Lock-Lebenszyklus an die Sichtbarkeit des Browserfensters koppeln
+          window.gapFlowUtils.bindAutoWakeLock(this);
+        },
+
+        /**
+         * Fordert den Wake-Lock-Bildschirmschutz an.
+         */
+        async requestWakeLock() {
+          await window.gapFlowUtils.requestWakeLock(this);
+        },
+
+        /**
+         * Prüft, ob der gesamte Prüfungstag von allen aktiven Gruppen vollständig absolviert wurde.
+         * @returns {boolean} True, wenn alle Gruppen alle aktiven Stationen absolviert haben.
+         */
+        isEntireExamFinished() {
+          const activeGroups = Object.values(this.groups).filter(g => g.active !== false);
+          if (activeGroups.length === 0) return false;
+
+          const activeIds = this.activeStations.map(s => s.id);
+          if (activeIds.length === 0) return false;
+
+          return activeGroups.every(g => {
+            return activeIds.every(id => (g.completedStations || []).includes(id));
+          });
+        },
+
+        isAllCompleted(group) {
+          const activeIds = this.activeStations.map(s => s.id);
+          if (activeIds.length === 0) return false;
+          return activeIds.every(id => (group.completedStations || []).includes(id));
+        },
+
+        /**
+         * Spielt das standardisierte Informations-Signal ab.
+         */
+        playInfoSound() {
+          if (!this.soundUnlocked || !this.audioContext) return;
+          window.gapFlowAudio.playInfoSound(this.audioContext);
+        },
+
+        /**
+         * Spielt die Abschluss-Melodie ab.
+         */
+        playVictoryMelody() {
+          if (!this.soundUnlocked || !this.audioContext) return;
+          window.gapFlowAudio.playVictoryMelody(this.audioContext);
+        },
+
+        /**
+         * Schaltet den Web-Audio-Context und den Wake-Lock stabil frei.
+         */
+        unlockSound() {
+          const ctx = window.gapFlowAudio.unlockAudioContext(this.audioContext);
+          if (ctx) {
+            this.audioContext = ctx;
+            this.soundUnlocked = true;
+          }
+        },
+
+        /**
+         * Schaltet den Sortiermodus der Gruppenliste um.
+         */
+        toggleSort() {
+          this.sortBy = this.sortBy === 'alphabetical' ? 'lastUpdate' : 'alphabetical';
+        },
+
+        /**
+         * Ermittelt den Zelleninhalt für die Gruppen-Stations-Matrix.
+         * @param {AlpineGroup} group - Die betroffene Gruppe.
+         * @param {AlpineStation} station - Die betroffene Hauptstation.
+         * @returns {string} Der darzustellende Text in der Zelle.
+         */
+        getCellValue(group, station) {
+          if ((group.completedStations || []).includes(station.id)) {
+            return "Erledigt";
+          }
+          // Sicherer Split-Abgleich zur Vermeidung des startsWith-Präfix-Bugs bei zweistelligen IDs
+          if (group.currentStation && group.currentStation.split('.')[0] === station.id) {
+            return `Station ${group.currentStation}`;
+          }
+          return "—";
+        },
+
+        getCellStyle(group, station) {
+          const isDone = (group.completedStations || []).includes(station.id);
+          const isActive = group.currentStation && group.currentStation.split('.')[0] === station.id;
+
+          if (isDone) {
+            return 'background-color: var(--sig-success-bg) !important; color: var(--sig-success-text) !important;';
+          }
+          if (isActive) {
+            return 'background-color: var(--sig-warning-bg) !important; color: var(--sig-warning-text) !important;';
+          }
+          return 'color: var(--org-text-muted) !important;';
+        },
+
+        /**
+         * Ermittelt den darzustellenden Zustandstext mitsamt Echtzeit-Zeitzähler für eine Gruppe.
+         * @param {AlpineGroup} group - Die betroffene Gruppe.
+         * @returns {string} Der formatierte Statustext.
+         */
+        getActiveTimeText(group) {
+          if (this.isAllCompleted(group)) {
+            return "Geschafft 🎉";
+          }
+
+          if (group.status === 'paused') {
+            const pauseEnd = group.lastStatusChange + 30 * 60 * 1000;
+            return `Pause bis ${window.gapFlowUtils.formatTime(pauseEnd)}`;
+          }
+
+          const diffMs = this.now - group.lastStatusChange;
+          const diffMins = Math.floor(diffMs / 60000);
+
+          if (group.status === 'assigned') {
+            // Psychologischer Schutzmodus zur Verringerung des Leistungsdrucks bei Anwärtern
+            return `Aktiv`;
+          }
+
+          if (group.status === 'waiting') {
+            return `Wartend (${diffMins} Min.)`;
+          }
+
+          return '—';
+        },
+
+        /**
+         * Liefert die CSS-Klassen für das Status-Badge einer Gruppe.
+         * @param {AlpineGroup} group - Die betroffene Gruppe.
+         * @returns {string} Tailwind-CSS-Klassennamen.
+         */
+        getBadgeClass(group) {
+          const base = 'px-3 py-1 block w-full whitespace-normal break-words text-xs font-bold border rounded-lg ';
+          
+          if (this.isAllCompleted(group)) {
+            return base + 'sig-badge-green';
+          }
+          
+          if (group.status === 'paused') {
+            return base + 'sig-badge-orange animate-pulse';
+          }
+
+          if (group.status === 'assigned') {
+            return base + 'sig-badge-orange';
+          }
+
+          if (group.status === 'waiting') {
+            return base + 'badge-group-active';
+          }
+
+          return 'text-muted';
+        }
+      };
+    }
+  </script>
+</body>
+</html>
