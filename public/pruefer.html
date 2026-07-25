@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.80) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.81) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -247,7 +247,7 @@
                     </button>
 
                     <!-- Rückgängig-Button mit linear animierter Hintergrund-Breite -->
-                    <button @click="undoGracePeriod()"
+                    <button @click="abortGracePeriod()"
                             class="relative overflow-hidden w-full py-3.5 btn-sig-red active:scale-95 font-black text-base shadow uppercase tracking-wider transition-all duration-200 shrink-0">
                       <!-- Animierter Timer-Hintergrund (100% -> 0% Breite) -->
                       <div class="absolute top-0 left-0 h-full bg-black/20 transition-all linear duration-100"

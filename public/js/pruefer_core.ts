@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.7)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.8)
 
 interface GroupMember {
   name: string;
@@ -97,7 +97,6 @@ interface ExaminerComponent {
   updateFromState(state: FlatExaminerPayload): void;
   startGracePeriod(): void;
   abortGracePeriod(): void;
-  undoGracePeriod(): void;
   executeCompleteWithPause(): Promise<void>;
   playInfoSound(): void;
   playVictoryMelody(): void;
@@ -406,10 +405,6 @@ function examiner(): ExaminerComponent {
       this.graceTicks = 70;
       this.pauseOnComplete = false;
       this.freezeUI = false;
-    },
-
-    undoGracePeriod(): void {
-      this.abortGracePeriod();
     },
 
     async executeCompleteWithPause(): Promise<void> {

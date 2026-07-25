@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.80)
+// Version Tracker: server.ts (GAP-Flow v1.1.81)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -469,8 +469,6 @@ adminController.init({
   checkAndLogGroupCompletion,
   executeRevertCompletion,
   isLogForStation: stateFilters.isLogForStation,
-  dbImmediateSave,
-  ioBroadcast,
   commitAndRespond,
   ADMIN_PASSWORD,
   getAdminSessionToken,

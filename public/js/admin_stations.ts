@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.7)
+// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.8)
 
 interface ClientSubStation {
   id: string;
@@ -55,7 +55,6 @@ interface AdminStationsComponent {
   updateErrorMessage: string;
 
   get stationDetailsList(): ExtendedStation[];
-  getAvailableGroupsForSubStation(stId: string, sub: ClientSubStation): unknown[];
   initSocket(): void;
   clearAllStations(): Promise<void>;
   addStation(): Promise<void>;
@@ -103,45 +102,34 @@ window.adminPanel = function (): Record<string, unknown> {
     updateErrorMessage: '',
 
     get stationDetailsList(): ExtendedStation[] {
-      const self = this as unknown as AdminStationsComponent;
-      if (self.renderLock && self._cachedStationList) {
-        return self._cachedStationList;
-      }
-      const list = Object.values(self.stations || {})
-        .map((st) => {
-          const subList = Object.values(st.subStations || {})
-            .map((sub) => ({
-              ...sub,
-              activeGroup:
-                sub.currentGroupId && self.groups[sub.currentGroupId]
-                  ? self.groups[sub.currentGroupId]
-                  : null,
-            }))
-            .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+        const self = this as unknown as AdminStationsComponent;
+        if (self.renderLock && self._cachedStationList) {
+          return self._cachedStationList;
+        }
+        const list = Object.values(self.stations || {})
+          .map((st) => {
+            const subList = Object.values(st.subStations || {})
+              .map((sub) => ({
+                ...sub,
+                activeGroup:
+                  sub.currentGroupId && self.groups[sub.currentGroupId]
+                    ? self.groups[sub.currentGroupId]
+                    : null,
+              }))
+              .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
-          return {
-            ...st,
-            subList,
-          };
-        })
-        .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+            return {
+              ...st,
+              subList,
+            };
+          })
+          .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
-      self._cachedStationList = list;
-      return list;
-    },
+        self._cachedStationList = list;
+        return list;
+      },
 
-    getAvailableGroupsForSubStation(stId: string, sub: ClientSubStation): unknown[] {
-      const self = this as unknown as AdminStationsComponent;
-      return Object.values(self.groups || {}).filter(
-        (g) =>
-          g.id !== sub.currentGroupId &&
-          !sub.paused &&
-          g.status === 'waiting' &&
-          !(g.completedStations || []).includes(stId)
-      );
-    },
-
-    initSocket(): void {
+      initSocket(): void {
       const self = this as unknown as AdminStationsComponent;
       self.connectSocket((state) => {
         self._cachedStationList = null;

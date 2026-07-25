@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.62)
+// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.63)
 
 import { Request, Response } from 'express';
 import { SystemState, Group, Station, LogEntry } from './types';
@@ -29,8 +29,6 @@ export interface AdminControllerOptions {
     examinerName?: string
   ) => boolean;
   isLogForStation: (log: LogEntry, station: Station) => boolean;
-  dbImmediateSave: () => Promise<void>;
-  ioBroadcast: () => void;
   commitAndRespond: (res: Response, data?: Record<string, unknown>, runAllocator?: boolean) => void;
   ADMIN_PASSWORD: string;
   getAdminSessionToken: () => string;
@@ -53,8 +51,6 @@ let executeRevertCompletion: (
   examinerName?: string
 ) => boolean = () => false;
 let isLogForStation: (log: LogEntry, station: Station) => boolean = () => false;
-let dbImmediateSave: () => Promise<void> = async () => {};
-let ioBroadcast: () => void = () => {};
 let commitAndRespond: (res: Response, data?: Record<string, unknown>, runAllocator?: boolean) => void = (
   res,
   data = { success: true }
@@ -80,8 +76,6 @@ export function init(options: AdminControllerOptions): void {
   checkAndLogGroupCompletion = options.checkAndLogGroupCompletion;
   executeRevertCompletion = options.executeRevertCompletion;
   isLogForStation = options.isLogForStation;
-  dbImmediateSave = options.dbImmediateSave;
-  ioBroadcast = options.ioBroadcast;
   commitAndRespond = options.commitAndRespond;
   adminPasswordInternal = options.ADMIN_PASSWORD;
   getAdminSessionToken = options.getAdminSessionToken;
