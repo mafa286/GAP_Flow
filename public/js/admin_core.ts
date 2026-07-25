@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.64)
+// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.65)
 
 interface AdminSocketIoClient {
   disconnect: () => void;
@@ -87,6 +87,12 @@ interface AdminPanelBase {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_last_activity');
       this.stopInactivityTimer();
+
+      if (this._inactivityHandler) {
+        const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+        events.forEach((evt) => document.removeEventListener(evt, this._inactivityHandler!));
+        this._inactivityHandler = null;
+      }
 
       if (window.adminSocket) {
         window.adminSocket.disconnect();

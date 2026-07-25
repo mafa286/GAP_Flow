@@ -1,4 +1,4 @@
-// Version Tracker: public/js/audio_engine.ts (GAP-Flow v1.1.61)
+// Version Tracker: public/js/audio_engine.ts (GAP-Flow v1.1.62)
 
 window.gapFlowAudio = {
   playInfoSound(ctx: AudioContext | null): void {
@@ -83,7 +83,10 @@ window.gapFlowAudio = {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) return null;
 
-      const ctx = existingCtx || new AudioContextClass();
+      let ctx = existingCtx;
+      if (!ctx || ctx.state === 'closed') {
+        ctx = new AudioContextClass();
+      }
 
       if (ctx.state === 'suspended') {
         ctx.resume();

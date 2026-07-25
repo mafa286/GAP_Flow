@@ -1,4 +1,4 @@
-// Version Tracker: public/js/gap_flow_utils.ts (GAP-Flow v1.1.62)
+// Version Tracker: public/js/gap_flow_utils.ts (GAP-Flow v1.1.63)
 
 interface WakeLockContext {
   wakeLock?: WakeLockSentinel | null;
@@ -49,10 +49,10 @@ window.gapFlowUtils = {
         let text = '';
         try {
           const decoder = new TextDecoder('utf-8', { fatal: true });
-          text = decoder.decode(arrayBuffer);
+          text = decoder.decode(arrayBuffer as ArrayBuffer);
         } catch (err) {
           const decoder = new TextDecoder('windows-1252');
-          text = decoder.decode(arrayBuffer);
+          text = decoder.decode(arrayBuffer as ArrayBuffer);
         }
         resolve(text);
       };

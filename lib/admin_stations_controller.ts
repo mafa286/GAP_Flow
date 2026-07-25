@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.4)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.5)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -347,7 +347,7 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
       subStations: {},
     };
 
-    if (st.subStations && typeof st.subStations === 'object' && !Array.isArray(st.subStations)) {
+    if (st.subStations && typeof st.subStations === 'object' && !Array.isArray(st.subStations) && Object.prototype.hasOwnProperty.call(st, 'subStations')) {
       const subMap = st.subStations as Record<string, Record<string, unknown>>;
       const subKeys = Object.keys(subMap);
       subKeys.forEach((subId) => {

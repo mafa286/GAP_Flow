@@ -1,4 +1,4 @@
-// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.4)
+// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.5)
 
 import { SystemState, Station, SubStation, LogEntry } from './types';
 
@@ -101,7 +101,7 @@ export function isLogForStation(log: LogEntry, station: Station): boolean {
  * @returns {Record<string, unknown>} Minimierter Systemzustand für den Beamer-Client.
  */
 export function getBeamerState(systemState: SystemState): Record<string, unknown> {
-  const cleanState = JSON.parse(JSON.stringify(systemState));
+  const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.logs;
   delete cleanState.anwaerter;
   delete cleanState.autoAllocationActive;
@@ -249,7 +249,7 @@ export function getFlatExaminerState(
  * @returns {Record<string, unknown>} Gefilterter Systemzustand für das Live-Dashboard.
  */
 export function getAdminDashboardState(systemState: SystemState): Record<string, unknown> {
-  const cleanState = JSON.parse(JSON.stringify(systemState));
+  const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.anwaerter;
   if (cleanState.groups) {
     const gIds = Object.keys(cleanState.groups);
@@ -271,7 +271,7 @@ export function getAdminDashboardState(systemState: SystemState): Record<string,
  * @returns {Record<string, unknown>} Gefilterter Systemzustand für die Gruppenverwaltung.
  */
 export function getAdminGroupsState(systemState: SystemState): Record<string, unknown> {
-  const cleanState = JSON.parse(JSON.stringify(systemState));
+  const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.stations;
   delete cleanState.logs;
   delete cleanState.firstAssignmentTime;
@@ -287,7 +287,7 @@ export function getAdminGroupsState(systemState: SystemState): Record<string, un
  * @returns {Record<string, unknown>} Gefilterter Systemzustand für die Stationsverwaltung.
  */
 export function getAdminStationsState(systemState: SystemState): Record<string, unknown> {
-  const cleanState = JSON.parse(JSON.stringify(systemState));
+  const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.anwaerter;
   delete cleanState.logs;
   if (cleanState.groups) {
