@@ -110,10 +110,10 @@ Die Anwendung ist anschließend unter https://deine-domain.de:3000 erreichbar.
 ---
 ## ⚙️ Umgebungsvariablen
 
-| Variable | Beschreibung | Standardwert |
-| :--- | :--- | :--- | :--- |
-| PORT | Der HTTP-Port, auf dem der GAP-Flow Server lauscht. | 3000 |
-| ADMIN_PASSWORD | Das Passwort für die Anmeldung am Admin-Leitstand. | admin123 |
+| Variable | Beschreibung | Standardwert | 
+| :--- | :--- | :--- | :--- | 
+| PORT | Der HTTP-Port, auf dem der GAP-Flow Server lauscht. | 3000 | 
+| ADMIN_PASSWORD | Das Passwort für die Anmeldung am Admin-Leitstand. | admin123 | 
 | TZ | Die Server-Zeitzone für korrekte Uhrzeiten im Protokoll. | Europe/Berlin |
 
 ---
