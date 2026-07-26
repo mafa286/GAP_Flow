@@ -93,43 +93,35 @@ Starte den Container:
 docker compose up -d
 ```
 
+
 ### Variante B: Manuelle Installation (Lokale Entwicklung)
 
-1. Repository klonen:
+**Repository klonen, installieren & starten:**
 
 ```Bash
 git clone https://github.com/mafa286/GAP_Flow.git
 cd GAP_Flow
-```
-
-2. Abhängigkeiten installieren:
-
-```Bash
 npm install
-```
-
-3. Anwendung starten:
-
-```Bash
 npm start
 ```
 
-Die Anwendung ist anschließend unter http://localhost:3000 erreichbar.
+Die Anwendung ist anschließend unter https://deine-domain.de:3000 erreichbar.
+
 
 ## ⚙️ Umgebungsvariablen
 
-Variable          Beschreibung                                Standardwert
-PORT              HTTP-Port der Express-Anwendung             3000
-ADMIN_PASSWORD    Administrator-Passwort für den Leitstand    admin123
-TZ	              Zeitzone für Log-Zeitstempel                Europe/Berlin
+Variable    Beschreibung    Standardwert
+PORT    HTTP-Port der Express-Anwendung 3000
+ADMIN_PASSWORD  Administrator-Passwort für den Leitstand    admin123
+TZ  Zeitzone für Log-Zeitstempel  Europe/Berlin
 
 ## 📖 Benutzung im Prüfungseinsatz
 
-1. Admin-Leitstand öffnen (/admin_dashboard.html): Mit dem konfigurierten ADMIN_PASSWORD einloggen.
-2. Teilnehmer & Gruppen anlegen (/admin_groups.html): Anwärter manuell registrieren oder per CSV-Datei importieren und zu statischen Teams zusammenstellen.
-3. Stationen konfigurieren (/admin_stations.html): Prüfungsstationen anlegen und den Unterstationen zugewiesene Prüfer eintragen (oder per CSV importieren).
-4. Prüfer-Kopplung: Prüfer scannen den QR-Code ihrer Station mit dem Smartphone oder rufen den Link /pruefer.html?token=1.1  (1.1 = Nummer der Unterstation) auf und tragen ihren Namen ein.
-5. Startschuss: In der Kopfzeile des Leitstands den Schalter "Autom. Zuteilung" auf AKTIV stellen. Das System übernimmt die Steuerung vollautomatisch!
+1. **Admin-Leitstand öffnen:** (https://deine-domain.de:3000/admin_dashboard.html) Mit dem konfigurierten ADMIN_PASSWORD einloggen.
+2. **Teilnehmer & Gruppen anlegen:** (https://deine-domain.de:3000/admin_groups.html) Anwärter manuell registrieren oder per CSV-Datei importieren und zu statischen Teams zusammenstellen.
+3. **Stationen konfigurieren:** (https://deine-domain.de:3000/admin_stations.html) Prüfungsstationen anlegen und den Unterstationen zugewiesene Prüfer eintragen (oder per CSV importieren).
+4. **Prüfer-Kopplung:** Prüfer scannen den QR-Code ihrer Station mit dem Smartphone oder rufen den Link (https://deine-domain.de:3000/pruefer.html?token=1.1) (1.1 = Nummer der Unterstation) auf und tragen ihren Namen ein.
+5. **Startschuss:** In der Kopfzeile des Leitstands den Schalter "Autom. Zuteilung" auf AKTIV stellen. Das System übernimmt die Steuerung vollautomatisch!
 
 ## 📄 Lizenz
 
