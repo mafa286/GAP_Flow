@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version Tracker: entrypoint.sh (GAP-Flow v1.1.0)
+# Version Tracker: entrypoint.sh (GAP-Flow v1.1.1)
 set -e
 
 echo "[GAP-Flow] Prüfe Systemumgebung..."
@@ -18,9 +18,12 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git pull origin main || echo "[GAP-Flow] Git Pull fehlgeschlagen. Starte vorhandenen Stand..."
 fi
 
-# 3. Nativ installieren & Anwendung starten
-echo "[GAP-Flow] Installiere native Abhängigkeiten..."
-npm install
+# 3. Abhängigkeiten (inkl. Build-Tools für NODE_ENV=production) & SQLite C++-Bindings installieren
+echo "[GAP-Flow] Installiere Abhängigkeiten (inkl. Dev-Tools)..."
+npm install --include=dev --foreground-scripts
+
+echo "[GAP-Flow] Kompiliere native C++ Module (sqlite3)..."
+npm rebuild sqlite3
 
 echo "[GAP-Flow] Starte GAP-Flow..."
 exec npm start
