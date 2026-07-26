@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.9)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.10)
 
 interface CalcRowData {
   id: string;
@@ -181,6 +181,11 @@ window.adminPanel = function (): Record<string, unknown> {
       const self = this as unknown as AdminDashboardComponent;
       const canvasElement = document.getElementById('stationsChart');
       if (!canvasElement || !window.Chart) return;
+
+      if (stationsChartInstance) {
+        stationsChartInstance.destroy();
+        stationsChartInstance = null;
+      }
 
       const gridColor = window.themeConfig ? window.themeConfig.getColor('border') : '#cbd5e1';
       const tickColor = window.themeConfig ? window.themeConfig.getColor('muted') : '#475569';

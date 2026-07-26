@@ -1,4 +1,4 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.63)
+// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.64)
 
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
@@ -173,16 +173,19 @@ export function executeAllocation(
  * @param {function(): void} broadcastState - Websocket-Schnittstelle zum Broadcasten.
  * @returns {boolean} True, wenn mindestens eine Zuteilung stattgefunden hat.
  */
+let isAllocating = false;
+
 export function checkAndAssignIdleStations(
   systemState: SystemState,
   getUniqueTimestamp: () => number,
   scheduleStateSave: () => void,
   broadcastState: () => void
 ): boolean {
-  if (systemState.autoAllocationActive !== true) {
+  if (systemState.autoAllocationActive !== true || isAllocating) {
     return false;
   }
 
+  isAllocating = true;
   let allocationOccurred = false;
   const idleSubs: string[] = [];
 
@@ -208,6 +211,7 @@ export function checkAndAssignIdleStations(
     scheduleStateSave();
     broadcastState();
   }
+  isAllocating = false;
   return allocationOccurred;
 }
 

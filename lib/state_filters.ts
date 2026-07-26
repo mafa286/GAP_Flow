@@ -1,4 +1,4 @@
-// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.5)
+// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.6)
 
 import { SystemState, Station, SubStation, LogEntry } from './types';
 
@@ -258,6 +258,17 @@ export function getAdminDashboardState(systemState: SystemState): Record<string,
         delete cleanState.groups[gId];
       } else {
         cleanState.groups[gId].members = [];
+      }
+    });
+  }
+  if (cleanState.stations) {
+    Object.keys(cleanState.stations).forEach((mId) => {
+      const master = cleanState.stations[mId];
+      if (master && master.subStations) {
+        Object.keys(master.subStations).forEach((sId) => {
+          delete master.subStations[sId].token;
+          delete master.subStations[sId].deviceToken;
+        });
       }
     });
   }

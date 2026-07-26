@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.82)
+// Version Tracker: server.ts (GAP-Flow v1.1.83)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -712,6 +712,13 @@ app.get('/api/admin/update/download', adminAuth, fileProcessor.downloadCode);
 app.post('/api/admin/update/upload', adminAuth, express.raw({ type: 'application/zip', limit: '50mb' }), fileProcessor.uploadCode);
 app.post('/api/admin/restart', adminAuth, (_req: Request, res: Response) => { res.json({ success: true }); setTimeout(() => { shutdown(); }, 1000); });
 app.get('/api/admin/export', adminAuth, fileProcessor.exportCsv);
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[Server] Unerwarteter Express-Fehler:', err.stack || err.message);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Interner Server-Fehler' });
+  }
+});
 
 dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimestamp).then(() => {
   calculateStationsStats();
