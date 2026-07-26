@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version Tracker: entrypoint.sh (GAP-Flow v1.0.4)
+# Version Tracker: entrypoint.sh (GAP-Flow v1.0.5)
 set -e
 
 echo "[GAP-Flow] Prüfe Systemumgebung..."
@@ -23,9 +23,12 @@ echo "[GAP-Flow] Konfiguriere npm v12..."
 npm install -g npm@12 >/dev/null 2>&1 || true
 npm config set ignore-scripts false
 
-# 4. Abhängigkeiten installieren & Frontend bauen
+# 4. Abhängigkeiten installieren & native C++ Module für SQLite3 neu bauen
 echo "[GAP-Flow] Installiere Abhängigkeiten (Node 22)..."
-npm install --ignore-scripts=false
+npm install --foreground-scripts
+
+echo "[GAP-Flow] Kompiliere native C++ Bindings (sqlite3)..."
+npm rebuild sqlite3
 
 # 5. Anwendung starten
 echo "[GAP-Flow] Starte GAP-Flow..."
