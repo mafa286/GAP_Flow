@@ -1,4 +1,4 @@
-// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.2)
+// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.3)
 import fs from 'fs';
 import { SystemState } from './types';
 
@@ -105,9 +105,21 @@ export function saveJsonFallback(
   systemState: SystemState
 ): void {
   const tmpPath = `${jsonBackupPath}.tmp`;
-  fs.writeFileSync(tmpPath, JSON.stringify(clonedState, null, 2));
-  fs.renameSync(tmpPath, jsonBackupPath);
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(clonedState, null, 2));
+    fs.renameSync(tmpPath, jsonBackupPath);
 
-  systemState.isCleared = false;
-  systemState.pendingLogCancellations = [];
+    systemState.isCleared = false;
+    systemState.pendingLogCancellations = [];
+  } catch (e) {
+    const error = e as Error;
+    console.error('[System-IO] Fehler beim Schreiben des JSON-Fallbacks:', error.message);
+    if (fs.existsSync(tmpPath)) {
+      try {
+        fs.unlinkSync(tmpPath);
+      } catch (_) {
+        // Ignoriere temporäre Unlink-Fehler
+      }
+    }
+  }
 }

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/monitor.html (GAP-Flow v1.1.68) -->
+  <!-- Version Tracker: public/monitor.html (GAP-Flow v1.1.69) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfungs-Monitor (Beamer)</title>
@@ -217,7 +217,7 @@
          * @returns {string} Tailwind CSS Klassen.
          */
         getStationStatusClass(station) {
-          if (!station.beamerStatus) return 'text-main';
+          if (!station || !station.beamerStatus) return 'text-main';
           const bs = station.beamerStatus;
           if (bs.sprechwunsch) {
             return 'sig-badge-red animate-pulse';

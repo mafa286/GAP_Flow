@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations_popups.ts (GAP-Flow v1.1.4)
+// Version Tracker: public/js/admin_stations_popups.ts (GAP-Flow v1.1.5)
 
 interface StationGroup {
   id: string;
@@ -121,7 +121,7 @@ window.adminStationsPopups = {
   async releaseSub(id: string, subId: string): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
     if (self.isSubmitting) return;
-    const sub = self.stations[id]?.subStations[subId];
+    const sub = self.stations[id]?.subStations?.[subId];
     const groupName =
       sub && sub.currentGroupId && self.groups[sub.currentGroupId]
         ? self.groups[sub.currentGroupId].name

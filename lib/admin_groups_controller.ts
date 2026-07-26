@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.4)
+// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.5)
 
 import { Request, Response } from 'express';
 import { SystemState, Anwaerter, Group, LogEntry } from './types';
@@ -268,6 +268,7 @@ export function pauseAllGroups(req: Request, res: Response): void {
   if (targetState) {
     Object.keys(systemState.groups || {}).forEach((id) => {
       const group = systemState.groups[id];
+      if (!group) return;
       if (group.active !== false) {
         group.paused = targetState;
         if (group.status === 'waiting') {
@@ -295,6 +296,7 @@ export function pauseAllGroups(req: Request, res: Response): void {
   } else {
     Object.keys(systemState.groups || {}).forEach((id) => {
       const group = systemState.groups[id];
+      if (!group) return;
       if (group.active !== false) {
         group.paused = targetState;
         if (group.status === 'paused') {

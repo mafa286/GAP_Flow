@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.5)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.6)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -206,6 +206,9 @@ export function subConfig(req: Request, res: Response): void {
     const cleanExaminer = sanitizeName(examiner, 32);
     if (cleanExaminer !== sub.examiner) {
       sub.examiner = cleanExaminer;
+      if (!cleanExaminer) {
+        sub.deviceToken = null;
+      }
       writeSystemLog('System', subId, -13, sub.examiner || 'Abgemeldet');
     }
   }
