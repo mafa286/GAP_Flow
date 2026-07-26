@@ -1,4 +1,4 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.62)
+// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.63)
 
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
@@ -132,7 +132,10 @@ export function executeAllocation(
     if (remA !== remB) {
       return remB - remA;
     }
-    return a.lastStatusChange - b.lastStatusChange;
+    if (a.lastStatusChange !== b.lastStatusChange) {
+      return a.lastStatusChange - b.lastStatusChange;
+    }
+    return a.name.localeCompare(b.name, 'de', { numeric: true });
   });
 
   const selectedGroup = candidates[0];

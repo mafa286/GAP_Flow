@@ -1,4 +1,4 @@
-// Version Tracker: lib/db.ts (GAP-Flow v1.1.63)
+// Version Tracker: lib/db.ts (GAP-Flow v1.1.64)
 
 import sqlite3 from 'sqlite3';
 import { SystemState, Anwaerter, Group, Station, SubStation, LogEntry } from './types';
@@ -462,11 +462,12 @@ export function saveStateToStoragePromise(
           db?.run('DELETE FROM sub_stations', checkErr);
         }
 
-        if (clonedState.logs.length === 0) {
+        const currentLogs = clonedState.logs || [];
+        if (currentLogs.length === 0) {
           db?.run('DELETE FROM logs', checkErr);
           lastSavedLogTimestamp = 0;
         } else {
-          const newLogs = clonedState.logs.filter((l) => l.timestamp > lastSavedLogTimestamp);
+          const newLogs = currentLogs.filter((l) => l.timestamp > lastSavedLogTimestamp);
           newLogs.forEach((log) => {
             db?.run(
               'INSERT INTO logs (timestamp, groupName, stationId, durationMinutes, cancelled, examiner) VALUES (?, ?, ?, ?, ?, ?)',

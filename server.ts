@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.81)
+// Version Tracker: server.ts (GAP-Flow v1.1.82)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -212,7 +212,8 @@ export const authenticateExaminer = (
   res: Response,
   next: NextFunction
 ): void => {
-  const token = req.headers.authorization as string | undefined;
+  const tokenHeader = req.headers.authorization;
+  const token = Array.isArray(tokenHeader) ? tokenHeader[0] : tokenHeader;
   const { subStation, masterStation } = stateFilters.findSubStationAndMasterByToken(systemState, token || null);
   if (!subStation || subStation.active === false || !masterStation) {
     res.status(401).json({ error: 'Unterstation deaktiviert oder ungültiges Token' });
@@ -575,7 +576,8 @@ const loginLimiter = rateLimit({
 });
 
 export const adminAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
+  const rawAuth = req.headers.authorization;
+  const authHeader = Array.isArray(rawAuth) ? rawAuth[0] : rawAuth;
   if (authHeader && (authHeader.trim() === ADMIN_PASSWORD || authHeader.trim() === getAdminSessionToken())) {
     next();
   } else {

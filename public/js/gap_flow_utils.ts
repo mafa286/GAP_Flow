@@ -1,4 +1,4 @@
-// Version Tracker: public/js/gap_flow_utils.ts (GAP-Flow v1.1.63)
+// Version Tracker: public/js/gap_flow_utils.ts (GAP-Flow v1.1.64)
 
 interface WakeLockContext {
   wakeLock?: WakeLockSentinel | null;
@@ -94,6 +94,7 @@ window.gapFlowUtils = {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
