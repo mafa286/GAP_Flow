@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version Tracker: entrypoint.sh (GAP-Flow v1.1.1)
+# Version Tracker: entrypoint.sh (GAP-Flow v1.1.3)
 set -e
 
 echo "[GAP-Flow] Prüfe Systemumgebung..."
@@ -18,8 +18,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git pull origin main || echo "[GAP-Flow] Git Pull fehlgeschlagen. Starte vorhandenen Stand..."
 fi
 
-# 3. npm v12 Sicherstellung, Notifier Deaktivierung & Abhängigkeiten installieren
-npm install -g npm@12 >/dev/null 2>&1 || true
+# 3. Update-Hinweise stummschalten & native Abhängigkeiten blitzschnell installieren
 npm config set update-notifier false >/dev/null 2>&1 || true
 
 echo "[GAP-Flow] Installiere Abhängigkeiten (inkl. Dev-Tools)..."
