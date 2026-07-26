@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.10)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.11)
 
 interface CalcRowData {
   id: string;
@@ -190,19 +190,22 @@ window.adminPanel = function (): Record<string, unknown> {
       const gridColor = window.themeConfig ? window.themeConfig.getColor('border') : '#cbd5e1';
       const tickColor = window.themeConfig ? window.themeConfig.getColor('muted') : '#475569';
 
-      window.addEventListener('theme-changed', (e: Event) => {
-        if (!stationsChartInstance) return;
-        const customEvent = e as CustomEvent<string>;
-        const dark = customEvent.detail === 'dark';
-        const newGrid = window.themeConfig ? window.themeConfig.getColor('border', dark) : '#cbd5e1';
-        const newTick = window.themeConfig ? window.themeConfig.getColor('muted', dark) : '#475569';
-        stationsChartInstance.options.scales.x.grid.color = newGrid;
-        stationsChartInstance.options.scales.x.ticks.color = newTick;
-        stationsChartInstance.options.scales.y.grid.color = newGrid;
-        stationsChartInstance.options.scales.y.ticks.color = newTick;
-        stationsChartInstance.options.scales.y.title.color = newTick;
-        stationsChartInstance.update();
-      });
+      if (!window._dashboardThemeListenerBound) {
+        window._dashboardThemeListenerBound = true;
+        window.addEventListener('theme-changed', (e: Event) => {
+          if (!stationsChartInstance) return;
+          const customEvent = e as CustomEvent<string>;
+          const dark = customEvent.detail === 'dark';
+          const newGrid = window.themeConfig ? window.themeConfig.getColor('border', dark) : '#cbd5e1';
+          const newTick = window.themeConfig ? window.themeConfig.getColor('muted', dark) : '#475569';
+          stationsChartInstance.options.scales.x.grid.color = newGrid;
+          stationsChartInstance.options.scales.x.ticks.color = newTick;
+          stationsChartInstance.options.scales.y.grid.color = newGrid;
+          stationsChartInstance.options.scales.y.ticks.color = newTick;
+          stationsChartInstance.options.scales.y.title.color = newTick;
+          stationsChartInstance.update();
+        });
+      }
 
       stationsChartInstance = new window.Chart(canvasElement, {
         type: 'bar',

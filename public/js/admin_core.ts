@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.65)
+// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.66)
 
 interface AdminSocketIoClient {
   disconnect: () => void;
@@ -101,6 +101,7 @@ interface AdminPanelBase {
     },
 
     startInactivityTimer(): void {
+      this.stopInactivityTimer();
       const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
       this._inactivityHandler = () => this.resetInactivityTimer();
       events.forEach((evt) => document.addEventListener(evt, this._inactivityHandler!, { passive: true }));

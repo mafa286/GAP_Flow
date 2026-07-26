@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.10)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.11)
 
 interface GroupMember {
   name: string;
@@ -474,6 +474,7 @@ function examiner(): ExaminerComponent {
     },
 
     async fetchStatus(): Promise<void> {
+      this.receivedSocketUpdate = false;
       try {
         const res = await fetch('/api/examiner/status', {
           headers: {
