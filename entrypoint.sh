@@ -18,7 +18,10 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git pull origin main || echo "[GAP-Flow] Git Pull fehlgeschlagen. Starte vorhandenen Stand..."
 fi
 
-# 3. Abhängigkeiten (inkl. Build-Tools für NODE_ENV=production) & SQLite C++-Bindings installieren
+# 3. npm v12 Sicherstellung, Notifier Deaktivierung & Abhängigkeiten installieren
+npm install -g npm@12 >/dev/null 2>&1 || true
+npm config set update-notifier false >/dev/null 2>&1 || true
+
 echo "[GAP-Flow] Installiere Abhängigkeiten (inkl. Dev-Tools)..."
 npm install --include=dev --foreground-scripts
 
