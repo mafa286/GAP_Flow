@@ -107,14 +107,16 @@ npm start
 
 Die Anwendung ist anschließend unter https://deine-domain.de:3000 erreichbar.
 
-
+---
 ## ⚙️ Umgebungsvariablen
 
-Variable    Beschreibung    Standardwert
-PORT    HTTP-Port der Express-Anwendung 3000
-ADMIN_PASSWORD  Administrator-Passwort für den Leitstand    admin123
-TZ  Zeitzone für Log-Zeitstempel  Europe/Berlin
+| Variable | Beschreibung | Standardwert |
+| :--- | :--- | :--- | :--- |
+| PORT | Der HTTP-Port, auf dem der GAP-Flow Server lauscht. | 3000 |
+| ADMIN_PASSWORD | Das Passwort für die Anmeldung am Admin-Leitstand. | admin123 |
+| TZ | Die Server-Zeitzone für korrekte Uhrzeiten im Protokoll. | Europe/Berlin |
 
+---
 ## 📖 Benutzung im Prüfungseinsatz
 
 1. **Admin-Leitstand öffnen:** (https://deine-domain.de:3000/admin_dashboard.html) Mit dem konfigurierten ADMIN_PASSWORD einloggen.
@@ -123,6 +125,7 @@ TZ  Zeitzone für Log-Zeitstempel  Europe/Berlin
 4. **Prüfer-Kopplung:** Prüfer scannen den QR-Code ihrer Station mit dem Smartphone oder rufen den Link (https://deine-domain.de:3000/pruefer.html?token=1.1) (1.1 = Nummer der Unterstation) auf und tragen ihren Namen ein.
 5. **Startschuss:** In der Kopfzeile des Leitstands den Schalter "Autom. Zuteilung" auf AKTIV stellen. Das System übernimmt die Steuerung vollautomatisch!
 
+---
 ## 📄 Lizenz
 
 Dieses Projekt steht unter der MIT-Lizenz.
