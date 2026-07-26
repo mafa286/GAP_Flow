@@ -1,4 +1,4 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.64)
+// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.65)
 
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
@@ -269,6 +269,7 @@ export function startAutoUnpauseDaemon(
 
     const allGroups = Object.values(systemState.groups || {});
     allGroups.forEach((group) => {
+      if (!group) return;
       if (group.status === 'paused' && group.active !== false && (now - group.lastStatusChange) >= thirtyMinutesMs) {
         const g = systemState.groups[group.id];
         if (g) {

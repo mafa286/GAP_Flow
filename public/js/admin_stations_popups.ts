@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations_popups.ts (GAP-Flow v1.1.5)
+// Version Tracker: public/js/admin_stations_popups.ts (GAP-Flow v1.1.6)
 
 interface StationGroup {
   id: string;
@@ -87,8 +87,8 @@ window.adminStationsPopups = {
 
   getAvailableGroupsForManualAssign(): StationGroup[] {
     const self = this as unknown as AdminStationsPopupsComponent;
-    if (!self.popupMasterId || !self.popupSubId || !self.stations[self.popupMasterId]) return [];
-    const sub = self.stations[self.popupMasterId].subStations[self.popupSubId];
+    if (!self.popupMasterId || !self.popupSubId || !self.stations || !self.stations[self.popupMasterId]) return [];
+    const sub = self.stations[self.popupMasterId].subStations?.[self.popupSubId];
     if (!sub) return [];
     return self.getAvailableGroupsForSubStation(self.popupMasterId, sub);
   },

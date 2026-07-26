@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.4)
+// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.5)
 
 interface ClientAnwaerter {
   id: string;
@@ -78,9 +78,9 @@ window.adminPanel = function (): Record<string, unknown> {
       if (self.renderLock && self._cachedSortedGroups) {
         return self._cachedSortedGroups;
       }
-      const list = Object.values(self.groups || {}).sort((a, b) =>
-        a.name.localeCompare(b.name, 'de', { numeric: true })
-      );
+      const list = Object.values(self.groups || {})
+        .filter((g) => !!g)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de', { numeric: true }));
       self._cachedSortedGroups = list;
       return list;
     },
@@ -90,9 +90,9 @@ window.adminPanel = function (): Record<string, unknown> {
       if (self.renderLock && self._cachedSortedAnwaerter) {
         return self._cachedSortedAnwaerter;
       }
-      const list = Object.values(self.anwaerter || {}).sort((a, b) =>
-        a.name.localeCompare(b.name, 'de', { numeric: true })
-      );
+      const list = Object.values(self.anwaerter || {})
+        .filter((a) => !!a)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de', { numeric: true }));
       self._cachedSortedAnwaerter = list;
       return list;
     },

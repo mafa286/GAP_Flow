@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.6)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.7)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -130,7 +130,7 @@ export async function clearStations(req: Request, res: Response): Promise<void> 
  */
 export function createStation(req: Request, res: Response): void {
   try {
-    const { name } = req.body;
+    const { name } = req.body || {};
     if (!name) {
       res.status(400).json({ error: 'Fehlt' });
       return;
@@ -195,7 +195,7 @@ export function createStation(req: Request, res: Response): void {
  */
 export function subConfig(req: Request, res: Response): void {
   const { id } = req.params;
-  const { subId, examiner, active, paused, reservedGroupId, deviceToken } = req.body;
+  const { subId, examiner, active, paused, reservedGroupId, deviceToken } = req.body || {};
   const { station, subStation: sub } = getStationAndSubOrNull(id, subId);
   if (!station || !sub) {
     res.status(404).json({ error: 'Fehlt' });
@@ -251,7 +251,7 @@ export function subConfig(req: Request, res: Response): void {
  */
 export function updateStation(req: Request, res: Response): void {
   const { id } = req.params;
-  const { active, multiplier, subExaminers } = req.body;
+  const { active, multiplier, subExaminers } = req.body || {};
   const station = systemState.stations[id];
 
   if (!station) {
@@ -305,7 +305,7 @@ export function updateStation(req: Request, res: Response): void {
  * @returns {Promise<void>}
  */
 export async function batchStations(req: Request, res: Response): Promise<void> {
-  const { stations } = req.body;
+  const { stations } = req.body || {};
   if (!stations || !Array.isArray(stations)) {
     res.status(400).json({ error: 'Ungültig' });
     return;
@@ -405,7 +405,7 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
  */
 export function subComplete(req: Request, res: Response): void {
   const { id } = req.params;
-  const { subId } = req.body;
+  const { subId } = req.body || {};
   const { station, subStation: sub } = getStationAndSubOrNull(id, subId);
 
   if (!station || !sub) {
@@ -430,7 +430,7 @@ export function subComplete(req: Request, res: Response): void {
  */
 export function subRelease(req: Request, res: Response): void {
   const { id } = req.params;
-  const { subId } = req.body;
+  const { subId } = req.body || {};
   const { station, subStation: sub } = getStationAndSubOrNull(id, subId);
 
   if (!station || !sub) {
@@ -453,7 +453,7 @@ export function subRelease(req: Request, res: Response): void {
  */
 export function subAssign(req: Request, res: Response): void {
   const { id } = req.params;
-  const { subId, groupId } = req.body;
+  const { subId, groupId } = req.body || {};
   const { station, subStation: sub } = getStationAndSubOrNull(id, subId);
 
   if (!station || !sub) {

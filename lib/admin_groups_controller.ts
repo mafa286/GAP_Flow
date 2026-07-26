@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.5)
+// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.6)
 
 import { Request, Response } from 'express';
 import { SystemState, Anwaerter, Group, LogEntry } from './types';
@@ -87,7 +87,7 @@ export async function clearAnwaerter(req: Request, res: Response): Promise<void>
  * @returns {void}
  */
 export function addAnwaerter(req: Request, res: Response): void {
-  const { name } = req.body;
+  const { name } = req.body || {};
   if (!name) {
     res.status(400).json({ error: 'Name erforderlich' });
     return;
@@ -121,7 +121,7 @@ export function addAnwaerter(req: Request, res: Response): void {
  * @returns {Promise<void>}
  */
 export async function batchAnwaerter(req: Request, res: Response): Promise<void> {
-  const { names } = req.body;
+  const { names } = req.body || {};
   if (!names || !Array.isArray(names)) {
     res.status(400).json({ error: 'Ungültig' });
     return;
@@ -170,7 +170,7 @@ export async function batchAnwaerter(req: Request, res: Response): Promise<void>
 export function toggleAnwaerterActive(req: Request, res: Response): void {
   try {
     const { id } = req.params;
-    const { active } = req.body;
+    const { active } = req.body || {};
     const candidate = systemState.anwaerter[id];
     if (!candidate) {
       res.status(404).json({ error: 'Fehlt' });
@@ -207,7 +207,7 @@ export function toggleAnwaerterActive(req: Request, res: Response): void {
  * @returns {void}
  */
 export function createGroup(req: Request, res: Response): void {
-  const { name, anwaerterIds } = req.body;
+  const { name, anwaerterIds } = req.body || {};
   if (!name || !anwaerterIds || !Array.isArray(anwaerterIds) || anwaerterIds.length === 0) {
     res.status(400).json({ error: 'Ungültig' });
     return;
@@ -262,7 +262,7 @@ export function createGroup(req: Request, res: Response): void {
  * @returns {void}
  */
 export function pauseAllGroups(req: Request, res: Response): void {
-  const { paused } = req.body;
+  const { paused } = req.body || {};
   const targetState = !!paused;
 
   if (targetState) {
@@ -319,7 +319,7 @@ export function pauseAllGroups(req: Request, res: Response): void {
  */
 export function pauseGroup(req: Request, res: Response): void {
   const { id } = req.params;
-  const { paused } = req.body;
+  const { paused } = req.body || {};
   const group = systemState.groups[id];
 
   if (!group) {
@@ -353,7 +353,7 @@ export function pauseGroup(req: Request, res: Response): void {
 export function toggleGroupActive(req: Request, res: Response): void {
   try {
     const { id } = req.params;
-    const { active } = req.body;
+    const { active } = req.body || {};
     const group = systemState.groups[id];
     if (!group) {
       res.status(404).json({ error: 'Gruppe nicht gefunden' });

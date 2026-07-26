@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.83)
+// Version Tracker: server.ts (GAP-Flow v1.1.84)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -592,7 +592,7 @@ app.get('/api/ping', (_req: Request, res: Response) => {
 });
 
 app.post('/api/examiner/register', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { firstName, lastName } = req.body;
+  const { firstName, lastName } = req.body || {};
   const sub = req.subStation!;
 
   if (sub.deviceToken) {
@@ -658,7 +658,7 @@ app.post('/api/examiner/complete', authenticateExaminer, (req: AuthenticatedExam
 });
 
 app.post('/api/examiner/pause', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { paused } = req.body;
+  const { paused } = req.body || {};
   const sub = req.subStation!;
   sub.paused = !!paused;
   if (!sub.currentGroupId) {

@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.60)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.61)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -60,7 +60,8 @@ export function init(
     const role = auth.role as string | undefined;
 
     if (role === 'admin') {
-      const secret = (auth.password || auth.token) as string | undefined;
+      const rawSecret = (auth.password || auth.token) as string | string[] | undefined;
+      const secret = Array.isArray(rawSecret) ? rawSecret[0] : rawSecret;
       if (secret && (secret.trim() === adminPassword || secret.trim() === getAdminSessionToken())) {
         socket.role = 'admin';
         return next();
@@ -74,7 +75,8 @@ export function init(
     }
 
     if (role === 'examiner') {
-      const token = auth.token as string | undefined;
+      const rawToken = auth.token as string | string[] | undefined;
+      const token = Array.isArray(rawToken) ? rawToken[0] : rawToken;
       if (token && isValidExaminerToken(token)) {
         socket.role = 'examiner';
         socket.token = token;

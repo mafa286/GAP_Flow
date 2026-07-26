@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.9)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.10)
 
 interface GroupMember {
   name: string;
@@ -391,8 +391,10 @@ function examiner(): ExaminerComponent {
       this.graceTimer = setInterval(() => {
         this.graceTicks -= 1;
         if (this.graceTicks <= 0) {
-          if (this.graceTimer) clearInterval(this.graceTimer);
-          this.graceTimer = null;
+          if (this.graceTimer) {
+            clearInterval(this.graceTimer);
+            this.graceTimer = null;
+          }
           this.executeCompleteWithPause();
         }
       }, 100);

@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.63)
+// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.64)
 
 import { Request, Response } from 'express';
 import { SystemState, Group, Station, LogEntry } from './types';
@@ -130,7 +130,7 @@ export function getSystemStats(): SystemStats {
  * @returns {void}
  */
 export function verify(req: Request, res: Response): void {
-  const { password } = req.body;
+  const { password } = req.body || {};
   if (password && password.trim() === adminPasswordInternal) {
     res.json({
       success: true,
@@ -149,7 +149,7 @@ export function verify(req: Request, res: Response): void {
  * @returns {void}
  */
 export function verifyToken(req: Request, res: Response): void {
-  const { token } = req.body;
+  const { token } = req.body || {};
   if (token && token.trim() === getAdminSessionToken()) {
     res.json({
       success: true,
@@ -168,7 +168,7 @@ export function verifyToken(req: Request, res: Response): void {
  */
 export async function revertLog(req: Request, res: Response): Promise<void> {
   try {
-    const { timestamp } = req.body;
+    const { timestamp } = req.body || {};
     let targetLog = systemState.logs.find((l) => l.timestamp === timestamp);
 
     if (!targetLog && !dbModule.getUseJsonFallback()) {
@@ -240,7 +240,7 @@ export async function revertLog(req: Request, res: Response): Promise<void> {
  */
 export function toggleAutoAllocation(req: Request, res: Response): void {
   try {
-    const { active } = req.body;
+    const { active } = req.body || {};
     systemState.autoAllocationActive = !!active;
 
     commitAndRespond(
@@ -262,7 +262,7 @@ export function toggleAutoAllocation(req: Request, res: Response): void {
  */
 export function correctionsComplete(req: Request, res: Response): void {
   try {
-    const { groupId, stationId } = req.body;
+    const { groupId, stationId } = req.body || {};
     const group = systemState.groups[groupId];
     const station = systemState.stations[stationId];
 
@@ -308,7 +308,7 @@ export function correctionsComplete(req: Request, res: Response): void {
  */
 export async function correctionsRevert(req: Request, res: Response): Promise<void> {
   try {
-    const { groupId, stationId } = req.body;
+    const { groupId, stationId } = req.body || {};
     const group = systemState.groups[groupId];
     const station = systemState.stations[stationId];
 
