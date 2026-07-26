@@ -1,11 +1,11 @@
 {
   "name": "GAP-Flow",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Echtzeit GA-Prüfungs-Management-System mit automatisierter Gruppenzuteilung",
   "main": "server.ts",
   "license": "MIT",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=26.0.0"
   },
   "scripts": {
     "start": "npm run build:frontend && npx tsx server.ts",
@@ -23,7 +23,7 @@
     "@eslint/js": "^9.20.0",
     "@types/adm-zip": "^0.5.7",
     "@types/express": "^5.0.0",
-    "@types/node": "^22.13.0",
+    "@types/node": "^26.0.0",
     "@types/sqlite3": "^3.1.11",
     "eslint": "^9.20.0",
     "tsx": "^4.19.2",

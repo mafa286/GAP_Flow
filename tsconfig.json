@@ -1,7 +1,7 @@
-// Version Tracker: tsconfig.json (GAP-Flow v1.0.1)
+// Version Tracker: tsconfig.json (GAP-Flow v1.0.2)
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
