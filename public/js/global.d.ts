@@ -1,6 +1,7 @@
-// Version Tracker: public/js/global.d.ts (GAP-Flow v1.0.1)
+// Version Tracker: public/js/global.d.ts (GAP-Flow v1.0.2)
 
 interface Window {
+  _dashboardThemeListenerBound?: boolean;
   gapFlowUtils?: any;
   gapFlowAudio?: any;
   prueferPwaHelper?: any;
