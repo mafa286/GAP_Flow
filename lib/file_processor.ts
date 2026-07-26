@@ -1,4 +1,4 @@
-// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.62)
+// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.63)
 
 import fs from 'fs';
 import path from 'path';
@@ -326,11 +326,19 @@ export async function exportCsv(req: Request, res: Response): Promise<void> {
         details = `${parseFloat(String(l.durationMinutes)).toFixed(1)} Minuten`;
       }
 
-      const cleanActor = actor.replace(/"/g, '""').trim();
-      const cleanStation = stationDisplay.replace(/"/g, '""').trim();
-      const cleanExaminer = examiner.replace(/"/g, '""').trim();
-      const cleanEvent = event.replace(/"/g, '""').trim();
-      const cleanDetails = details.replace(/"/g, '""').trim();
+      const sanitizeFormula = (val: string): string => {
+        let clean = val.replace(/"/g, '""').trim();
+        if (/^[=+\-@\t\r]/.test(clean)) {
+          clean = `'${clean}`;
+        }
+        return clean;
+      };
+
+      const cleanActor = sanitizeFormula(actor);
+      const cleanStation = sanitizeFormula(stationDisplay);
+      const cleanExaminer = sanitizeFormula(examiner);
+      const cleanEvent = sanitizeFormula(event);
+      const cleanDetails = sanitizeFormula(details);
 
       csv += `"${datumStr}";"${uhrzeitStr}";"${cleanActor}";"${cleanStation}";"${cleanExaminer}";"${cleanEvent}";"${cleanDetails}";"${status}"\n`;
     });

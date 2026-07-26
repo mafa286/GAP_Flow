@@ -1,4 +1,4 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.65)
+// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.67)
 
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
@@ -187,31 +187,38 @@ export function checkAndAssignIdleStations(
 
   isAllocating = true;
   let allocationOccurred = false;
-  const idleSubs: string[] = [];
 
-  const activeMasters = Object.values(systemState.stations || {}).filter((master) => master.active);
-  activeMasters.forEach((master) => {
-    const subs = Object.values(master.subStations || {});
-    subs.forEach((sub) => {
-      if (sub.active !== false && !sub.paused && !sub.currentGroupId) {
-        idleSubs.push(sub.id);
+  try {
+    const idleSubs: string[] = [];
+    const activeMasters = Object.values(systemState.stations || {}).filter((master) => master.active);
+    
+    activeMasters.forEach((master) => {
+      const subs = Object.values(master.subStations || {});
+      subs.forEach((sub) => {
+        if (sub.active !== false && !sub.paused && !sub.currentGroupId) {
+          idleSubs.push(sub.id);
+        }
+      });
+    });
+
+    idleSubs.forEach((subId) => {
+      const assignedGroup = executeAllocation(subId, systemState, getUniqueTimestamp);
+      if (assignedGroup) {
+        allocationOccurred = true;
+        console.log(`[Auto-Allocation] Gruppe '${assignedGroup.name}' wurde automatisch der leerlaufenden Station '${subId}' zugewiesen.`);
       }
     });
-  });
 
-  idleSubs.forEach((subId) => {
-    const assignedGroup = executeAllocation(subId, systemState, getUniqueTimestamp);
-    if (assignedGroup) {
-      allocationOccurred = true;
-      console.log(`[Auto-Allocation] Gruppe '${assignedGroup.name}' wurde automatisch der leerlaufenden Station '${subId}' zugewiesen.`);
+    if (allocationOccurred) {
+      scheduleStateSave();
+      broadcastState();
     }
-  });
-
-  if (allocationOccurred) {
-    scheduleStateSave();
-    broadcastState();
+  } catch (error) {
+    console.error('[Auto-Allocation] Kritischer Fehler im Zuteilungslauf:', error);
+  } finally {
+    isAllocating = false;
   }
-  isAllocating = false;
+
   return allocationOccurred;
 }
 
@@ -258,38 +265,40 @@ export function releaseGroupFromStation(
  */
 export function startAutoUnpauseDaemon(
   systemState: SystemState,
-  getUniqueTimestamp: () => number,
   scheduleStateSave: () => void,
   broadcastState: () => void
-): NodeJS.Timeout {
-  return setInterval(() => {
-    let stateChanged = false;
-    const thirtyMinutesMs = 30 * 60 * 1000;
-    const now = Date.now();
+): void {
+  setInterval(() => {
+    if (!systemState) return;
+    
+    try {
+      let stateChanged = false;
+      const now = Date.now();
 
-    const allGroups = Object.values(systemState.groups || {});
-    allGroups.forEach((group) => {
-      if (!group) return;
-      if (group.status === 'paused' && group.active !== false && (now - group.lastStatusChange) >= thirtyMinutesMs) {
-        const g = systemState.groups[group.id];
-        if (g) {
-          g.status = 'waiting';
-          g.paused = false;
-          g.lastStatusChange = getUniqueTimestamp();
-          stateChanged = true;
+      Object.values(systemState.stations || {}).forEach((master) => {
+        if (!master || !master.subStations) return;
+        
+        Object.values(master.subStations).forEach((sub) => {
+          if (sub && sub.paused && sub.pausedAt && sub.pauseDurationMinutes) {
+            const pauseEndTime = sub.pausedAt + sub.pauseDurationMinutes * 60 * 1000;
+            if (now >= pauseEndTime) {
+              sub.paused = false;
+              sub.pausedAt = undefined;
+              sub.pauseDurationMinutes = undefined;
+              stateChanged = true;
+              console.log(`[Auto-Unpause] Unterstation '${sub.id}' wurde automatisch entpausiert.`);
+            }
+          }
+        });
+      });
 
-          writeSystemLog(group.name, '', -5, 'System-Daemon');
-          console.log(`[Auto-Unpause] Die Pause für Gruppe '${group.name}' ist nach 30 Minuten abgelaufen. Status ist wieder 'wartend'.`);
-        }
-      }
-    });
-
-    if (stateChanged) {
-      const allocationOccurred = checkAndAssignIdleStations(systemState, getUniqueTimestamp, scheduleStateSave, broadcastState);
-      if (!allocationOccurred) {
+      if (stateChanged) {
         scheduleStateSave();
         broadcastState();
+        checkAndAssignIdleStations(systemState, Date.now, scheduleStateSave, broadcastState);
       }
+    } catch (error) {
+      console.error('[Auto-Unpause Daemon] Fehler bei automatischer Freigabe-Prüfung:', error);
     }
   }, 10000);
 }

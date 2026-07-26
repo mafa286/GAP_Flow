@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.84)
+// Version Tracker: server.ts (GAP-Flow v1.1.85)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -134,8 +134,11 @@ const systemState: SystemState = {
 };
 
 let parsedPassword = (process.env.ADMIN_PASSWORD || '').trim();
-if (!parsedPassword || parsedPassword === '""' || parsedPassword === "''") {
-  console.warn("[System] Warnung: ADMIN_PASSWORD leer oder ungültig. Verwende Standard 'admin123'.");
+if (!parsedPassword || parsedPassword === '""' || parsedPassword === "''" || parsedPassword === 'admin123') {
+  console.warn('================================================------------------');
+  console.warn('⚠️ SECURITY WARNING: ADMIN_PASSWORD ist auf dem Standardwert ("admin123")!');
+  console.warn('Bitte setzen Sie ADMIN_PASSWORD in Ihren Umgebungsvariablen vor dem Produktiveinsatz.');
+  console.warn('================================================------------------');
   parsedPassword = 'admin123';
 }
 const ADMIN_PASSWORD = parsedPassword;
