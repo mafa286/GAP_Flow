@@ -1,6 +1,6 @@
 {
   "name": "GAP-Flow",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Echtzeit GA-Prüfungs-Management-System mit automatisierter Gruppenzuteilung",
   "main": "server.ts",
   "license": "MIT",
@@ -17,20 +17,20 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "adm-zip": "^0.6.0",
-    "express": "^5.0.0",
-    "express-rate-limit": "^7.5.0",
-    "socket.io": "^4.8.1",
-    "sqlite3": "^6.0.1"
+    "adm-zip": "^*",
+    "express": "*",
+    "express-rate-limit": "*",
+    "socket.io": "*",
+    "sqlite3": "*"
   },
   "devDependencies": {
-    "@eslint/js": "^9.20.0",
-    "@types/adm-zip": "^0.5.7",
-    "@types/express": "^5.0.0",
-    "@types/node": "^26.0.0",
-    "@types/sqlite3": "^6.0.0",
-    "eslint": "^9.20.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "@eslint/js": "*",
+    "@types/adm-zip": "*",
+    "@types/express": "*",
+    "@types/node": "*",
+    "@types/sqlite3": "*",
+    "eslint": "*",
+    "tsx": "*",
+    "typescript": "*"
   }
 }
