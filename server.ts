@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.88)
+// Version Tracker: server.ts (GAP-Flow v1.1.89)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -200,19 +200,32 @@ export function sanitizeName(str: string, maxLength: number): string {
 }
 
 /**
- * Bereinigt und validiert Telefonnummern zum Schutz vor Injektionen (XSS, tel: Protocol Exploits).
- * Erlaubt ausschließlich Ziffern, Leerzeichen, Plus, Minus, Schrägstrich und Klammern.
+ * Bereinigt und validiert Telefonnummern nach striktem Schema (optionales '+' am Anfang, gefolgt von Ziffern).
+ * Entfernt alle Leerzeichen, Buchstaben und Sonderzeichen.
  * @param {string} str - Die zu bereinigende Telefonnummer.
  * @param {number} maxLength - Die maximale zulässige Länge.
- * @returns {string} Bereinigte Telefonnummer.
+ * @returns {string} Bereinigte Telefonnummer (z. B. +491701234567 oder 01701234567).
  */
 export function sanitizePhoneNumber(str: string, maxLength: number): string {
   if (typeof str !== 'string') return '';
   let cleaned = str.trim().substring(0, maxLength);
-  cleaned = cleaned.replace(/[^0-9\s+\/\-()]/g, '');
-  return cleaned.trim();
+  const startsWithPlus = cleaned.startsWith('+');
+  cleaned = cleaned.replace(/[^0-9]/g, '');
+  return startsWithPlus ? `+${cleaned}` : cleaned;
 }
 
+/**
+ * Bereinigt Kontakt-Namen und erlaubt ausschließlich namenstypische Zeichen (Buchstaben, Zahlen, Leerzeichen, Komma, Bindestrich, Schrägstrich).
+ * @param {string} str - Der zu bereinigende Name.
+ * @param {number} maxLength - Die maximale zulässige Länge.
+ * @returns {string} Bereinigter Name.
+ */
+export function sanitizeContactName(str: string, maxLength: number): string {
+  if (typeof str !== 'string') return '';
+  let cleaned = str.trim().substring(0, maxLength);
+  cleaned = cleaned.replace(/[^a-zA-Z0-9\s,\-/äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ]/g, '');
+  return cleaned.trim();
+}
 /**
  * Validiert, ob das übergebene Examiner-Token einer registrierten Unterstation zugewiesen ist.
  * @param {string} token - Das zu validierende Zugriffstoken.
@@ -746,9 +759,9 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
         phonePruefungsleitungNumber: '',
       };
     }
-    systemState.settings.phoneLeitstelleName = sanitizeName(settings.phoneLeitstelleName || '', 32);
+    systemState.settings.phoneLeitstelleName = sanitizeContactName(settings.phoneLeitstelleName || '', 32);
     systemState.settings.phoneLeitstelleNumber = sanitizePhoneNumber(settings.phoneLeitstelleNumber || '', 24);
-    systemState.settings.phonePruefungsleitungName = sanitizeName(settings.phonePruefungsleitungName || '', 32);
+    systemState.settings.phonePruefungsleitungName = sanitizeContactName(settings.phonePruefungsleitungName || '', 32);
     systemState.settings.phonePruefungsleitungNumber = sanitizePhoneNumber(settings.phonePruefungsleitungNumber || '', 24);
     commitAndRespond(res, { success: true, settings: systemState.settings });
   } else {
