@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_groups.html (GAP-Flow v1.1.65) -->
+<!-- Version Tracker: public/admin_groups.html (GAP-Flow v1.1.66) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Anwärter & Gruppen</title>
   <script src="/js/theme_config.js"></script>
@@ -53,15 +53,6 @@
         <p class="text-muted text-sm">Teilnehmer-Datenbank und statische Gruppenbildung</p>
       </div>
       <div class="flex gap-4 font-bold text-xs">
-        <!-- GLOBALER STARTSCHUSS-SCHALTER -->
-        <div class="flex items-center gap-2.5 px-3 py-1.5 app-card-accent shadow-inner">
-          <span class="text-xs font-bold text-muted tracking-wide uppercase">Autom. Zuteilung:</span>
-          <button @click="toggleAutoAllocation(!autoAllocationActive)" 
-                  class="px-3.5 py-1.5 rounded-md font-black text-xs uppercase tracking-wider transition-all duration-300 shadow"
-                  :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
-            <span x-text="autoAllocationActive ? 'AKTIV' : 'DEAKTIVIERT'"></span>
-          </button>
-        </div>
         <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
           <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
           <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
