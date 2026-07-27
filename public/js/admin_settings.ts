@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.3)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.4)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
@@ -16,8 +16,6 @@ interface AdminSettingsComponent {
 
   initSocket(): void;
   saveSettings(): Promise<void>;
-  downloadSystemBackup(): Promise<void>;
-  uploadSystemUpdate(event: Event): Promise<void>;
   triggerSystemRestart(): Promise<void>;
   pollServerPing(): Promise<void>;
   getUpdateTitle(): string;
@@ -107,86 +105,6 @@ window.adminPanel = function (): Record<string, unknown> {
         alert('Netzwerk-Fehler beim Speichern der Einstellungen.');
       } finally {
         self.isSubmitting = false;
-      }
-    },
-
-    /**
-     * Initiiert den Download des aktuellen System-Backups als ZIP-Archiv.
-     * @returns {Promise<void>}
-     */
-    async downloadSystemBackup(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      if (self.isSubmitting) return;
-      self.isSubmitting = true;
-      try {
-        const response = await fetch('/api/admin/update/download', {
-          method: 'GET',
-          headers: { Authorization: self.password },
-        });
-
-        if (window.gapFlowUtils) {
-          const success = await window.gapFlowUtils.downloadFileFromResponse(response, 'GAP-Flow_Code.zip');
-          if (!success) {
-            alert('Download fehlgeschlagen: Nicht autorisiert oder ungültige Serverrückmeldung.');
-          }
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Herunterladen des Backups.');
-      } finally {
-        self.isSubmitting = false;
-      }
-    },
-
-    /**
-     * Lädt ein Update-ZIP-Paket hoch.
-     * @param {Event} event - Das File-Input Change-Event.
-     * @returns {Promise<void>}
-     */
-    async uploadSystemUpdate(event: Event): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      const targetInput = event.target as HTMLInputElement | null;
-      if (!targetInput || !targetInput.files || targetInput.files.length === 0) return;
-
-      const file = targetInput.files[0];
-      if (!confirm(`Möchten Sie das Update-Paket "${file.name}" jetzt installieren und den Server neu starten?`)) {
-        targetInput.value = '';
-        return;
-      }
-
-      self.showUpdateStatusModal = true;
-      self.updateStep = 'upload';
-      self.updateErrorMessage = '';
-
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        self.updateStep = 'extract';
-
-        const response = await fetch('/api/admin/update/upload', {
-          method: 'POST',
-          headers: {
-            Authorization: self.password,
-            'Content-Type': 'application/zip',
-          },
-          body: arrayBuffer,
-        });
-
-        if (response.ok) {
-          self.updateStep = 'restarting';
-          setTimeout(() => {
-            self.pollServerPing();
-          }, 3000);
-        } else {
-          const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          self.updateStep = 'failed';
-          self.updateErrorMessage = errData.error || 'Fehler beim Upload des Update-Pakets.';
-        }
-      } catch (e) {
-        const error = e as Error;
-        self.updateStep = 'failed';
-        self.updateErrorMessage = `Netzwerkfehler: ${error.message}`;
-      } finally {
-        targetInput.value = '';
       }
     },
 
