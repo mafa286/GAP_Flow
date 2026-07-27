@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.0) -->
+<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.1) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -89,11 +89,11 @@
             <div class="space-y-3">
               <div>
                 <label for="phone-leitstelle-name-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Bezeichnung / Name</label>
-                <input type="text" id="phone-leitstelle-name-input" name="phoneLeitstelleName" x-model="phoneLeitstelleName" maxlength="32" placeholder="z. B. Einsatzleitung THW" class="w-full px-3 py-2 input-text text-sm">
+                <input type="text" id="phone-leitstelle-name-input" name="phoneLeitstelleName" x-model="phoneLeitstelleName" maxlength="32" pattern="[a-zA-Z0-9\s\-.,äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ/()]+" autocomplete="off" placeholder="z. B. Einsatzleitung THW" class="w-full px-3 py-2 input-text text-sm">
               </div>
               <div>
                 <label for="phone-leitstelle-number-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Telefonnummer (mit Vorwahl)</label>
-                <input type="tel" id="phone-leitstelle-number-input" name="phoneLeitstelleNumber" x-model="phoneLeitstelleNumber" maxlength="32" placeholder="z. B. +49 170 1234567" class="w-full px-3 py-2 input-text text-sm font-mono">
+                <input type="tel" id="phone-leitstelle-number-input" name="phoneLeitstelleNumber" x-model="phoneLeitstelleNumber" maxlength="24" pattern="[0-9\s+\/\-()]+" autocomplete="tel" placeholder="z. B. +49 170 1234567" class="w-full px-3 py-2 input-text text-sm font-mono">
               </div>
             </div>
           </div>
@@ -106,11 +106,11 @@
             <div class="space-y-3">
               <div>
                 <label for="phone-pruefungsleitung-name-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Bezeichnung / Name</label>
-                <input type="text" id="phone-pruefungsleitung-name-input" name="phonePruefungsleitungName" x-model="phonePruefungsleitungName" maxlength="32" placeholder="z. B. Prüfungsleiter Schmidt" class="w-full px-3 py-2 input-text text-sm">
+                <input type="text" id="phone-pruefungsleitung-name-input" name="phonePruefungsleitungName" x-model="phonePruefungsleitungName" maxlength="32" pattern="[a-zA-Z0-9\s\-.,äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ/()]+" autocomplete="off" placeholder="z. B. Prüfungsleiter Schmidt" class="w-full px-3 py-2 input-text text-sm">
               </div>
               <div>
                 <label for="phone-pruefungsleitung-number-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Telefonnummer (mit Vorwahl)</label>
-                <input type="tel" id="phone-pruefungsleitung-number-input" name="phonePruefungsleitungNumber" x-model="phonePruefungsleitungNumber" maxlength="32" placeholder="z. B. +49 171 9876543" class="w-full px-3 py-2 input-text text-sm font-mono">
+                <input type="tel" id="phone-pruefungsleitung-number-input" name="phonePruefungsleitungNumber" x-model="phonePruefungsleitungNumber" maxlength="24" pattern="[0-9\s+\/\-()]+" autocomplete="tel" placeholder="z. B. +49 171 9876543" class="w-full px-3 py-2 input-text text-sm font-mono">
               </div>
             </div>
           </div>
