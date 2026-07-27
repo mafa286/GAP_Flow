@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.64) -->
+  <!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.65) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Stationen</title>
   <script src="/js/theme_config.js?v=1.1.65"></script>
@@ -15,10 +15,6 @@
   <script src="/socket.io/socket.io.js?v=4.0.0"></script>
   <!-- PapaParse für RFC-konformen CSV-Import -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js?v=5.4.1" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous"></script>
-  <!-- Socket.io-Client für Echtzeit-Push-Updates -->
-  <script src="/socket.io/socket.io.js"></script>
-  <!-- PapaParse für RFC-konformen CSV-Import -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha512-dfX5uYVXzyU8+KHqj8bjo7UkOdg18PaOtpa48djpNbZHwExddghZ+ZmzWT06R5v6NSk3ZUfsH6FNEDepLx9hPQ==" crossorigin="anonymous"></script>
 </head>
 
 <body class="app-bg min-h-screen p-6 transition-colors duration-200" x-data="adminPanel()">
@@ -196,8 +192,8 @@
                       </button>
                       <div x-show="open" 
                            @click.outside="open = false" 
-                           class="absolute right-0 mt-1 w-52 app-card shadow-xl z-30 text-[11px] font-bold flex flex-col py-1.5 app-bg border border-main text-left hidden">
-                        
+                           class="absolute right-0 mt-1 w-52 app-card shadow-xl z-30 text-[11px] font-bold flex flex-col py-1.5 app-bg border border-main text-left"
+                           x-cloak>                        
                         <!-- Zuweisen / Freigeben -->
                         <button @click="open = false; openManualAssignPopup(st.id, sub.id)"
                                 :disabled="isSubmitting"
