@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.13)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.14)
 
 interface GroupMember {
   name: string;
@@ -97,10 +97,12 @@ interface ExaminerComponent {
   showFunctionsMenu: boolean;
   showPermissionsModal: boolean;
   showGuideModal: boolean;
-  phoneLeitstelle: string;
-  phonePruefungsleitung: string;
+  phoneLeitstelleName: string;
+  phoneLeitstelleNumber: string;
+  phonePruefungsleitungName: string;
+  phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
-
+  
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
@@ -189,10 +191,12 @@ function examiner(): ExaminerComponent {
     showFunctionsMenu: false,
     showPermissionsModal: false,
     showGuideModal: false,
-    phoneLeitstelle: '',
-    phonePruefungsleitung: '',
+    phoneLeitstelleName: '',
+    phoneLeitstelleNumber: '',
+    phonePruefungsleitungName: '',
+    phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
-
+    
     /**
      * Überprüft den aktuellen Berechtigungsstatus im Browser (z.B. System-Push-Benachrichtigungen).
      * @returns {void}
