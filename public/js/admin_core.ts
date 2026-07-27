@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.66)
+// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.67)
 
 interface AdminSocketIoClient {
   disconnect: () => void;
@@ -311,6 +311,8 @@ interface AdminPanelBase {
           pageContext = 'groups';
         } else if (path.includes('admin_stations.html')) {
           pageContext = 'stations';
+        } else if (path.includes('admin_settings.html')) {
+          pageContext = 'settings';
         }
 
         if (typeof window.io === 'function') {
