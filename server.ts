@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.89)
+// Version Tracker: server.ts (GAP-Flow v1.1.90)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -791,5 +791,6 @@ dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimes
   calculateStationsStats();
   server.listen(PORT, () => {
     console.log(`Prüfungs-Management-System läuft aktiv auf Port ${PORT}`);
+    fileProcessor.createAutoBackupZip();
   });
 });
