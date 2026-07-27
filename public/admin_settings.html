@@ -1,1 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.0) -->
+  <meta charset="UTF-8">
+  <title>Admin-Leitstand - Einstellungen &amp; System</title>
+  <script src="/js/theme_config.js?v=1.1.68"></script>
+  <script src="/js/gap_flow_utils.js?v=1.1.64"></script>
+  <script src="/js/admin_core.js?v=1.1.66"></script>
+  <script src="/js/admin_settings.js?v=1.0.0"></script>
+  <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js?v=4.8.3"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
 
+<body class="app-bg min-h-screen p-6 transition-colors duration-200" x-data="adminPanel()">
+
+  <!-- PASSWORD WALL -->
+  <div x-show="!authenticated" class="fixed inset-0 app-bg z-50 flex items-center justify-center p-6 transition-colors duration-200">
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-main transition-colors duration-200">
+      <h1 class="text-xl font-black text-center text-brand uppercase tracking-wide">Admin-Leitstand</h1>
+      <input type="password" id="admin-password-input" name="adminPassword" x-model="passwordInput" maxlength="128" @keydown.enter="login()" autocomplete="current-password" placeholder="Admin-Passwort" class="w-full px-4 py-3 input-text focus:outline-none">
+      <button @click="login()" class="w-full py-3 btn-brand text-sm">Einloggen</button>
+      <p x-show="authError" class="text-xs text-center font-bold text-sig-danger">Falsches Passwort!</p>
+    </div>
+  </div>
+
+  <!-- INACTIVITY WARNING MODAL -->
+  <div x-show="showInactivityWarning" class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+    <div class="app-card p-8 max-w-sm w-full space-y-4 text-center animate-pulse">
+      <div class="text-4xl">⚠️</div>
+      <h2 class="text-lg font-black text-brand uppercase tracking-wide">Inaktivität festgestellt</h2>
+      <p class="text-muted text-xs leading-relaxed">
+        Sie waren für 14 Minuten inaktiv. Das System meldet Sie in **1 Minute** automatisch ab. Bewegen Sie die Maus oder drücken Sie eine Taste, um aktiv zu bleiben.
+      </p>
+      <button @click="resetInactivityTimer()" class="w-full py-3 btn-sig-green uppercase tracking-wider text-xs shadow-lg">
+        Aktiv bleiben
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN CONTAINER -->
+  <div x-show="authenticated" class="max-w-[1700px] mx-auto space-y-6" x-cloak>
+    
+    <!-- HEADER -->
+    <div class="flex justify-between items-center border-b border-main pb-4">
+      <div>
+        <h1 class="text-3xl font-black text-brand uppercase tracking-wide">Prüfungsleitung &amp; Administration</h1>
+        <p class="text-muted text-sm">Systemkonfiguration, Telefonkontakte &amp; Live-Verwaltung</p>
+      </div>
+      <div class="flex gap-4 items-center">
+        <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+          <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <button @click="logout()" class="px-4 py-2.5 btn-sig-red text-xs font-bold" title="Vom Admin-Bereich abmelden">Abmelden</button>
+      </div>
+    </div>
+
+    <!-- SUB-NAVIGATION -->
+    <nav class="flex gap-4 border-b border-main pb-4">
+      <a href="/admin_dashboard.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Live-Dashboard</a>
+      <a href="/admin_groups.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Anwärter &amp; Gruppen</a>
+      <a href="/admin_stations.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Stationen &amp; Skalierung</a>
+      <a href="/admin_settings.html" class="px-4 py-2 btn-brand text-sm transition">Einstellungen &amp; System</a>
+    </nav>
+
+    <!-- CONTENT: EINSTELLUNGEN & SYSTEM -->
+    <div class="space-y-6">
+
+      <!-- SEKTION 1: TELEFONKONTAKTE FÜR PRÜFER-PWA -->
+      <div class="app-card p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-main">1. Telefonkontakte für Prüfer-PWA</h2>
+          <p class="text-xs text-muted leading-relaxed">
+            Hinterlegen Sie hier die Ansprechpartner und Telefonnummern für die Schnellwahl im Prüfer-Panel. Diese Kontakte werden direkt an die Smartphones der Prüfer im Feld übertragen.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Kachel Leitstelle -->
+          <div class="p-4 app-card-accent space-y-4 rounded-lg border border-main">
+            <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-2">
+              <span>📞</span> Kontakt Leitstelle
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <label for="phone-leitstelle-name-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Bezeichnung / Name</label>
+                <input type="text" id="phone-leitstelle-name-input" name="phoneLeitstelleName" x-model="phoneLeitstelleName" maxlength="32" placeholder="z. B. Einsatzleitung THW" class="w-full px-3 py-2 input-text text-sm">
+              </div>
+              <div>
+                <label for="phone-leitstelle-number-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Telefonnummer (mit Vorwahl)</label>
+                <input type="tel" id="phone-leitstelle-number-input" name="phoneLeitstelleNumber" x-model="phoneLeitstelleNumber" maxlength="32" placeholder="z. B. +49 170 1234567" class="w-full px-3 py-2 input-text text-sm font-mono">
+              </div>
+            </div>
+          </div>
+
+          <!-- Kachel Prüfungsleitung -->
+          <div class="p-4 app-card-accent space-y-4 rounded-lg border border-main">
+            <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-2">
+              <span>📱</span> Kontakt Prüfungsleitung
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <label for="phone-pruefungsleitung-name-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Bezeichnung / Name</label>
+                <input type="text" id="phone-pruefungsleitung-name-input" name="phonePruefungsleitungName" x-model="phonePruefungsleitungName" maxlength="32" placeholder="z. B. Prüfungsleiter Schmidt" class="w-full px-3 py-2 input-text text-sm">
+              </div>
+              <div>
+                <label for="phone-pruefungsleitung-number-input" class="block text-[11px] font-bold text-muted uppercase mb-1">Telefonnummer (mit Vorwahl)</label>
+                <input type="tel" id="phone-pruefungsleitung-number-input" name="phonePruefungsleitungNumber" x-model="phonePruefungsleitungNumber" maxlength="32" placeholder="z. B. +49 171 9876543" class="w-full px-3 py-2 input-text text-sm font-mono">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button @click="saveSettings()" 
+                  :disabled="isSubmitting"
+                  class="px-6 py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg disabled:opacity-50">
+            💾 Kontakte speichern
+          </button>
+        </div>
+      </div>
+
+      <!-- SEKTION 2: SYSTEM-AKTUALISIERUNG & BACKUP -->
+      <div class="app-card p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-main">2. System-Aktualisierung &amp; Backup (Live-Verwaltung)</h2>
+          <p class="text-xs text-muted leading-relaxed">
+            Laden Sie den aktuellen Stand des Programms (Backend-Logik, package.json-Abhängigkeiten und den vollständigen public/-Frontendordner) herunter, um lokale Anpassungen vorzunehmen, oder spielen Sie ein modifiziertes Update-ZIP-Paket ein. Der Server führt nach dem Upload automatisch ein <code>npm install</code> aus und startet sich neu.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Download Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">Code herunterladen</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Erstellt ein Live-ZIP-Backup mit der aktuellen <code>server.ts</code>, der <code>package.json</code> und dem vollständigen <code>public/</code>-Verzeichnis.
+              </p>
+            </div>
+            <button @click="downloadSystemBackup()" 
+                    :disabled="isSubmitting"
+                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50">
+              📥 Code-ZIP herunterladen
+            </button>
+          </div>
+
+          <!-- Upload Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">Update-ZIP hochladen</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Wählen Sie ein geändertes ZIP-Paket aus. Nach dem Upload sichert der Server die Vorgängerversion als <code>backup_previous.zip</code> und startet sich neu.
+              </p>
+            </div>
+            <input type="file" id="system-update-zip-file" name="systemUpdateZipFile" @change="uploadSystemUpdate($event)" 
+                   :disabled="isSubmitting" 
+                   accept=".zip" 
+                   class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
+          </div>
+
+          <!-- Neustart Kachel -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">System neustarten</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Beendet den Serverprozess sofort kontrolliert. Docker startet den Container daraufhin automatisch neu (Dauer: ca. 5–10 Sek.).
+              </p>
+            </div>
+            <button @click="triggerSystemRestart()" 
+                    :disabled="isSubmitting"
+                    class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50">
+              🔄 Server neustarten
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: UPDATE STATUS MONITOR -->
+    <div x-show="showUpdateStatusModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+      <div class="app-card p-6 max-w-sm w-full space-y-5 text-center border-main">
+        
+        <template x-if="updateStep === 'upload' || updateStep === 'extract'">
+          <div class="text-4xl animate-bounce">📦</div>
+        </template>
+        <template x-if="updateStep === 'restarting'">
+          <div class="text-4xl animate-spin">🔄</div>
+        </template>
+        <template x-if="updateStep === 'reconnecting'">
+          <div class="text-4xl animate-ping">📡</div>
+        </template>
+        <template x-if="updateStep === 'ready'">
+          <div class="text-4xl">🎉</div>
+        </template>
+        <template x-if="updateStep === 'failed'">
+          <div class="text-4xl">❌</div>
+        </template>
+
+        <h3 class="text-base font-black text-main uppercase tracking-wide" x-text="getUpdateTitle()"></h3>
+        <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+
+        <template x-if="updateStep === 'ready'">
+          <button @click="reloadAfterUpdate()" 
+                  class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg">
+            Update abschließen
+          </button>
+        </template>
+        <template x-if="updateStep === 'failed'">
+          <button @click="showUpdateStatusModal = false" 
+                  class="w-full py-2.5 btn-sig-red text-xs font-black uppercase tracking-wider shadow">
+            Schließen
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
