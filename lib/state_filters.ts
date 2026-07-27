@@ -1,4 +1,4 @@
-// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.6)
+// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.7)
 
 import { SystemState, Station, SubStation, LogEntry } from './types';
 
@@ -54,6 +54,12 @@ export interface FlatExaminerState {
   isRegistered: boolean;
   isAuthorized: boolean;
   isClaimed: boolean;
+  settings?: {
+    phoneLeitstelleName?: string;
+    phoneLeitstelleNumber?: string;
+    phonePruefungsleitungName?: string;
+    phonePruefungsleitungNumber?: string;
+  };
 }
 
 /**
@@ -239,6 +245,12 @@ export function getFlatExaminerState(
     isRegistered,
     isAuthorized,
     isClaimed,
+    settings: systemState.settings ? {
+      phoneLeitstelleName: systemState.settings.phoneLeitstelleName || '',
+      phoneLeitstelleNumber: systemState.settings.phoneLeitstelleNumber || '',
+      phonePruefungsleitungName: systemState.settings.phonePruefungsleitungName || '',
+      phonePruefungsleitungNumber: systemState.settings.phonePruefungsleitungNumber || '',
+    } : undefined,
   };
 }
 
