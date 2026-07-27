@@ -1,4 +1,4 @@
-// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.63)
+// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.64)
 
 import fs from 'fs';
 import path from 'path';
@@ -231,6 +231,81 @@ export function uploadCode(req: Request, res: Response): void {
       fs.unlinkSync(tempZipPath);
     }
     res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Erstellt bei jedem erfolgreichen Serverstart ein automatisches ZIP-Backup im Backup-Verzeichnis.
+ * Sichert Quellcode und Datenbanken mit Zeitstempel und bereinigt veraltete Backups.
+ * @returns {string | null} Der Dateiname des erstellten Backups oder null bei Fehler.
+ */
+export function createAutoBackupZip(): string | null {
+  try {
+    if (!backupDir || !fs.existsSync(backupDir)) {
+      if (backupDir) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      } else {
+        return null;
+      }
+    }
+
+    const zip = new AdmZip();
+
+    // 1. Quellcode und Konfigurationsdateien hinzufügen (ohne node_modules & .git)
+    const files = fs.readdirSync(appDir);
+    files.forEach((file) => {
+      if (file === 'node_modules' || file === '.git' || file === 'data') return;
+
+      const fullPath = path.join(appDir, file);
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        zip.addLocalFolder(fullPath, file);
+      } else {
+        zip.addLocalFile(fullPath);
+      }
+    });
+
+    // 2. Datenbank-Verzeichnis (data/) explizit mit sichern
+    if (dbDir && fs.existsSync(dbDir)) {
+      zip.addLocalFolder(dbDir, 'data');
+    }
+
+    const dObj = new Date();
+    const dPad = (n: number) => n.toString().padStart(2, '0');
+    const timestampStr = `${dObj.getFullYear()}${dPad(dObj.getMonth() + 1)}${dPad(dObj.getDate())}_${dPad(dObj.getHours())}${dPad(dObj.getMinutes())}${dPad(dObj.getSeconds())}`;
+    const backupFileName = `GAP-Flow_AutoBackup_${timestampStr}.zip`;
+    const targetPath = path.join(backupDir, backupFileName);
+
+    zip.writeZip(targetPath);
+    console.log(`[Auto-Backup] Automatisches System-Backup erfolgreich erstellt: ${backupFileName}`);
+
+    // 3. Veraltete automatische Backups bereinigen (behalte die 10 aktuellsten Backups)
+    try {
+      const backupFiles = fs.readdirSync(backupDir)
+        .filter((f) => f.startsWith('GAP-Flow_AutoBackup_') && f.endsWith('.zip'))
+        .map((f) => ({
+          name: f,
+          path: path.join(backupDir, f),
+          mtime: fs.statSync(path.join(backupDir, f)).mtimeMs,
+        }))
+        .sort((a, b) => b.mtime - a.mtime);
+
+      if (backupFiles.length > 10) {
+        backupFiles.slice(10).forEach((oldFile) => {
+          fs.unlinkSync(oldFile.path);
+          console.log(`[Auto-Backup] Altes Backup bereinigt: ${oldFile.name}`);
+        });
+      }
+    } catch (cleanupErr) {
+      console.warn('[Auto-Backup] Warnung bei Altdaten-Bereinigung:', cleanupErr);
+    }
+
+    return backupFileName;
+  } catch (err) {
+    const error = err as Error;
+    console.error('[Auto-Backup] Fehler beim Erstellen des automatischen Backups:', error.message);
+    return null;
   }
 }
 
