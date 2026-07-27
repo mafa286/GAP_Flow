@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.1)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.2)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
@@ -58,10 +58,10 @@ window.adminPanel = function (): Record<string, unknown> {
       if (self.isSubmitting) return;
 
       const cleanLeitstelleName = (self.phoneLeitstelleName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
-      const cleanLeitstelleNum = (self.phoneLeitstelleNumber || '').replace(/[^0-9\s+\/\-()]/g, '').trim().substring(0, 24);
+      const cleanLeitstelleNum = (self.phoneLeitstelleNumber || '').replace(/[^a-zA-Z0-9\s+\/\-().,äöüÄÖÜß]/g, '').trim().substring(0, 32);
       const cleanPruefungName = (self.phonePruefungsleitungName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
-      const cleanPruefungNum = (self.phonePruefungsleitungNumber || '').replace(/[^0-9\s+\/\-()]/g, '').trim().substring(0, 24);
-
+      const cleanPruefungNum = (self.phonePruefungsleitungNumber || '').replace(/[^a-zA-Z0-9\s+\/\-().,äöüÄÖÜß]/g, '').trim().substring(0, 32);
+      
       self.phoneLeitstelleName = cleanLeitstelleName;
       self.phoneLeitstelleNumber = cleanLeitstelleNum;
       self.phonePruefungsleitungName = cleanPruefungName;
