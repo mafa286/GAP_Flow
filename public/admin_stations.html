@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.68) -->
+<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.69) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Stationen</title>
   <script src="/js/theme_config.js?v=1.1.65"></script>
@@ -53,16 +53,6 @@
         <p class="text-muted text-sm">Stationen erstellen, skalieren und Prüferverantwortlichkeiten zuweisen</p>
       </div>
       <div class="flex gap-4 items-center">
-        <!-- GLOBALER STARTSCHUSS-SCHALTER -->
-        <div class="flex items-center gap-2.5 px-3 py-1.5 app-card-accent shadow-inner">
-          <span class="text-xs font-bold text-muted tracking-wide uppercase">Autom. Zuteilung:</span>
-          <button @click="toggleAutoAllocation(!autoAllocationActive)" 
-                  class="px-3.5 py-1.5 rounded-md font-black text-xs uppercase tracking-wider transition-all duration-300 shadow"
-                  :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
-            <span x-text="autoAllocationActive ? 'AKTIV' : 'DEAKTIVIERT'"></span>
-          </button>
-        </div>
-
         <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
           <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
           <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
@@ -82,10 +72,10 @@
     <!-- CONTENT: STATIONS MANAGEMENT -->
     <div class="app-card p-6 space-y-6">
     
-      <!-- RASTER: NEUE MASTER-STATION (1/3) & CSV-IMPORT (2/3) -->
+      <!-- RASTER: NEUE MASTER-STATION (1/3), CSV-IMPORT (1/3) & AUTOM. ZUTEILUNG (1/3) -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- LINKS: NEUE MASTER-STATION (1/3 BREITE) -->
+        <!-- SPALTE 1: NEUE MASTER-STATION (1/3 BREITE) -->
         <div class="lg:col-span-1 p-4 app-card-accent flex flex-col justify-between space-y-4 rounded-lg border border-main">
           <div class="space-y-3">
             <h2 class="text-sm font-bold text-muted uppercase">Neue Master-Station anlegen</h2>
@@ -103,20 +93,39 @@
           </div>
         </div>
 
-        <!-- RECHTS: STATIONS-CSV-IMPORT BOX (2/3 BREITE) -->
-        <div class="lg:col-span-2 p-4 app-card-accent space-y-3 rounded-lg border border-main">
-          <h3 class="text-sm font-bold text-muted uppercase">Stationen per CSV importieren</h3>
-          <p class="text-[10px] text-muted leading-normal">
-            Erstellen Sie eine einfache CSV/TXT-Datei (Trennzeichen: Semikolon <code>;</code>).<br>
-            Format 1: <code>Stationsnummer; Stationsname; Prüfername1; Prüfername2; Prüfername3...</code> (Jeder Prüfer eine eigene Spalte)<br>
-            Format 2: <code>Stationsnummer; Stationsname; Prüfername1, Prüfername2, Prüfername3...</code> (Prüfer Komma-getrennt in Spalte 3)<br>
-            Unterstationen und Multiplikatoren werden automatisch anhand der Anzahl der eingetragenen Prüfer berechnet.
-          </p>
-          <div class="p-2.5 sig-badge-red text-[10px] leading-normal shadow-sm">
-            ⚠️ <strong>Achtung:</strong> Der Import setzt alle Stationen, Unterstationen und Protokolle zurück, um das neue Setup sauber aufzubauen! Ihre registrierten Anwärter und Gruppen bleiben vollständig erhalten.
+        <!-- SPALTE 2: STATIONS-CSV-IMPORT BOX (1/3 BREITE) -->
+        <div class="lg:col-span-1 p-4 app-card-accent flex flex-col justify-between space-y-3 rounded-lg border border-main">
+          <div class="space-y-2">
+            <h3 class="text-sm font-bold text-muted uppercase">Stationen per CSV importieren</h3>
+            <p class="text-[10px] text-muted leading-normal">
+              Erstellen Sie eine CSV/TXT-Datei (<code>;</code>-getrennt). Spalten: <code>Nummer; Name; Prüfer1; Prüfer2...</code>
+            </p>
+            <div class="p-2 sig-badge-red text-[10px] leading-normal shadow-sm">
+              ⚠️ Import setzt Stationen &amp; Protokolle zurück.
+            </div>
           </div>
-          <input type="file" id="stations-csv-import-file" name="stationsCsvFile" @change="handleCSVImport($event)" :disabled="isSubmitting" accept=".csv,.txt" class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
+          <input type="file" id="stations-csv-import-file" name="stationsCsvFile" @change="handleCSVImport($event)" :disabled="isSubmitting" accept=".csv,.txt" class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file mt-2">
         </div>
+
+        <!-- SPALTE 3: AUTOMATISCHE ZUTEILUNG TOGGLE (1/3 BREITE) -->
+        <div class="lg:col-span-1 p-4 app-card-accent flex flex-col justify-between space-y-4 rounded-lg border border-main">
+          <div class="space-y-2">
+            <h3 class="text-sm font-bold text-muted uppercase">Automatische Zuteilung</h3>
+            <p class="text-[10px] text-muted leading-normal">
+              Steuert den globalen Startschuss. Wenn aktiv, weist die Allocator Engine allen freien Unterstationen automatisch wartende Teams zu.
+            </p>
+          </div>
+
+          <div class="pt-2 border-t border-main">
+            <button @click="toggleAutoAllocation(!autoAllocationActive)" 
+                    :disabled="isSubmitting"
+                    class="w-full py-2.5 rounded-lg font-black text-xs uppercase tracking-wider transition-all duration-300 shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    :class="autoAllocationActive ? 'btn-sig-green' : 'btn-sig-red animate-pulse'">
+              <span x-text="autoAllocationActive ? '⚡ ZUTEILUNG: AKTIV' : '⛔ ZUTEILUNG: DEAKTIVIERT'"></span>
+            </button>
+          </div>
+        </div>
+
       </div>
       <!-- Master-Stationen Konfiguration -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
