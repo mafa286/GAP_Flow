@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.87)
+// Version Tracker: server.ts (GAP-Flow v1.1.88)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -196,6 +196,20 @@ export function sanitizeName(str: string, maxLength: number): string {
   if (typeof str !== 'string') return '';
   let cleaned = str.trim().substring(0, maxLength);
   cleaned = cleaned.replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ/()]/g, '');
+  return cleaned.trim();
+}
+
+/**
+ * Bereinigt und validiert Telefonnummern zum Schutz vor Injektionen (XSS, tel: Protocol Exploits).
+ * Erlaubt ausschließlich Ziffern, Leerzeichen, Plus, Minus, Schrägstrich und Klammern.
+ * @param {string} str - Die zu bereinigende Telefonnummer.
+ * @param {number} maxLength - Die maximale zulässige Länge.
+ * @returns {string} Bereinigte Telefonnummer.
+ */
+export function sanitizePhoneNumber(str: string, maxLength: number): string {
+  if (typeof str !== 'string') return '';
+  let cleaned = str.trim().substring(0, maxLength);
+  cleaned = cleaned.replace(/[^0-9\s+\/\-()]/g, '');
   return cleaned.trim();
 }
 
@@ -733,10 +747,9 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
       };
     }
     systemState.settings.phoneLeitstelleName = sanitizeName(settings.phoneLeitstelleName || '', 32);
-    systemState.settings.phoneLeitstelleNumber = sanitizeName(settings.phoneLeitstelleNumber || '', 32);
+    systemState.settings.phoneLeitstelleNumber = sanitizePhoneNumber(settings.phoneLeitstelleNumber || '', 24);
     systemState.settings.phonePruefungsleitungName = sanitizeName(settings.phonePruefungsleitungName || '', 32);
-    systemState.settings.phonePruefungsleitungNumber = sanitizeName(settings.phonePruefungsleitungNumber || '', 32);
-
+    systemState.settings.phonePruefungsleitungNumber = sanitizePhoneNumber(settings.phonePruefungsleitungNumber || '', 24);
     commitAndRespond(res, { success: true, settings: systemState.settings });
   } else {
     res.status(400).json({ error: 'Ungültige Einstellungen' });
