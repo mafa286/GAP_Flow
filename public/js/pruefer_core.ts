@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.11)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.12)
 
 interface GroupMember {
   name: string;
@@ -88,6 +88,16 @@ interface ExaminerComponent {
   isCompiling: boolean;
   _lastInfoSoundTime: number;
 
+  showFunctionsMenu: boolean;
+  showPermissionsModal: boolean;
+  showGuideModal: boolean;
+  phoneLeitstelle: string;
+  phonePruefungsleitung: string;
+  notificationPermissionStatus: string;
+
+  checkPermissions(): void;
+  requestNotificationPermission(): Promise<void>;
+  openCallLink(phoneNumber: string, label: string): void;
   init(): void;
   isIOS(): boolean;
   triggerAndroidInstallPrompt(): void;
@@ -169,6 +179,54 @@ function examiner(): ExaminerComponent {
     appInstalledSuccessfully: false,
     isCompiling: false,
     _lastInfoSoundTime: 0,
+
+    showFunctionsMenu: false,
+    showPermissionsModal: false,
+    showGuideModal: false,
+    phoneLeitstelle: '',
+    phonePruefungsleitung: '',
+    notificationPermissionStatus: 'default',
+
+    /**
+     * Überprüft den aktuellen Berechtigungsstatus im Browser (z.B. System-Push-Benachrichtigungen).
+     * @returns {void}
+     */
+    checkPermissions(): void {
+      if ('Notification' in window) {
+        this.notificationPermissionStatus = Notification.permission;
+      } else {
+        this.notificationPermissionStatus = 'unsupported';
+      }
+    },
+
+    /**
+     * Fordert beim Benutzer die System-Benachrichtigungsberechtigung für PWA-Pushs an.
+     * @returns {Promise<void>}
+     */
+    async requestNotificationPermission(): Promise<void> {
+      if ('Notification' in window) {
+        try {
+          const res = await Notification.requestPermission();
+          this.notificationPermissionStatus = res;
+        } catch (e) {
+          console.error('Fehler beim Anfragen der Benachrichtigungsberechtigung:', e);
+        }
+      }
+    },
+
+    /**
+     * Öffnet einen Anruf-Link (tel:) oder zeigt einen Hinweis, falls keine Rufnummer hinterlegt ist.
+     * @param {string} phoneNumber - Die anzurufende Telefonnummer.
+     * @param {string} label - Die Bezeichnung der Anrufstelle (z.B. Leitstelle).
+     * @returns {void}
+     */
+    openCallLink(phoneNumber: string, label: string): void {
+      if (phoneNumber && phoneNumber.trim()) {
+        window.location.href = `tel:${phoneNumber.trim()}`;
+      } else {
+        alert(`Keine Telefonnummer für "${label}" im System hinterlegt. Die Verwaltung erfolgt über die Admin-Einstellungen.`);
+      }
+    },
 
     init(): void {
       const params = new URLSearchParams(window.location.search);
