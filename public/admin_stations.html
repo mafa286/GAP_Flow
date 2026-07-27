@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.65) -->
+<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.66) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Stationen</title>
   <script src="/js/theme_config.js?v=1.1.65"></script>
@@ -77,6 +77,7 @@
       <a href="/admin_dashboard.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Live-Dashboard</a>
       <a href="/admin_groups.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Anwärter &amp; Gruppen</a>
       <a href="/admin_stations.html" class="px-4 py-2 btn-brand text-sm transition">Stationen &amp; Skalierung</a>
+      <a href="/admin_settings.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Einstellungen &amp; System</a>
     </nav>
 
     <!-- CONTENT: STATIONS MANAGEMENT -->
@@ -288,61 +289,6 @@
           </div>
         </template>
       </div>
-
-      <!-- SEKTION: SYSTEM-AKTUALISIERUNG & BACKUP -->
-      <div class="app-card p-6 space-y-6 mt-6">
-        <h2 class="text-xl font-bold text-main">3. System-Aktualisierung &amp; Backup (Live-Verwaltung)</h2>
-        <p class="text-xs text-muted leading-relaxed">
-          Laden Sie den aktuellen Stand des Programms (Backend-Logik, package.json-Abhängigkeiten und den vollständigen public/-Frontendordner) herunter, um lokale Anpassungen vorzunehmen, oder spielen Sie ein modifiziertes Update-ZIP-Paket ein. Der Server führt nach dem Upload automatisch ein <code>npm install</code> aus und startet sich neu.
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Download Kachel -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-muted uppercase text-brand">Code herunterladen</h3>
-              <p class="text-[10px] text-muted leading-normal">
-                Erstellt ein Live-ZIP-Backup mit der aktuellen <code>server.js</code>, der <code>package.json</code> und dem vollständigen <code>public/</code>-Verzeichnis.
-              </p>
-            </div>
-            <button @click="downloadSystemBackup()" 
-                    :disabled="isSubmitting"
-                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50">
-              📥 Code-ZIP herunterladen
-            </button>
-          </div>
-
-          <!-- Upload Kachel -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-muted uppercase text-brand">Update-ZIP hochladen</h3>
-              <p class="text-[10px] text-muted leading-normal">
-                Wählen Sie ein geändertes ZIP-Paket aus. Nach dem Upload sichert der Server die Vorgängerversion als <code>backup_previous.zip</code> und startet sich neu.
-              </p>
-            </div>
-            <input type="file" id="system-update-zip-file" name="systemUpdateZipFile" @change="uploadSystemUpdate($event)" 
-                   :disabled="isSubmitting" 
-                   accept=".zip" 
-                   class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
-          </div>
-
-          <!-- Neustart Kachel -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-muted uppercase text-brand">System neustarten</h3>
-              <p class="text-[10px] text-muted leading-normal">
-                Beendet den Serverprozess sofort kontrolliert. Docker startet den Container daraufhin automatisch neu (Dauer: ca. 5–10 Sek.).
-              </p>
-            </div>
-            <button @click="triggerSystemRestart()" 
-                    :disabled="isSubmitting"
-                    class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50">
-              🔄 Server neustarten
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
     <!-- MODAL: UPDATE STATUS MONITOR -->
