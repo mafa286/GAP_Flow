@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.85)
+// Version Tracker: server.ts (GAP-Flow v1.1.86)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -387,6 +387,15 @@ export function executeSubStationCompletion(master: Station, sub: SubStation): b
 
   sub.currentGroupId = null;
   sub.startTime = null;
+
+  const remainingGroupsForMaster = Object.values(systemState.groups || {}).filter(
+    (g) => g.active !== false && !(g.completedStations || []).includes(master.id)
+  );
+
+  if (remainingGroupsForMaster.length === 0) {
+    sub.paused = true;
+  }
+
   if (sub.paused) {
     writeSystemLog('System', sub.id, -3, sub.examiner || 'Prüfer');
   }
@@ -632,6 +641,7 @@ app.post('/api/examiner/deregister', authenticateExaminer, (req: AuthenticatedEx
 
   sub.examiner = '';
   sub.deviceToken = null;
+  sub.paused = true;
 
   writeSystemLog('System', sub.id, -13, 'Abgemeldet');
 
