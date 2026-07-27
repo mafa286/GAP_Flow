@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.7)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.8)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -206,6 +206,7 @@ export function subConfig(req: Request, res: Response): void {
     const cleanExaminer = sanitizeName(examiner, 32);
     if (cleanExaminer !== sub.examiner) {
       sub.examiner = cleanExaminer;
+      sub.paused = true;
       if (!cleanExaminer) {
         sub.deviceToken = null;
       }
@@ -215,6 +216,9 @@ export function subConfig(req: Request, res: Response): void {
 
   if (deviceToken !== undefined) {
     sub.deviceToken = deviceToken;
+    if (deviceToken === null) {
+      sub.paused = true;
+    }
   }
 
   if (active !== undefined) {
