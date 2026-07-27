@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.0)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.1)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
@@ -50,11 +50,23 @@ window.adminPanel = function (): Record<string, unknown> {
 
     /**
      * Speichert die angepassten Telefonkontakte über das Admin-API.
+     * Bereinigt vorab verbotene Sonderzeichen zum Schutz vor Injektionen.
      * @returns {Promise<void>}
      */
     async saveSettings(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
       if (self.isSubmitting) return;
+
+      const cleanLeitstelleName = (self.phoneLeitstelleName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
+      const cleanLeitstelleNum = (self.phoneLeitstelleNumber || '').replace(/[^0-9\s+\/\-()]/g, '').trim().substring(0, 24);
+      const cleanPruefungName = (self.phonePruefungsleitungName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
+      const cleanPruefungNum = (self.phonePruefungsleitungNumber || '').replace(/[^0-9\s+\/\-()]/g, '').trim().substring(0, 24);
+
+      self.phoneLeitstelleName = cleanLeitstelleName;
+      self.phoneLeitstelleNumber = cleanLeitstelleNum;
+      self.phonePruefungsleitungName = cleanPruefungName;
+      self.phonePruefungsleitungNumber = cleanPruefungNum;
+
       self.isSubmitting = true;
 
       try {
@@ -66,14 +78,14 @@ window.adminPanel = function (): Record<string, unknown> {
           },
           body: JSON.stringify({
             settings: {
-              phoneLeitstelleName: self.phoneLeitstelleName,
-              phoneLeitstelleNumber: self.phoneLeitstelleNumber,
-              phonePruefungsleitungName: self.phonePruefungsleitungName,
-              phonePruefungsleitungNumber: self.phonePruefungsleitungNumber,
+              phoneLeitstelleName: cleanLeitstelleName,
+              phoneLeitstelleNumber: cleanLeitstelleNum,
+              phonePruefungsleitungName: cleanPruefungName,
+              phonePruefungsleitungNumber: cleanPruefungNum,
             },
           }),
         });
-
+        
         if (response.ok) {
           alert('Die Einstellungen wurden erfolgreich gespeichert.');
         } else {
