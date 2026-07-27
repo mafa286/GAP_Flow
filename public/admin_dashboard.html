@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <!-- Version Tracker: public/admin_dashboard.html (GAP-Flow v1.1.64) -->
+<!-- Version Tracker: public/admin_dashboard.html (GAP-Flow v1.1.65) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Dashboard</title>
   <script src="/js/theme_config.js?v=1.1.66"></script>
@@ -63,7 +63,6 @@
           </button>
         </div>
 
-        <button @click="exportCSV()" class="px-4 py-2.5 btn-brand text-xs">Protokoll-CSV exportieren</button>
         <button onclick="window.toggleTheme()" class="p-2.5 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
           <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
           <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
@@ -77,6 +76,7 @@
       <a href="/admin_dashboard.html" class="px-4 py-2 btn-brand text-sm transition">Live-Dashboard</a>
       <a href="/admin_groups.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Anwärter &amp; Gruppen</a>
       <a href="/admin_stations.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Stationen &amp; Skalierung</a>
+      <a href="/admin_settings.html" class="px-4 py-2 app-card-accent hover:opacity-80 text-main font-bold rounded-lg text-sm transition">Einstellungen &amp; System</a>
     </nav>
 
     <!-- ZEILE 1: ENGPASS-ANALYSE DIAGRAMMTIEFE (Volle Breite) -->
@@ -149,7 +149,10 @@
 
     <!-- ZEILE 2: LIVE-AKTIVITÄTEN -->
     <div class="app-card p-6 space-y-4">
-      <h2 class="text-lg font-bold text-main">Aktivitäten &amp; Verlauf (Live)</h2>
+      <div class="flex justify-between items-center border-b border-main pb-2">
+        <h2 class="text-lg font-bold text-main">Aktivitäten &amp; Verlauf (Live)</h2>
+        <button @click="exportCSV()" class="px-4 py-2 btn-brand text-xs font-bold shadow-sm">Protokoll-CSV exportieren</button>
+      </div>
       
       <!-- Spaltenaufteilung: Links Filter (1/3 Breite), Rechts das Log (2/3 Breite) -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
