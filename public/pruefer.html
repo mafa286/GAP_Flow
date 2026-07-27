@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.84) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.85) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -399,16 +399,26 @@
       </div>
 
       <div class="space-y-2.5 pt-2">
-        <!-- Leitstelle anrufen -->
-        <button @click="openCallLink(phoneLeitstelleNumber, phoneLeitstelleName || 'Leitstelle')"
-                class="w-full py-3 btn-brand text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow">
-          <span>📞</span> <span x-text="phoneLeitstelleName ? phoneLeitstelleName : 'Leitstelle anrufen'"></span>
+        <!-- Leitstelle / App-Admin anrufen -->
+        <button @click="openCallLink(phoneLeitstelleNumber, 'Leitstelle / App-Admin')"
+                class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
+          <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+            <span>📞</span>
+            <span>Leitstelle / App-Admin</span>
+          </div>
+          <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
+                x-text="phoneLeitstelleName ? phoneLeitstelleName : 'Kein Name hinterlegt'"></span>
         </button>
 
         <!-- Prüfungsleitung anrufen -->
-        <button @click="openCallLink(phonePruefungsleitungNumber, phonePruefungsleitungName || 'Prüfungsleitung')"
-                class="w-full py-3 btn-brand text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow">
-          <span>📱</span> <span x-text="phonePruefungsleitungName ? phonePruefungsleitungName : 'Prüfungsleitung anrufen'"></span>
+        <button @click="openCallLink(phonePruefungsleitungNumber, 'Prüfungsleitung')"
+                class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
+          <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+            <span>📱</span>
+            <span>Prüfungsleitung</span>
+          </div>
+          <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
+                x-text="phonePruefungsleitungName ? phonePruefungsleitungName : 'Kein Name hinterlegt'"></span>
         </button>
         
         <!-- Berechtigungen prüfen -->
