@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.12)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.13)
 
 interface GroupMember {
   name: string;
@@ -30,6 +30,12 @@ interface FlatExaminerPayload {
   isRegistered?: boolean;
   isAuthorized?: boolean;
   isClaimed?: boolean;
+  settings?: {
+    phoneLeitstelleName?: string;
+    phoneLeitstelleNumber?: string;
+    phonePruefungsleitungName?: string;
+    phonePruefungsleitungNumber?: string;
+  };
 }
 
 interface SocketIoClient {
@@ -398,6 +404,12 @@ function examiner(): ExaminerComponent {
       this.isAuthorized = data.isAuthorized || false;
       this.isClaimed = data.isClaimed || false;
 
+      if (data.settings) {
+        this.phoneLeitstelleName = data.settings.phoneLeitstelleName || '';
+        this.phoneLeitstelleNumber = data.settings.phoneLeitstelleNumber || '';
+        this.phonePruefungsleitungName = data.settings.phonePruefungsleitungName || '';
+        this.phonePruefungsleitungNumber = data.settings.phonePruefungsleitungNumber || '';
+      }
       if (data.currentGroupDetails) {
         this.currentGroup = {
           id: data.currentGroupDetails.id,
