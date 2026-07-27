@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.81) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.82) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -158,28 +158,39 @@
       <!-- 2.C: REGULÄRES PRÜFER-PANEL (Falls registriert und autorisiert) -->
       <template x-if="isRegistered && isAuthorized && !renderLock">
         <div class="h-full flex flex-col justify-between">
-          <!-- HEADER: Flache, informationsreiche Oberzeile (Row 1) -->
-          <div class="app-card p-3 flex justify-between items-center shrink-0 gap-2">
-            <div class="flex items-center gap-2.5 min-w-0 flex-1 pr-1">
+          <!-- HEADER: Zweizeilige strukturierte Oberzeile -->
+          <div class="app-card p-3 flex flex-col shrink-0 gap-2.5">
+            <!-- Zeile 1: Vollbreiter Stationsname mit Status-LED -->
+            <div class="flex items-center gap-2.5 w-full">
               <span class="w-3 h-3 rounded-full shrink-0" 
                     :style="connected ? 'background-color: var(--sig-success-text) !important;' : 'background-color: var(--sig-danger-text) !important;'"
                     :class="connected ? 'animate-pulse' : 'animate-ping'"></span>
-              <h1 class="text-base font-black text-main tracking-wide whitespace-normal break-words" x-text="masterName + ' (' + subId + ')'"></h1>
+              <h1 class="text-base font-black text-main tracking-wide whitespace-normal break-words w-full" x-text="masterName + ' (' + subId + ')'"></h1>
             </div>
                   
-            <div class="flex items-center gap-2 shrink-0">
-              <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
-                <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <!-- Zeile 2: Funktions-Button links, Theme & Abmelden rechts auf gleicher Höhe -->
+            <div class="flex justify-between items-center w-full pt-2 border-t border-main">
+              <!-- Links: Funktions / Menü Button -->
+              <button @click="showFunctionsMenu = true"
+                      class="px-3 py-1.5 btn-brand text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-sm">
+                <span>⚙</span> Menü
               </button>
 
-              <!-- Abmelden Button (Weg 1 - Selbstbedienung) -->
-              <button @click="deregisterExaminer()"
-                      :disabled="isSubmitting"
-                      class="p-2 btn-sig-red text-xs font-black uppercase tracking-wider rounded-lg" 
-                      title="Station freigeben und abmelden">
-                Abmelden
-              </button>
+              <!-- Rechts: Theme Toggle & Abmelden Button -->
+              <div class="flex items-center gap-2">
+                <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
+                  <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                  <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                </button>
+
+                <!-- Abmelden Button -->
+                <button @click="deregisterExaminer()"
+                        :disabled="isSubmitting"
+                        class="px-3 py-1.5 btn-sig-red text-xs font-black uppercase tracking-wider rounded-lg" 
+                        title="Station freigeben und abmelden">
+                  Abmelden
+                </button>
+              </div>
             </div>
           </div>
 
@@ -374,8 +385,147 @@
     </div>
   </div>
 
-  <!-- 4. BESTÄTIGUNG: BEREITSCHAFT HERSTELLEN (Audio/WakeLock-Freigabe fangen) -->
-  <div x-show="showStartSetup" 
+  <!-- MODAL: FUNKTIONS / MENÜ DIALOG -->
+  <div x-show="showFunctionsMenu" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main">
+      <div class="flex justify-between items-center border-b border-main pb-3">
+        <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
+          <span>⚙</span> Station-Funktionen
+        </h3>
+        <button @click="showFunctionsMenu = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+      </div>
+
+      <div class="space-y-2.5 pt-2">
+        <!-- Leitstelle anrufen -->
+        <button @click="openCallLink(phoneLeitstelle, 'Leitstelle')"
+                class="w-full py-3 btn-brand text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow">
+          <span>📞</span> Leitstelle anrufen
+        </button>
+
+        <!-- Prüfungsleitung anrufen -->
+        <button @click="openCallLink(phonePruefungsleitung, 'Prüfungsleitung')"
+                class="w-full py-3 btn-brand text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow">
+          <span>📱</span> Prüfungsleitung anrufen
+        </button>
+
+        <!-- Berechtigungen prüfen -->
+        <button @click="showFunctionsMenu = false; checkPermissions(); showPermissionsModal = true;"
+                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-main transition">
+          <span>🛡️</span> Berechtigungen prüfen
+        </button>
+
+        <!-- Anleitung der Prüfer App -->
+        <button @click="showFunctionsMenu = false; showGuideModal = true;"
+                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-main transition">
+          <span>📖</span> Anleitung der Prüfer-App
+        </button>
+      </div>
+
+      <button @click="showFunctionsMenu = false" class="w-full py-2 mt-2 app-card-accent text-muted font-bold text-xs uppercase tracking-wider">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: BERECHTIGUNGEN PRÜFEN -->
+  <div x-show="showPermissionsModal" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main">
+      <div class="flex justify-between items-center border-b border-main pb-3">
+        <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
+          <span>🛡️</span> Berechtigungs-Check
+        </h3>
+        <button @click="showPermissionsModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+      </div>
+
+      <div class="space-y-3 pt-2 text-left text-xs">
+        <!-- Ton Status -->
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-main flex items-center gap-1.5">🔊 Audio / Signalton</span>
+            <span class="font-mono font-bold text-[11px]" 
+                  :style="soundUnlocked ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-warning-text) !important;'"
+                  x-text="soundUnlocked ? 'Aktiv ✅' : 'Gesperrt ⚠️'"></span>
+          </div>
+          <p class="text-[10px] text-muted">Akustische Signale bei Gruppenwechsel und Sieges-Melodie.</p>
+          <button x-show="!soundUnlocked" @click="unlockSound()" class="w-full mt-2 py-1.5 btn-brand text-[10px] uppercase font-bold">
+            🔊 Ton freischalten
+          </button>
+        </div>
+
+        <!-- Telefon Status -->
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-main flex items-center gap-1.5">📞 Telefon-Schnittstelle</span>
+            <span class="font-mono font-bold text-[11px]" style="color: var(--sig-success-text) !important;">Bereit ✅</span>
+          </div>
+          <p class="text-[10px] text-muted">Direktwahl für Leitstelle und Prüfungsleitung über Smartphone-Modem.</p>
+        </div>
+
+        <!-- Benachrichtigungen Status -->
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-main flex items-center gap-1.5">🔔 System-Push</span>
+            <span class="font-mono font-bold text-[11px]"
+                  :style="notificationPermissionStatus === 'granted' ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-warning-text) !important;'"
+                  x-text="notificationPermissionStatus === 'granted' ? 'Erlaubt ✅' : (notificationPermissionStatus === 'denied' ? 'Blockiert ⛔' : 'Inaktiv ⏳')"></span>
+          </div>
+          <p class="text-[10px] text-muted">Push-Meldungen bei neuen Gruppenzuweisungen im Standby.</p>
+          <button x-show="notificationPermissionStatus !== 'granted'" 
+                  @click="requestNotificationPermission()" 
+                  class="w-full mt-2 py-1.5 btn-brand text-[10px] uppercase font-bold">
+            🔔 Benachrichtigungen anfragen
+          </button>
+        </div>
+      </div>
+
+      <button @click="showPermissionsModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: ANLEITUNG DER PRÜFER APP -->
+  <div x-show="showGuideModal" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-main pb-3 shrink-0">
+        <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
+          <span>📖</span> Prüfer-Kurzanleitung
+        </h3>
+        <button @click="showGuideModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+      </div>
+
+      <div class="space-y-3 pt-2 text-left text-xs overflow-y-auto pr-1 flex-1 leading-relaxed">
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <span class="font-black text-brand block">1️⃣ Automatische Zuteilung</span>
+          <p class="text-muted text-[11px]">Sobald Sie Ihre Station freischalten („Station bereit“), teilt Ihnen die System-Engine automatisch das nächste geeignete Prüfungsteam aus dem Sammelraum zu.</p>
+        </div>
+
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <span class="font-black text-brand block">2️⃣ Prüfung durchführen & Abschließen</span>
+          <p class="text-muted text-[11px]">Prüfen Sie das Team. Nach Beendigung tippen Sie auf <strong class="text-main">„Prüfung abschließen“</strong>. Es startet ein 7-Sekunden-Countdown, in dem Sie die Aktion abbrechen oder eine Pause vormerken können.</p>
+        </div>
+
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <span class="font-black text-brand block">3️⃣ Pausensteuerung & Prüferwechsel</span>
+          <p class="text-muted text-[11px]">Nutzen Sie <strong class="text-main">„Station pausieren“</strong> für Unterbrechungen. Bei Schichtende tippen Sie oben rechts auf <strong class="text-main">„Abmelden“</strong>, um das Gerät sauber freizugeben.</p>
+        </div>
+
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <span class="font-black text-brand block">4️⃣ Offline-Resilienz im Funkloch</span>
+          <p class="text-muted text-[11px]">Sollte der Empfang im Gelände abbrechen, speichert das System Ihre Eingaben zwischen und synchronisiert automatisch, sobald die Verbindung wieder hergestellt ist.</p>
+        </div>
+      </div>
+
+      <button @click="showGuideModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider shrink-0 mt-2">
+        Verstanden
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. BESTÄTIGUNG: BEREITSCHAFT HERSTELLEN (Audio/WakeLock-Freigabe fangen) -->  <div x-show="showStartSetup" 
        class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
     <div class="app-card p-6 md:p-8 max-w-sm w-full space-y-5 text-center border-main">
       <div class="text-5xl animate-bounce">⚡</div>
