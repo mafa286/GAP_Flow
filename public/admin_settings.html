@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.5) -->
+<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.6) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -125,12 +125,12 @@
         </div>
       </div>
 
-      <!-- SEKTION 2: SYSTEM-AKTUALISIERUNG & BACKUP -->
+      <!-- SEKTION 2: SYSTEM-NEUSTART & AUTOMATISCHES BACKUP -->
       <div class="app-card p-6 space-y-6">
         <div>
-          <h2 class="text-xl font-bold text-main">2. System-Aktualisierung &amp; Backup (Live-Verwaltung)</h2>
+          <h2 class="text-xl font-bold text-main">2. System-Neustart &amp; Automatisches Backup</h2>
           <p class="text-xs text-muted leading-relaxed">
-            Laden Sie den aktuellen Stand des Programms (Backend-Logik, package.json-Abhängigkeiten und den vollständigen public/-Frontendordner) herunter, um lokale Anpassungen vorzunehmen, oder spielen Sie ein modifiziertes Update-ZIP-Paket ein. Der Server führt nach dem Upload automatisch ein <code>npm install</code> aus und startet sich neu.
+            Hier können Sie den Serverprozess kontrolliert neu starten. Bei jedem Neustart prüft das System den Quellcode und erstellt beim Hochfahren automatisch ein vollständiges, zeitsynchrones ZIP-Backup aller Datenbanken und Einstellungen im Backup-Ordner.
           </p>
         </div>
 
