@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.2)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.3)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
@@ -57,10 +57,20 @@ window.adminPanel = function (): Record<string, unknown> {
       const self = this as unknown as AdminSettingsComponent;
       if (self.isSubmitting) return;
 
-      const cleanLeitstelleName = (self.phoneLeitstelleName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
-      const cleanLeitstelleNum = (self.phoneLeitstelleNumber || '').replace(/[^a-zA-Z0-9\s+\/\-().,äöüÄÖÜß]/g, '').trim().substring(0, 32);
-      const cleanPruefungName = (self.phonePruefungsleitungName || '').replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜß/()]/g, '').trim().substring(0, 32);
-      const cleanPruefungNum = (self.phonePruefungsleitungNumber || '').replace(/[^a-zA-Z0-9\s+\/\-().,äöüÄÖÜß]/g, '').trim().substring(0, 32);
+      const cleanName = (val: string): string =>
+        (val || '').replace(/[^a-zA-Z0-9\s,\-/äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ]/g, '').trim().substring(0, 32);
+
+      const cleanPhone = (val: string): string => {
+        let clean = (val || '').trim().substring(0, 24);
+        const hasPlus = clean.startsWith('+');
+        clean = clean.replace(/[^0-9]/g, '');
+        return hasPlus ? `+${clean}` : clean;
+      };
+
+      const cleanLeitstelleName = cleanName(self.phoneLeitstelleName);
+      const cleanLeitstelleNum = cleanPhone(self.phoneLeitstelleNumber);
+      const cleanPruefungName = cleanName(self.phonePruefungsleitungName);
+      const cleanPruefungNum = cleanPhone(self.phonePruefungsleitungNumber);
       
       self.phoneLeitstelleName = cleanLeitstelleName;
       self.phoneLeitstelleNumber = cleanLeitstelleNum;
