@@ -1,4 +1,4 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.1)
+// Version Tracker: lib/types.ts (GAP-Flow v1.0.2)
 
 /**
  * Repräsentiert einen registrierten Anwärter.
@@ -76,6 +76,16 @@ export interface LogEntry {
 }
 
 /**
+ * Systemweite Konfigurationseinstellungen.
+ */
+export interface SystemSettings {
+  phoneLeitstelleName: string;
+  phoneLeitstelleNumber: string;
+  phonePruefungsleitungName: string;
+  phonePruefungsleitungNumber: string;
+}
+
+/**
  * Der zentrale In-Memory-Systemzustand.
  */
 export interface SystemState {
@@ -87,4 +97,5 @@ export interface SystemState {
   firstAssignmentTime: number | null;
   isCleared: boolean;
   pendingLogCancellations: number[];
+  settings?: SystemSettings;
 }
