@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.86)
+// Version Tracker: server.ts (GAP-Flow v1.1.87)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -131,6 +131,12 @@ const systemState: SystemState = {
   firstAssignmentTime: null,
   isCleared: false,
   pendingLogCancellations: [],
+  settings: {
+    phoneLeitstelleName: '',
+    phoneLeitstelleNumber: '',
+    phonePruefungsleitungName: '',
+    phonePruefungsleitungNumber: '',
+  },
 };
 
 let parsedPassword = (process.env.ADMIN_PASSWORD || '').trim();
@@ -714,6 +720,28 @@ app.post('/api/admin/corrections/complete', adminAuth, adminController.correctio
 app.post('/api/admin/corrections/revert', adminAuth, adminController.correctionsRevert);
 app.put('/api/admin/stations/:id/sub_release', adminAuth, adminStationsController.subRelease);
 app.put('/api/admin/stations/:id/sub_assign', adminAuth, adminStationsController.subAssign);
+
+app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
+  const { settings } = req.body || {};
+  if (settings && typeof settings === 'object') {
+    if (!systemState.settings) {
+      systemState.settings = {
+        phoneLeitstelleName: '',
+        phoneLeitstelleNumber: '',
+        phonePruefungsleitungName: '',
+        phonePruefungsleitungNumber: '',
+      };
+    }
+    systemState.settings.phoneLeitstelleName = sanitizeName(settings.phoneLeitstelleName || '', 32);
+    systemState.settings.phoneLeitstelleNumber = sanitizeName(settings.phoneLeitstelleNumber || '', 32);
+    systemState.settings.phonePruefungsleitungName = sanitizeName(settings.phonePruefungsleitungName || '', 32);
+    systemState.settings.phonePruefungsleitungNumber = sanitizeName(settings.phonePruefungsleitungNumber || '', 32);
+
+    commitAndRespond(res, { success: true, settings: systemState.settings });
+  } else {
+    res.status(400).json({ error: 'Ungültige Einstellungen' });
+  }
+});
 
 app.post('/api/admin/stations/clear', adminAuth, adminStationsController.clearStations);
 app.post('/api/admin/stations', adminAuth, adminStationsController.createStation);
