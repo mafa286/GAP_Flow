@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.4) -->
+<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.5) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -134,47 +134,18 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Download Kachel -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
-            <div>
-              <h3 class="text-sm font-bold text-brand uppercase">Code herunterladen</h3>
-              <p class="text-[10px] text-muted leading-normal mt-1">
-                Erstellt ein Live-ZIP-Backup mit der aktuellen <code>server.ts</code>, der <code>package.json</code> und dem vollständigen <code>public/</code>-Verzeichnis.
-              </p>
-            </div>
-            <button @click="downloadSystemBackup()" 
-                    :disabled="isSubmitting"
-                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50">
-              📥 Code-ZIP herunterladen
-            </button>
-          </div>
-
-          <!-- Upload Kachel -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
-            <div>
-              <h3 class="text-sm font-bold text-brand uppercase">Update-ZIP hochladen</h3>
-              <p class="text-[10px] text-muted leading-normal mt-1">
-                Wählen Sie ein geändertes ZIP-Paket aus. Nach dem Upload sichert der Server die Vorgängerversion als <code>backup_previous.zip</code> und startet sich neu.
-              </p>
-            </div>
-            <input type="file" id="system-update-zip-file" name="systemUpdateZipFile" @change="uploadSystemUpdate($event)" 
-                   :disabled="isSubmitting" 
-                   accept=".zip" 
-                   class="block w-full text-xs cursor-pointer focus:outline-none disabled:opacity-50 input-file">
-          </div>
-
+        <div class="max-w-md">
           <!-- Neustart Kachel -->
           <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
             <div>
               <h3 class="text-sm font-bold text-brand uppercase">System neustarten</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Beendet den Serverprozess sofort kontrolliert. Docker startet den Container daraufhin automatisch neu (Dauer: ca. 5–10 Sek.).
+                Beendet den Serverprozess kontrolliert. Docker startet den Container daraufhin neu (Dauer: ca. 2–5 Sek.). Beim Start erstellt das System automatisch ein frisches ZIP-Backup im Backup-Ordner.
               </p>
             </div>
             <button @click="triggerSystemRestart()" 
                     :disabled="isSubmitting"
-                    class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50">
+                    class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow">
               🔄 Server neustarten
             </button>
           </div>
