@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.6)
+// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.7)
 
 import { Request, Response } from 'express';
 import { SystemState, Anwaerter, Group, LogEntry } from './types';
@@ -70,6 +70,12 @@ export async function clearAnwaerter(req: Request, res: Response): Promise<void>
     systemState.autoAllocationActive = false;
     systemState.anwaerter = {};
     systemState.groups = {};
+    systemState.settings = {
+      phoneLeitstelleName: '',
+      phoneLeitstelleNumber: '',
+      phonePruefungsleitungName: '',
+      phonePruefungsleitungNumber: '',
+    };
 
     await dbImmediateSave();
     ioBroadcast();
@@ -134,6 +140,12 @@ export async function batchAnwaerter(req: Request, res: Response): Promise<void>
   systemState.autoAllocationActive = false;
   systemState.anwaerter = {};
   systemState.groups = {};
+  systemState.settings = {
+    phoneLeitstelleName: '',
+    phoneLeitstelleNumber: '',
+    phonePruefungsleitungName: '',
+    phonePruefungsleitungNumber: '',
+  };
 
   const imported: Anwaerter[] = [];
   const seen = new Set<string>();
