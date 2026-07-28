@@ -1,4 +1,4 @@
-// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.3)
+// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.4)
 import fs from 'fs';
 import { SystemState } from './types';
 
@@ -80,6 +80,15 @@ export function loadJsonFallback(
 
     if (loaded.firstAssignmentTime === undefined) {
       loaded.firstAssignmentTime = null;
+    }
+
+    if (loaded.settings) {
+      systemState.settings = {
+        phoneLeitstelleName: loaded.settings.phoneLeitstelleName || '',
+        phoneLeitstelleNumber: loaded.settings.phoneLeitstelleNumber || '',
+        phonePruefungsleitungName: loaded.settings.phonePruefungsleitungName || '',
+        phonePruefungsleitungNumber: loaded.settings.phonePruefungsleitungNumber || '',
+      };
     }
 
     Object.assign(systemState, loaded);
