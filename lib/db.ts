@@ -1,4 +1,4 @@
-// Version Tracker: lib/db.ts (GAP-Flow v1.1.64)
+// Version Tracker: lib/db.ts (GAP-Flow v1.1.65)
 
 import sqlite3 from 'sqlite3';
 import { SystemState, Anwaerter, Group, Station, SubStation, LogEntry } from './types';
@@ -258,6 +258,16 @@ export async function loadStateFromDb(
       if (firstAssignmentRow && firstAssignmentRow.value) {
         systemState.firstAssignmentTime = parseInt(firstAssignmentRow.value, 10);
       }
+
+      const settingsRow = await dbGet<{ value: string }>("SELECT value FROM meta WHERE key = 'system_settings'");
+      if (settingsRow && settingsRow.value) {
+        try {
+          systemState.settings = JSON.parse(settingsRow.value);
+        } catch (e) {
+          console.error('[System-IO] Fehler beim Lesen der System-Einstellungen aus SQLite meta:', e);
+        }
+      }
+
       console.log('[System-IO] Systemzustand aus SQLite-Datenbank geladen.');
     } catch (err) {
       const error = err as Error;
@@ -485,6 +495,9 @@ export function saveStateToStoragePromise(
 
         db?.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', ['auto_allocation_active', clonedState.autoAllocationActive ? '1' : '0'], checkErr);
         db?.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', ['first_assignment_time', clonedState.firstAssignmentTime ? clonedState.firstAssignmentTime.toString() : ''], checkErr);
+        if (clonedState.settings) {
+          db?.run('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)', ['system_settings', JSON.stringify(clonedState.settings)], checkErr);
+        }
 
         db?.run('SELECT 1', () => {
           if (hasError) {
