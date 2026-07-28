@@ -1,4 +1,4 @@
-// Version Tracker: lib/db.ts (GAP-Flow v1.1.65)
+// Version Tracker: lib/db.ts (GAP-Flow v1.1.66)
 
 import sqlite3 from 'sqlite3';
 import { SystemState, Anwaerter, Group, Station, SubStation, LogEntry } from './types';
@@ -129,7 +129,7 @@ export function initializeSystem(
         db.serialize(() => {
           db?.run(`CREATE TABLE IF NOT EXISTS anwaerter (id TEXT PRIMARY KEY, name TEXT, groupId TEXT, active INTEGER DEFAULT 1)`);
           db?.run(`CREATE TABLE IF NOT EXISTS groups (id TEXT PRIMARY KEY, name TEXT, completedStations TEXT, currentStation TEXT, status TEXT, lastStatusChange INTEGER, paused INTEGER DEFAULT 0, active INTEGER DEFAULT 1)`);
-          db?.run(`CREATE TABLE IF NOT EXISTS stations (id TEXT PRIMARY KEY, name TEXT, active INTEGER, multiplier INTEGER)`);
+          db?.run(`CREATE TABLE IF NOT EXISTS stations (id TEXT PRIMARY KEY, name TEXT, active INTEGER, multiplier INTEGER, targetAvgDuration REAL DEFAULT 15.0)`);
           db?.run(`CREATE TABLE IF NOT EXISTS sub_stations (id TEXT PRIMARY KEY, parentId TEXT, examiner TEXT, paused INTEGER, currentGroupId TEXT, token TEXT, startTime INTEGER, active INTEGER DEFAULT 1, reservedGroupId TEXT, deviceToken TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS logs (timestamp INTEGER, groupName TEXT, stationId TEXT, durationMinutes REAL, cancelled INTEGER DEFAULT 0, examiner TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)`);
@@ -142,6 +142,7 @@ export function initializeSystem(
           db?.run('ALTER TABLE sub_stations ADD COLUMN active INTEGER DEFAULT 1', () => {});
           db?.run('ALTER TABLE sub_stations ADD COLUMN reservedGroupId TEXT', () => {});
           db?.run('ALTER TABLE sub_stations ADD COLUMN deviceToken TEXT', () => {});
+          db?.run('ALTER TABLE stations ADD COLUMN targetAvgDuration REAL DEFAULT 15.0', () => {});
 
           loadStateFromDb(dbPath, jsonBackupPath, systemState, getUniqueTimestamp).then(resolve);
         });
@@ -170,7 +171,7 @@ export async function loadStateFromDb(
     try {
       const aRows = await dbAll<Anwaerter & { active: number }>('SELECT * FROM anwaerter');
       const gRows = await dbAll<{ id: string; name: string; completedStations: string; currentStation: string | null; status: string; lastStatusChange: number; paused: number; active: number }>('SELECT * FROM groups');
-      const sRows = await dbAll<{ id: string; name: string; active: number; multiplier: number }>('SELECT * FROM stations');
+      const sRows = await dbAll<{ id: string; name: string; active: number; multiplier: number; targetAvgDuration?: number }>('SELECT * FROM stations');
 
       const hasAnwaerter = aRows && aRows.length > 0;
       const hasGroups = gRows && gRows.length > 0;
@@ -220,6 +221,7 @@ export async function loadStateFromDb(
           name: r.name,
           active: r.active === 1,
           multiplier: r.multiplier,
+          targetAvgDuration: r.targetAvgDuration || 15.0,
           subStations: {},
         };
       });
@@ -443,8 +445,8 @@ export function saveStateToStoragePromise(
         Object.keys(clonedState.stations || {}).forEach((id) => {
           const s = clonedState.stations[id];
           db?.run(
-            'INSERT OR REPLACE INTO stations (id, name, active, multiplier) VALUES (?, ?, ?, ?)',
-            [id, s.name, s.active ? 1 : 0, s.multiplier],
+            'INSERT OR REPLACE INTO stations (id, name, active, multiplier, targetAvgDuration) VALUES (?, ?, ?, ?, ?)',
+            [id, s.name, s.active ? 1 : 0, s.multiplier, s.targetAvgDuration || 15.0],
             checkErr
           );
           if (s.subStations) {
