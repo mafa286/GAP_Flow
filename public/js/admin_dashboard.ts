@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.12)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.13)
 
 interface CalcRowData {
   id: string;
@@ -27,6 +27,7 @@ interface DashboardStation {
   id: string;
   name: string;
   active: boolean;
+  targetAvgDuration?: number;
   stats?: {
     avgDuration: number;
     hasLogs: boolean;
