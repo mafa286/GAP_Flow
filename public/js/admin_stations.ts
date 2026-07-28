@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.8)
+// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.9)
 
 interface ClientSubStation {
   id: string;
@@ -270,8 +270,9 @@ window.adminPanel = function (): Record<string, unknown> {
                 isFirstLine &&
                 (firstColLower.includes('nummer') ||
                   firstColLower.includes('name') ||
+                  firstColLower.includes('dauer') ||
+                  firstColLower.includes('richtzeit') ||
                   firstColLower.includes('prüfer') ||
-                  firstColLower.includes('paralel') ||
                   firstColLower.includes('parallel'))
               ) {
                 isFirstLine = false;
@@ -285,23 +286,11 @@ window.adminPanel = function (): Record<string, unknown> {
 
                 if (!mId || !rawName) return;
 
-                let examiners: string[] = [];
-                if (cols.length >= 3) {
-                  if (cols.length === 3 && cols[2].includes(',')) {
-                    examiners = cols[2]
-                      .split(',')
-                      .map((e) => e.trim())
-                      .filter(Boolean);
-                  } else {
-                    examiners = cols
-                      .slice(2)
-                      .map((e) => e.trim())
-                      .filter(Boolean);
-                  }
-                }
+                const rawAvgDuration = cols.length >= 3 ? parseFloat(cols[2].replace(',', '.')) : 15.0;
+                const targetAvgDuration = (!Number.isNaN(rawAvgDuration) && rawAvgDuration > 0) ? rawAvgDuration : 15.0;
 
-                const multiplier = examiners.length > 0 ? examiners.length : 1;
-                const actualExaminers = examiners.length > 0 ? examiners : [`Prüfer ${mId}.1`];
+                const rawMultiplier = cols.length >= 4 ? parseInt(cols[3], 10) : 1;
+                const multiplier = (!Number.isNaN(rawMultiplier) && rawMultiplier >= 1 && rawMultiplier <= 5) ? rawMultiplier : 1;
 
                 let displayName = rawName;
                 if (!displayName.startsWith(`${mId} -`)) {
@@ -309,25 +298,25 @@ window.adminPanel = function (): Record<string, unknown> {
                 }
 
                 const subStations: Record<string, unknown> = {};
-                actualExaminers.forEach((exName, idx) => {
-                  const subIndex = idx + 1;
-                  const subId = `${mId}.${subIndex}`;
+                for (let idx = 1; idx <= multiplier; idx += 1) {
+                  const subId = `${mId}.${idx}`;
                   subStations[subId] = {
                     id: subId,
                     parentId: mId,
-                    examiner: exName,
+                    examiner: `Prüfer ${subId}`,
                     paused: true,
                     currentGroupId: null,
                     token: subId,
                     startTime: null,
                   };
-                });
+                }
 
                 stationsMap[mId] = {
                   id: mId,
                   name: displayName,
                   active: true,
                   multiplier,
+                  targetAvgDuration,
                   subStations,
                 };
               }
