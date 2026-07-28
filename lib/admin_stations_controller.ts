@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.8)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.9)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -112,6 +112,12 @@ export async function clearStations(req: Request, res: Response): Promise<void> 
     systemState.isCleared = true;
     systemState.autoAllocationActive = false;
     systemState.stations = {};
+    systemState.settings = {
+      phoneLeitstelleName: '',
+      phoneLeitstelleNumber: '',
+      phonePruefungsleitungName: '',
+      phonePruefungsleitungNumber: '',
+    };
 
     await dbImmediateSave();
     ioBroadcast();
@@ -321,6 +327,12 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
   systemState.isCleared = true;
   systemState.autoAllocationActive = false;
   systemState.stations = {};
+  systemState.settings = {
+    phoneLeitstelleName: '',
+    phoneLeitstelleNumber: '',
+    phonePruefungsleitungName: '',
+    phonePruefungsleitungNumber: '',
+  };
 
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
