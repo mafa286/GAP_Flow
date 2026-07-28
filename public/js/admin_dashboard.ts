@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.13)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.14)
 
 interface CalcRowData {
   id: string;
@@ -542,6 +542,8 @@ window.adminPanel = function (): Record<string, unknown> {
         text = `🚫 Zuweisung für Gruppe <span class="font-extrabold" style="color: var(--sig-danger-text) !important;">${escGroup}</span> an Unterstation <span class="font-bold" style="color: var(--sig-danger-text) !important;">${escStation}</span> wurde manuell aufgehoben.`;
       } else if (log.durationMinutes === -10) {
         text = `🤖 Gruppe <span class="font-extrabold text-brand">${escGroup}</span> wurde automatisch Unterstation <span class="font-bold text-brand">${escStation}</span> zugewiesen (Prüfer: ${escFallbackExaminer}).`;
+      } else if (log.durationMinutes === -12) {
+        text = `📌 <span class="font-extrabold text-main">${escExaminer}</span> wurde der Gruppe <span class="font-extrabold text-brand">${escGroup}</span> zugewiesen.`;
       } else {
         const displayStation = escStation.startsWith('Station') ? escStation : `Station ${escStation}`;
         text = `✔ <span class="font-extrabold" style="color: var(--sig-success-text) !important;">${escGroup}</span> hat <span class="text-main font-semibold">${displayStation}</span> bei <span class="text-main font-semibold">${escExaminer}</span> abgeschlossen.`;
