@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.5)
+// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.6)
 
 interface ClientAnwaerter {
   id: string;
@@ -95,6 +95,15 @@ window.adminPanel = function (): Record<string, unknown> {
         .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de', { numeric: true }));
       self._cachedSortedAnwaerter = list;
       return list;
+    },
+
+    /**
+     * Wird beim Laden der Gruppenverwaltung aufgerufen und füllt sofort das Namensfeld mit Heros 01 vor.
+     * @returns {void}
+     */
+    pageInit(): void {
+      const self = this as unknown as AdminGroupsComponent;
+      self.updateDefaultGroupName();
     },
 
     initSocket(): void {
