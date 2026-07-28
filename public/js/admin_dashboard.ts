@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.11)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.12)
 
 interface CalcRowData {
   id: string;
@@ -365,7 +365,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
       activeStations.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
-      const labels = activeStations.map((s) => (s.name.length > 20 ? `${s.name.substring(0, 18)}...` : s.name));
+      const labels = activeStations.map((s) => (s.name.length > 26 ? `${s.name.substring(0, 24)}...` : s.name));
       const remainingTimes: number[] = [];
       const backgroundColors: string[] = [];
 
@@ -397,9 +397,16 @@ window.adminPanel = function (): Record<string, unknown> {
       }
 
       activeStations.forEach((st) => {
-        const stats = st.stats || { avgDuration: 15.0, hasLogs: false, g_rem: 0, n_subs: 1 };
+        let activeSubsCount = 0;
+        if (st.subStations) {
+          activeSubsCount = Object.values(st.subStations).filter((sub: any) => sub.active !== false).length;
+        }
 
-        const { avgDuration, hasLogs, g_rem, n_subs } = stats;
+        const defaultAvg = st.targetAvgDuration || 15.0;
+        const stats = st.stats || { avgDuration: defaultAvg, hasLogs: false, g_rem: 0, n_subs: activeSubsCount || 1 };
+
+        const { avgDuration, hasLogs, g_rem } = stats;
+        const n_subs = stats.n_subs || activeSubsCount || 1;
 
         let tActive = 0;
         let busySubsCount = 0;
