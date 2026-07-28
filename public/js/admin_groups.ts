@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.6)
+// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.7)
 
 interface ClientAnwaerter {
   id: string;
@@ -308,6 +308,7 @@ window.adminPanel = function (): Record<string, unknown> {
                   }
                   alert(msg);
                   self.newGroupName = '';
+                  self.updateDefaultGroupName();
                 } else {
                   alert('Fehler beim Massen-Import.');
                 }
