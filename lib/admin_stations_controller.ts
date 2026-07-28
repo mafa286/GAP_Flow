@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.10)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.11)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -118,6 +118,15 @@ export async function clearStations(req: Request, res: Response): Promise<void> 
       phonePruefungsleitungName: '',
       phonePruefungsleitungNumber: '',
     };
+
+    Object.values(systemState.groups || {}).forEach((group) => {
+      group.completedStations = [];
+      group.currentStation = null;
+      if (group.status !== 'paused') {
+        group.status = 'waiting';
+      }
+      group.lastStatusChange = getUniqueTimestamp();
+    });
 
     await dbImmediateSave();
     ioBroadcast();
@@ -333,6 +342,15 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
   };
+
+  Object.values(systemState.groups || {}).forEach((group) => {
+    group.completedStations = [];
+    group.currentStation = null;
+    if (group.status !== 'paused') {
+      group.status = 'waiting';
+    }
+    group.lastStatusChange = getUniqueTimestamp();
+  });
 
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
