@@ -1,4 +1,4 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.2)
+// Version Tracker: lib/types.ts (GAP-Flow v1.0.3)
 
 /**
  * Repräsentiert einen registrierten Anwärter.
@@ -45,6 +45,7 @@ export interface Station {
   active: boolean;
   multiplier: number;
   subStations: Record<string, SubStation>;
+  targetAvgDuration?: number;
   stats?: StationStats;
 }
 
