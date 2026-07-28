@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.90)
+// Version Tracker: server.ts (GAP-Flow v1.1.91)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -317,7 +317,7 @@ export function calculateStationsStats(): void {
       (log) => !log.cancelled && log.durationMinutes >= 0 && stateFilters.isLogForStation(log, st)
     );
 
-    let avgDuration = 15.0;
+    let avgDuration = st.targetAvgDuration || 15.0;
     let hasLogs = false;
     if (stationLogs.length > 0) {
       avgDuration = stationLogs.reduce((acc, log) => acc + log.durationMinutes, 0) / stationLogs.length;
