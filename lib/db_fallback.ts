@@ -1,4 +1,5 @@
-// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.4)
+// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.5)
+
 import fs from 'fs';
 import { SystemState } from './types';
 
@@ -68,6 +69,9 @@ export function loadJsonFallback(
     if (loaded.stations) {
       Object.keys(loaded.stations).forEach((mId) => {
         const station = loaded.stations[mId];
+        if (station.targetAvgDuration === undefined) {
+          station.targetAvgDuration = 15.0;
+        }
         if (station.subStations) {
           Object.keys(station.subStations).forEach((subId) => {
             const sub = station.subStations[subId];
