@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.71) -->
+<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.72) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Stationen</title>
   <script src="/js/theme_config.js?v=1.1.65"></script>
@@ -80,7 +80,7 @@
           <div class="space-y-3">
             <h2 class="text-sm font-bold text-muted uppercase">Neue Master-Station anlegen</h2>
             <div class="flex gap-2 text-xs">
-              <input type="text" id="new-station-name-input" name="newStationName" x-model="newStationName" maxlength="16" :disabled="isSubmitting" @keydown.enter="addStation()" placeholder="Stationsname (z. B. Station 4)" class="flex-1 px-3 py-2 input-text text-sm disabled:opacity-50">
+              <input type="text" id="new-station-name-input" name="newStationName" x-model="newStationName" maxlength="24" :disabled="isSubmitting" @keydown.enter="addStation()" placeholder="Stationsname (z. B. Station 4)" class="flex-1 px-3 py-2 input-text text-sm disabled:opacity-50">
               <button @click="addStation()" :disabled="isSubmitting" class="px-4 py-2 btn-brand text-sm disabled:opacity-50 disabled:cursor-not-allowed">Hinzufügen</button>
             </div>
           </div>
@@ -98,7 +98,7 @@
           <div class="space-y-2">
             <h3 class="text-sm font-bold text-muted uppercase">Stationen per CSV importieren</h3>
             <p class="text-[10px] text-muted leading-normal">
-              Erstellen Sie eine CSV/TXT-Datei (<code>;</code>-getrennt). Spalten: <code>Nummer; Name; Prüfer1; Prüfer2...</code>
+              Erstellen Sie eine CSV/TXT-Datei (<code>;</code>-getrennt). Spalten: <code>Nummer; Name; Richtzeit (Min); [Anzahl Parallelstationen]</code>
             </p>
           </div>
 
