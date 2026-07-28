@@ -3,8 +3,8 @@
 > **Echtzeit Prüfungs-Management-System mit automatisierter Gruppenzuteilung**  
 > Speziell entwickelt für die praktische Grundausbildungs-Prüfungen im Technischen Hilfswerk (THW), im weitläufigen Gelände.
 
-![Node.js](https://img.shields.io/badge/Node.js-20_LTS-green?style=flat-square&logo=node.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?style=flat-square&logo=typescript)
+![Node.js](https://img.shields.io/badge/Node.js-26_LTS-green?style=flat-square&logo=node.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-7-blue?style=flat-square&logo=typescript)
 ![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker)
 ![License](https://img.shields.io/badge/License-MIT-orange?style=flat-square)
 
