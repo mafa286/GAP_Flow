@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.91)
+// Version Tracker: server.ts (GAP-Flow v1.1.92)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -331,7 +331,7 @@ export function calculateStationsStats(): void {
       avgDuration: parseFloat(avgDuration.toFixed(1)),
       hasLogs,
       g_rem: remainingGroups.length,
-      n_subs: Object.values(st.subStations || {}).filter((sub) => !sub.paused || !!sub.currentGroupId).length || 1,
+      n_subs: Object.values(st.subStations || {}).filter((sub) => sub.active !== false).length || 1,
     };
   });
 }
