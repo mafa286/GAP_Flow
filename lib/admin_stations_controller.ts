@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.9)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.10)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -72,13 +72,13 @@ export function getStationAndSubOrNull(stationId: string, subId: string): Statio
  * @returns {string | null} Der standardisierte Name oder null bei ungültigem Inhalt.
  */
 export function standardizeStationName(id: string, name: string): string | null {
-  const cleanInput = sanitizeName(name, 16);
+  const cleanInput = sanitizeName(name, 24);
   if (!cleanInput) return null;
   let displayName = cleanInput;
   if (!displayName.startsWith(`${id} -`)) {
     displayName = `${id} - ${displayName}`;
   }
-  return displayName.substring(0, 16);
+  return displayName.substring(0, 24);
 }
 
 /**
@@ -358,11 +358,15 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
     const rawMultiplier = parseInt(String(st.multiplier), 10);
     const multiplier = (!Number.isNaN(rawMultiplier) && rawMultiplier >= 1 && rawMultiplier <= 5) ? rawMultiplier : 1;
 
+    const rawTargetAvg = parseFloat(String(st.targetAvgDuration || st.avgDuration || 15));
+    const targetAvgDuration = (!Number.isNaN(rawTargetAvg) && rawTargetAvg > 0) ? parseFloat(rawTargetAvg.toFixed(1)) : 15.0;
+
     systemState.stations[rawId] = {
       id: rawId,
       name: displayName,
       active: !!st.active,
       multiplier,
+      targetAvgDuration,
       subStations: {},
     };
 
