@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.94)
+// Version Tracker: server.ts (GAP-Flow v1.1.95)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -591,10 +591,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
     res.removeHeader('X-Frame-Options');
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
-    if (filePath.toLowerCase().endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache');
+    const lowerPath = filePath.toLowerCase();
+    if (lowerPath.endsWith('.html') || lowerPath.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     } else {
-      // 1 Jahr Caching & immutable für alle statischen JS-, CSS- & Bild-Assets mit Cache-Busting
+      // 1 Jahr Caching & immutable für rein statische Bilder & Schriftarten
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       res.removeHeader('Content-Security-Policy');
     }
