@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.98)
+// Version Tracker: server.ts (GAP-Flow v1.1.99)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -592,33 +592,38 @@ let vapidPrivateKey = '';
 /**
  * Initialisiert das VAPID-Schlüsselpaar für W3C Web Push Notifications.
  */
-async function initVapidKeys(): Promise<void> {
-  const db = dbModule.getDb();
-  if (db && !dbModule.getUseJsonFallback()) {
-    db.get("SELECT value FROM meta WHERE key = 'vapid_public_key'", [], (err, rowPublic: any) => {
-      if (!err && rowPublic && rowPublic.value) {
-        vapidPublicKey = rowPublic.value;
-        db.get("SELECT value FROM meta WHERE key = 'vapid_private_key'", [], (err2, rowPrivate: any) => {
-          if (!err2 && rowPrivate && rowPrivate.value) {
-            vapidPrivateKey = rowPrivate.value;
-            webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-          }
-        });
-      } else {
-        const keys = webpush.generateVAPIDKeys();
-        vapidPublicKey = keys.publicKey;
-        vapidPrivateKey = keys.privateKey;
-        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
-        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
-        webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-      }
-    });
-  } else {
-    const keys = webpush.generateVAPIDKeys();
-    vapidPublicKey = keys.publicKey;
-    vapidPrivateKey = keys.privateKey;
-    webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-  }
+function initVapidKeys(): Promise<void> {
+  return new Promise((resolve) => {
+    const db = dbModule.getDb();
+    if (db && !dbModule.getUseJsonFallback()) {
+      db.get("SELECT value FROM meta WHERE key = 'vapid_public_key'", [], (err, rowPublic: any) => {
+        if (!err && rowPublic && rowPublic.value) {
+          vapidPublicKey = rowPublic.value;
+          db.get("SELECT value FROM meta WHERE key = 'vapid_private_key'", [], (err2, rowPrivate: any) => {
+            if (!err2 && rowPrivate && rowPrivate.value) {
+              vapidPrivateKey = rowPrivate.value;
+              webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+            }
+            resolve();
+          });
+        } else {
+          const keys = webpush.generateVAPIDKeys();
+          vapidPublicKey = keys.publicKey;
+          vapidPrivateKey = keys.privateKey;
+          db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
+          db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
+          webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+          resolve();
+        }
+      });
+    } else {
+      const keys = webpush.generateVAPIDKeys();
+      vapidPublicKey = keys.publicKey;
+      vapidPrivateKey = keys.privateKey;
+      webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+      resolve();
+    }
+  });
 }
 
 /**
@@ -642,6 +647,7 @@ export async function sendWebPushNotification(roleTarget: string, payload: Recor
       };
 
       webpush.sendNotification(sub, payloadStr).catch((pushErr) => {
+        console.error('[WebPush Error]', pushErr.statusCode, pushErr.message);
         if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
           db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
         }
