@@ -431,7 +431,7 @@ function examiner(): ExaminerComponent {
 
             if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then((reg) => {
-                reg.showNotification(data.title || 'GAP-Flow Benachrichtigung', {
+                const options: any = {
                   body: data.body || '',
                   icon: '/manifest.json',
                   badge: '/manifest.json',
@@ -442,7 +442,8 @@ function examiner(): ExaminerComponent {
                   actions: [
                     { action: 'deactivate', title: '⚙ Einstellungen' },
                   ],
-                });
+                };
+                reg.showNotification(data.title || 'GAP-Flow Benachrichtigung', options);
               }).catch((err) => {
                 console.error('[PWA Notification Error]', err);
               });
