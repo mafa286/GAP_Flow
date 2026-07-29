@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.68)
+// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.69)
 
 interface AdminSocketIoClient {
   disconnect: () => void;
@@ -30,6 +30,7 @@ interface AdminPanelBase {
   stopInactivityTimer(): void;
   login(): Promise<void>;
   verifyAndLoad(isToken?: boolean): void;
+  fetchAdminStatus(): Promise<Record<string, unknown> | null>;
   toggleAutoAllocation(state: boolean): Promise<void>;
   exportCSV(): Promise<void>;
   connectSocket(stateUpdateCallback?: (state: Record<string, unknown>) => void): void;
@@ -255,6 +256,32 @@ interface AdminPanelBase {
         .catch((e) => {
           console.error(e);
         });
+    },
+
+    /**
+     * Lädt den Zustand der Admin-Ansicht direkt per HTTP REST-API (Fallback & Initialer Sofortload).
+     * @returns {Promise<Record<string, unknown> | null>} Geladener Zustand oder null bei Fehler.
+     */
+    async fetchAdminStatus(): Promise<Record<string, unknown> | null> {
+      let pageContext = 'dashboard';
+      const path = window.location.pathname;
+      if (path.includes('admin_groups.html')) {
+        pageContext = 'groups';
+      } else if (path.includes('admin_stations.html')) {
+        pageContext = 'stations';
+      }
+
+      try {
+        const res = await fetch(`/api/admin/${pageContext}/status`, {
+          headers: { Authorization: this.password },
+        });
+        if (res.ok) {
+          return (await res.json()) as Record<string, unknown>;
+        }
+      } catch (e) {
+        console.error('REST-API Status-Laden fehlgeschlagen:', e);
+      }
+      return null;
     },
 
     async toggleAutoAllocation(state: boolean): Promise<void> {
