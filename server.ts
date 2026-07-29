@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.99)
+// Version Tracker: server.ts (GAP-Flow v1.2.0)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -949,4 +949,3 @@ dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimes
     fileProcessor.createAutoBackupZip();
   });
 });
-  startNotificationDaemon();
