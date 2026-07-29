@@ -768,8 +768,70 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   }
 });
 
+/**
+ * Automatisierter Hintergrund-Daemon für Inaktivitäts-, Richtzeit- & Prüfungsende-Erinnerungen.
+ */
+function startNotificationDaemon(): void {
+  setInterval(() => {
+    if (!systemState) return;
+
+    try {
+      // 1. Scanne Inaktivitäten & Richtzeit-Überschreitungen
+      const reminders = allocatorModule.scanReminderEvents(systemState);
+
+      // Inaktivitäts-Pushs (30 Min / +10 Min)
+      reminders.inactives.forEach((inactive) => {
+        socketsModule.broadcastNotification({
+          type: `inactivity-${inactive.subId}`,
+          title: 'Prüfungsleitstand: Inaktivitäts-Erinnerung',
+          body: `Station ${inactive.subId} seit ${inactive.pausedMinutes} Min. pausiert. Bist du bereit für die nächste Gruppe?`,
+          vibrate: [200, 100, 200],
+          actions: [{ action: 'end_pause', title: '▶️ Pause beenden' }],
+          timestamp: Date.now(),
+        });
+      });
+
+      // Richtzeit-Überschreitungs-Pushs (+10 Min über Durchschnitt)
+      reminders.overtimes.forEach((ot) => {
+        socketsModule.broadcastNotification({
+          type: `overtime-${ot.subId}`,
+          title: '⏱️ Richtzeit-Hinweis',
+          body: `Gruppe ${ot.groupName} seit ${ot.overtimeMinutes} Min. über Durchschnitt in der Prüfung!`,
+          vibrate: [200, 100, 200],
+          actions: [{ action: 'deactivate', title: '⚙ deaktivieren?' }],
+          timestamp: Date.now(),
+        });
+      });
+
+      // 2. Automatisches Gesamt-Prüfungsende
+      const activeMasterIds = allocatorModule.getActiveMasterIds(systemState);
+      const activeGroups = Object.values(systemState.groups || {}).filter((g) => g.active !== false);
+
+      if (
+        activeMasterIds.length > 0 &&
+        activeGroups.length > 0 &&
+        activeGroups.every((g) => activeMasterIds.every((mId) => (g.completedStations || []).includes(mId)))
+      ) {
+        if (!systemState.isCleared && !systemState._examFinishedNotificationSent) {
+          systemState._examFinishedNotificationSent = true;
+          socketsModule.broadcastNotification({
+            type: 'exam-finished',
+            title: '🏆 PRÜFUNGEN BEENDET!',
+            body: 'Alle Gruppen haben sämtliche Stationen absolviert.',
+            vibrate: [300, 100, 300, 100, 300, 100, 600],
+            timestamp: Date.now(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[Notification Daemon] Fehler im Erinnerungslauf:', err);
+    }
+  }, 60000);
+}
+
 dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimestamp).then(() => {
   calculateStationsStats();
+  startNotificationDaemon();
   server.listen(PORT, () => {
     console.log(`Prüfungs-Management-System läuft aktiv auf Port ${PORT}`);
     fileProcessor.createAutoBackupZip();
