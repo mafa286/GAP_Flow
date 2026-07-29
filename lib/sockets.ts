@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.64)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.65)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -65,6 +65,39 @@ export function init(
     const role = auth.role as string | undefined;
 
     if (role === 'admin') {
+      const rawSecret = (auth.password || auth.token) as string | string[] | undefined;
+      const secret = Array.isArray(rawSecret) ? rawSecret[0] : rawSecret;
+      if (secret && (secret.trim() === adminPassword || secret.trim() === getAdminSessionToken())) {
+        socket.role = 'admin';
+        return next();
+      }
+      return next(new Error('Authentication error'));
+    }
+
+    if (role === 'beamer') {
+      socket.role = 'beamer';
+      return next();
+    }
+
+    if (role === 'examiner') {
+      const rawToken = auth.token as string | string[] | undefined;
+      const token = Array.isArray(rawToken) ? rawToken[0] : rawToken;
+      if (token && isValidExaminerToken(token)) {
+        socket.role = 'examiner';
+        socket.token = token;
+        socket.deviceToken = (auth.deviceToken as string) || null;
+        return next();
+      }
+      return next(new Error('Authentication error'));
+    }
+
+    return next(new Error('Invalid role'));
+  });
+
+  io.on('connection', (socket: AuthenticatedSocket) => {
+    const role = socket.role;
+
+    if (role === 'admin') {
       const page = (socket.handshake.auth.page as string) || 'dashboard';
 
       if (page === 'groups') {
@@ -111,6 +144,16 @@ export function init(
   });
 
   return io;
+}
+
+/**
+ * Broadcastet eine System-Benachrichtigung an alle verbundenen Sockets.
+ * @param {Record<string, unknown>} payload - Die Benachrichtigungsdaten.
+ * @returns {void}
+ */
+export function broadcastNotification(payload: Record<string, unknown>): void {
+  if (!io) return;
+  io.emit('systemNotification', payload);
 }
 
 /**
