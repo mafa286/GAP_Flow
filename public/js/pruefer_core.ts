@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.15)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.16)
 
 interface GroupMember {
   name: string;
@@ -687,6 +687,7 @@ function examiner(): ExaminerComponent {
           const data = (await response.json()) as { deviceToken: string };
           localStorage.setItem('device_token', data.deviceToken);
           this.initSocket();
+          await this.fetchStatus();
         } else {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
           alert(errData.error || 'Fehler beim Belegen der Station.');
@@ -713,7 +714,8 @@ function examiner(): ExaminerComponent {
 
         if (response.ok) {
           localStorage.removeItem('device_token');
-          window.location.href = window.location.href;
+          this.initSocket();
+          await this.fetchStatus();
         } else {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
           alert(errData.error || 'Abmeldung fehgeschlagen.');
