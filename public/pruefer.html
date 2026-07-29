@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.86) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.87) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -420,6 +420,18 @@
           <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
                 x-text="phonePruefungsleitungName ? phonePruefungsleitungName : 'Kein Name hinterlegt'"></span>
         </button>
+
+        <!-- Dringender Rückrufwunsch an Leitstelle -->
+        <button @click="showFunctionsMenu = false; requestCallback('leitstelle');"
+                class="w-full py-2.5 btn-sig-orange flex items-center justify-center gap-2 shadow transition active:scale-95">
+          <span class="text-xs font-black uppercase tracking-wider">🚨 Rückruf Leitstelle anfordern</span>
+        </button>
+
+        <!-- Dringender Rückrufwunsch an Prüfungsleitung -->
+        <button @click="showFunctionsMenu = false; requestCallback('pruefungsleitung');"
+                class="w-full py-2.5 btn-sig-orange flex items-center justify-center gap-2 shadow transition active:scale-95">
+          <span class="text-xs font-black uppercase tracking-wider">🚨 Rückruf Prüfungsleitung anfordern</span>
+        </button>
         
         <!-- Berechtigungen prüfen -->
         <button @click="showFunctionsMenu = false; checkPermissions(); showPermissionsModal = true;"
@@ -435,6 +447,44 @@
       </div>
 
       <button @click="showFunctionsMenu = false" class="w-full py-2 mt-2 app-card-accent text-muted font-bold text-xs uppercase tracking-wider">
+        Schließen
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: BENACHRICHTIGUNGS-EINSTELLUNGEN -->
+  <div x-show="showNotificationSettingsModal" 
+       class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main">
+      <div class="flex justify-between items-center border-b border-main pb-3">
+        <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
+          <span>🔔</span> Benachrichtigungen
+        </h3>
+        <button @click="showNotificationSettingsModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+      </div>
+
+      <p class="text-muted text-xs leading-relaxed text-left">
+        Verwalten Sie hier die Einstellungen für System-Benachrichtigungen und Signaltöne im Gelände.
+      </p>
+
+      <div class="space-y-3 pt-2 text-left text-xs">
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-black text-main">🔔 Push-Benachrichtigungen</span>
+            <span class="font-mono font-bold text-[11px]"
+                  :style="notificationPermissionStatus === 'granted' ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-warning-text) !important;'"
+                  x-text="notificationPermissionStatus === 'granted' ? 'Aktiv ✅' : 'Deaktiviert ⚠️'"></span>
+          </div>
+          <p class="text-[10px] text-muted">Empfang von Zuteilungs-Alarmen und Rückrufwünschen im Standby.</p>
+          <button x-show="notificationPermissionStatus !== 'granted'" 
+                  @click="requestNotificationPermission()" 
+                  class="w-full mt-2 py-1.5 btn-brand text-[10px] uppercase font-bold">
+            🔔 Benachrichtigungen aktivieren
+          </button>
+        </div>
+      </div>
+
+      <button @click="showNotificationSettingsModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
         Schließen
       </button>
     </div>
