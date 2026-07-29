@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.26)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.27)
 
 interface GroupMember {
   name: string;
@@ -271,23 +271,45 @@ function examiner(): ExaminerComponent {
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();
 
-        if (!sub) {
-          const urlBase64ToUint8Array = (base64String: string) => {
-            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; i += 1) {
-              outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-          };
+        const urlBase64ToUint8Array = (base64String: string) => {
+          const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+          const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; i += 1) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          return outputArray;
+        };
 
-          const options: any = {
+        const newKeyBytes = urlBase64ToUint8Array(publicKey);
+
+        if (sub) {
+          const existingKey = sub.options.applicationServerKey;
+          if (existingKey) {
+            const existingKeyArray = new Uint8Array(existingKey);
+            let match = existingKeyArray.length === newKeyBytes.length;
+            if (match) {
+              for (let i = 0; i < newKeyBytes.length; i += 1) {
+                if (existingKeyArray[i] !== newKeyBytes[i]) {
+                  match = false;
+                  break;
+                }
+              }
+            }
+            if (!match) {
+              console.log('[PWA Web Push] VAPID Key aktualisiert. Erneuere Push-Subscription...');
+              await sub.unsubscribe();
+              sub = null;
+            }
+          }
+        }
+
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey),
-          };
-          sub = await reg.pushManager.subscribe(options);
+            applicationServerKey: newKeyBytes,
+          });
         }
 
         const subRes = await fetch('/api/examiner/push-subscription', {
@@ -304,6 +326,8 @@ function examiner(): ExaminerComponent {
         });
         if (subRes.ok) {
           console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert:', sub.endpoint);
+        } else {
+          console.warn('[PWA Web Push] Server-Registrierung fehlgeschlagen, Status:', subRes.status);
         }
       } catch (e) {
         console.error('[PWA Web Push] Registrierungsfehler:', e);
