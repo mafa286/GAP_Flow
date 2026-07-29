@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.97)
+// Version Tracker: server.ts (GAP-Flow v1.1.98)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -392,12 +392,40 @@ export const ioBroadcast = (): void => {
   );
 };
 
-export const allocatorCheck = (): boolean => allocatorModule.checkAndAssignIdleStations(
-  systemState,
-  getUniqueTimestamp,
-  dbScheduleSave,
-  ioBroadcast
-);
+export const allocatorCheck = (): boolean => {
+  const allocationOccurred = allocatorModule.checkAndAssignIdleStations(
+    systemState,
+    getUniqueTimestamp,
+    dbScheduleSave,
+    ioBroadcast
+  );
+
+  if (allocationOccurred) {
+    // Sende Zuteilungs-Push mit Anwärternamen an zugewiesene Stationen
+    Object.values(systemState.stations || {}).forEach((master) => {
+      if (!master || !master.subStations) return;
+      Object.values(master.subStations).forEach((sub) => {
+        if (sub.currentGroupId && sub.startTime && (Date.now() - sub.startTime) < 2000) {
+          const group = systemState.groups[sub.currentGroupId];
+          if (group) {
+            const memberNames = allocatorModule.getGroupMemberNames(group.id, systemState);
+            const memberListStr = memberNames.length > 0 ? `\n${memberNames.join('\n')}` : '';
+
+            socketsModule.broadcastNotification({
+              type: `allocation-${sub.id}`,
+              title: '📥 Prüfungsleitstand: Neue Zuteilung!',
+              body: `Gruppe ${group.name} wurde der Station ${sub.id} zugewiesen!${memberListStr}`,
+              vibrate: [300, 100, 300, 100, 300],
+              timestamp: Date.now(),
+            });
+          }
+        }
+      });
+    });
+  }
+
+  return allocationOccurred;
+};
 
 const waitForIoAndExit = (): void => {
   if (dbModule.getIsSaving()) {
