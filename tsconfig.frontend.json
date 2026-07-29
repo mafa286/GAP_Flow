@@ -1,5 +1,4 @@
 // Version Tracker: tsconfig.frontend.json (GAP-Flow v1.0.0)
-
 {
   "compilerOptions": {
     "target": "ES2020",
