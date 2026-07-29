@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.2)
+// Version Tracker: server.ts (GAP-Flow v1.2.3)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -596,6 +596,19 @@ let vapidPrivateKey = '';
 /**
  * Initialisiert das VAPID-Schlüsselpaar für W3C Web Push Notifications.
  */
+function generateAndSaveVapidKeys(db: any, resolve: () => void): void {
+  const keys = webpush.generateVAPIDKeys();
+  vapidPublicKey = keys.publicKey;
+  vapidPrivateKey = keys.privateKey;
+  if (db && !dbModule.getUseJsonFallback()) {
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
+  }
+  webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+  console.log('[WebPush] Neues VAPID Schlüsselpaar generiert und aktiviert.');
+  resolve();
+}
+
 function initVapidKeys(): Promise<void> {
   return new Promise((resolve) => {
     const db = dbModule.getDb();
@@ -607,25 +620,18 @@ function initVapidKeys(): Promise<void> {
             if (!err2 && rowPrivate && rowPrivate.value) {
               vapidPrivateKey = rowPrivate.value;
               webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+              console.log('[WebPush] VAPID Schlüsselpaar aus Datenbank geladen.');
+              resolve();
+            } else {
+              generateAndSaveVapidKeys(db, resolve);
             }
-            resolve();
           });
         } else {
-          const keys = webpush.generateVAPIDKeys();
-          vapidPublicKey = keys.publicKey;
-          vapidPrivateKey = keys.privateKey;
-          db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
-          db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
-          webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-          resolve();
+          generateAndSaveVapidKeys(db, resolve);
         }
       });
     } else {
-      const keys = webpush.generateVAPIDKeys();
-      vapidPublicKey = keys.publicKey;
-      vapidPrivateKey = keys.privateKey;
-      webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-      resolve();
+      generateAndSaveVapidKeys(null, resolve);
     }
   });
 }
@@ -641,16 +647,22 @@ export async function sendWebPushNotification(
   const db = dbModule.getDb();
   if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
 
-  let query = 'SELECT * FROM push_subscriptions WHERE (role = ? OR ? = "all")';
+  let query = "SELECT * FROM push_subscriptions WHERE (role = ? OR ? = 'all')";
   const params: unknown[] = [roleTarget, roleTarget];
 
   if (targetSubId) {
-    query += ' AND (targetId = ? OR targetId = "" OR targetId IS NULL)';
+    query += " AND (targetId = ? OR targetId = '' OR targetId IS NULL)";
     params.push(targetSubId);
   }
 
   db.all(query, params, (err, rows: any[]) => {
-    if (err || !rows) return;
+    if (err) {
+      console.error('[WebPush SQL Fehler]', err.message);
+      return;
+    }
+    if (!rows || rows.length === 0) return;
+
+    console.log(`[WebPush] Sende Push an ${rows.length} Abonnenten (Rolle: ${roleTarget}, TargetId: ${targetSubId || 'alle'})`);
     const payloadStr = JSON.stringify(payload);
 
     rows.forEach((r) => {
@@ -663,7 +675,7 @@ export async function sendWebPushNotification(
       };
 
       webpush.sendNotification(sub, payloadStr).catch((pushErr) => {
-        console.error('[WebPush Error]', pushErr.statusCode, pushErr.message);
+        console.error('[WebPush Zustellungsfehler]', pushErr.statusCode, pushErr.message);
         if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
           db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
         }
