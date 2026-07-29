@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.89) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.90) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -110,7 +110,7 @@
        :style="isPaused && isRegistered && isAuthorized ? 'background-color: var(--sig-warning-bg) !important;' : ''">
               
       <!-- 2.A: REGISTRIERUNGSMASKE (Standard-Anmeldung - Falls kein Geräte-Token auf dem Server registriert ist) (DSGVO) -->
-      <div x-show="!isClaimed" class="app-card p-6 text-center space-y-5 border-main my-auto flex flex-col justify-center items-center h-full relative">
+      <div x-show="!isClaimed && !renderLock" class="app-card p-6 text-center space-y-5 border-main my-auto flex flex-col justify-center items-center h-full relative">
         <!-- Integrierter Theme-Toggle in der oberen rechten Ecke der Karte -->
         <div class="absolute top-3 right-3">
           <button @click="window.toggleTheme()" class="p-2 app-card-accent hover:opacity-85 rounded-lg transition" title="Farbschema umschalten">
@@ -138,7 +138,7 @@
       </div>
 
       <!-- 2.B: GESPERRT-ANZEIGE (Falls Station besetzt & an ein anderes Gerät gekoppelt ist) (DSGVO) -->
-      <template x-if="isClaimed && !isAuthorized">
+      <template x-if="isClaimed && !isAuthorized && !renderLock">
         <div class="app-card p-6 text-center space-y-5 border-main my-auto flex flex-col justify-center items-center h-full relative card-sig-danger">
           <!-- Integrierter Theme-Toggle in der oberen rechten Ecke der Karte -->
           <div class="absolute top-3 right-3">
@@ -158,7 +158,7 @@
       </template>
 
       <!-- 2.C: REGULÄRES PRÜFER-PANEL (Falls registriert und autorisiert) -->
-      <template x-if="isRegistered && isAuthorized">
+      <template x-if="isRegistered && isAuthorized && !renderLock">
         <div class="h-full flex flex-col justify-between">
           <!-- HEADER: Zweizeilige strukturierte Oberzeile -->
           <div class="app-card p-3 flex flex-col shrink-0 gap-2.5">
@@ -215,7 +215,7 @@
           <div class="flex-1 min-h-0 flex flex-col justify-center my-3 relative">
             
             <!-- Zustand 1: Ein Team ist aktiv in der Prüfung -->
-            <template x-if="currentGroup">
+            <template x-if="currentGroup && !renderLock">
               <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden">
                 <div class="flex justify-between items-start text-sm md:text-base text-muted uppercase font-black tracking-wide border-b border-main pb-2">
                   <div class="flex flex-col text-left leading-tight">
@@ -273,7 +273,7 @@
             </template>
               
             <!-- Zustand 2: Keine Zuweisung & Wartend -->
-            <template x-if="!currentGroup && !isPaused && remainingGroups > 0">
+            <template x-if="!currentGroup && !isPaused && remainingGroups > 0 && !renderLock">
               <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden">
                 <div class="flex-1 flex flex-col justify-center items-center space-y-4 py-8">
                   <template x-if="reservedGroupName">
@@ -302,7 +302,7 @@
             </template>
                         
             <!-- Zustand 3: Alle Prüfungen beendet -->
-            <template x-if="!currentGroup && remainingGroups === 0">
+            <template x-if="!currentGroup && remainingGroups === 0 && !renderLock">
               <div class="app-card p-6 text-center space-y-4 border-main py-12 flex flex-col justify-center items-center h-full">
                 <div class="text-5xl animate-bounce">🎉</div>
                 <div>
@@ -313,7 +313,7 @@
             </template>
                 
             <!-- Zustand 4: Manuell pausiert -->
-            <template x-if="!currentGroup && isPaused && remainingGroups > 0">
+            <template x-if="!currentGroup && isPaused && remainingGroups > 0 && !renderLock">
               <div class="app-card p-4 flex flex-col justify-between h-full border-main overflow-hidden" style="background-color: var(--sig-warning-bg) !important;">
                 <div class="flex-1 flex flex-col justify-center items-center space-y-2 py-8">
                   <div class="text-4xl">⛔</div>
