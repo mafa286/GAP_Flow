@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.12)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.13)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,9 +6,12 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const CACHE_NAME = 'gap-flow-v6';
+const CACHE_NAME = 'gap-flow-v7';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/manifest.json',
   '/js/theme_config.js',
   '/js/audio_engine.js',
   '/js/gap_flow_utils.js',
