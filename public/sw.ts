@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.9)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.10)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -120,10 +120,10 @@ sw.addEventListener('push', (event: any) => {
       body: payload.body || '',
       icon: payload.icon || '/manifest.json',
       badge: payload.badge || '/manifest.json',
-      tag: payload.tag || 'gap-flow-notification',
+      tag: payload.tag || payload.type || 'gap-flow-notification',
       renotify: payload.renotify !== false,
       vibrate: payload.vibrate || [200, 100, 200],
-      data: payload.data || {},
+      data: payload.data || payload,
       actions: payload.actions || [],
     };
 
