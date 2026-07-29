@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.25)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.26)
 
 interface GroupMember {
   name: string;
@@ -93,6 +93,7 @@ interface ExaminerComponent {
   appInstalledSuccessfully: boolean;
   isCompiling: boolean;
   _lastInfoSoundTime: number;
+  _lastSubscribedSubId?: string;
 
   showFunctionsMenu: boolean;
   showPermissionsModal: boolean;
@@ -190,6 +191,7 @@ function examiner(): ExaminerComponent {
     appInstalledSuccessfully: false,
     isCompiling: false,
     _lastInfoSoundTime: 0,
+    _lastSubscribedSubId: '',
 
     showFunctionsMenu: false,
     showPermissionsModal: false,
