@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.21)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.22)
 
 interface GroupMember {
   name: string;
@@ -410,6 +410,43 @@ function examiner(): ExaminerComponent {
             setTimeout(() => {
               this.renderLock = false;
             }, 0);
+          });
+
+          // Empfang von Echtzeit-Systembenachrichtigungen, Rundrufen & Alarmen
+          window.examinerSocket.on('systemNotification', (payload: unknown) => {
+            const data = payload as { title?: string; body?: string; vibrate?: number[]; type?: string };
+            if (!data) return;
+
+            if (this.soundUnlocked) {
+              this.playInfoSound();
+            }
+
+            if ('vibrate' in navigator && data.vibrate) {
+              try {
+                navigator.vibrate(data.vibrate);
+              } catch (e) {
+                console.warn('[PWA] Vibration vom Gerät blockiert:', e);
+              }
+            }
+
+            if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then((reg) => {
+                reg.showNotification(data.title || 'GAP-Flow Benachrichtigung', {
+                  body: data.body || '',
+                  icon: '/manifest.json',
+                  badge: '/manifest.json',
+                  tag: data.type || 'system-notification',
+                  renotify: true,
+                  vibrate: data.vibrate || [300, 100, 300],
+                  data,
+                  actions: [
+                    { action: 'deactivate', title: '⚙ Einstellungen' },
+                  ],
+                });
+              }).catch((err) => {
+                console.error('[PWA Notification Error]', err);
+              });
+            }
           });
         }
       } catch (e) {
