@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.96)
+// Version Tracker: server.ts (GAP-Flow v1.1.97)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -25,93 +25,7 @@ export interface AuthenticatedExaminerRequest extends Request {
   masterStation?: Station;
 }
 
-// Low-Level HTTP Header-Patching: Bereinigt Socket.io/Engine.io Polling-Header & veraltete Direktiven für WebHint
-const originalSetHeader = http.ServerResponse.prototype.setHeader;
-http.ServerResponse.prototype.setHeader = function (name: string, value: unknown) {
-  // WICHTIG: Socket.io / Engine.io Handshake- & Polling-Header niemals manipulieren!
-  const reqUrl = (this.req && typeof this.req.url === 'string') ? this.req.url : '';
-  if (reqUrl.includes('/socket.io/')) {
-    return originalSetHeader.call(this, name, value as any);
-  }
-
-  if (typeof name === 'string') {
-    const lowerName = name.toLowerCase();
-
-    // 1. Verhindere das Setzen veralteter Header (X-Frame-Options, Expires)
-    if (lowerName === 'x-frame-options' || lowerName === 'expires') {
-      return this;
-    }
-
-    // 2. Bereinige Cache-Control von IE-Direktiven (post-check=0, pre-check=0), no-store, private und must-revalidate
-    if (lowerName === 'cache-control' && typeof value === 'string') {
-      let cleanCache = value
-        .replace(/post-check=\d+/gi, '')
-        .replace(/pre-check=\d+/gi, '')
-        .replace(/no-store/gi, '')
-        .replace(/must-revalidate/gi, '')
-        .replace(/private/gi, '')
-        .replace(/max-age=0/gi, '')
-        .replace(/,\s*,/g, ',')
-        .replace(/^,\s*|\s*,\s*$/g, '')
-        .trim();
-      if (!cleanCache || cleanCache === 'no-cache') cleanCache = 'no-cache';
-      return originalSetHeader.call(this, name, cleanCache);
-    }
-
-    // 3. Garantiere X-Content-Type-Options & charset=utf-8 bei text/*
-    if (lowerName === 'content-type' && typeof value === 'string') {
-      originalSetHeader.call(this, 'X-Content-Type-Options', 'nosniff');
-      if (value.startsWith('text/') && !value.toLowerCase().includes('charset')) {
-        return originalSetHeader.call(this, name, `${value}; charset=utf-8`);
-      }
-    }
-  }
-  return originalSetHeader.call(this, name, value as any);
-};
-
-const originalWriteHead = http.ServerResponse.prototype.writeHead;
-http.ServerResponse.prototype.writeHead = function (this: http.ServerResponse, statusCode: number, ...args: unknown[]) {
-  // WICHTIG: Socket.io / Engine.io Handshake- & Polling-Header niemals manipulieren!
-  const reqUrl = (this.req && typeof this.req.url === 'string') ? this.req.url : '';
-  if (reqUrl.includes('/socket.io/')) {
-    return (originalWriteHead as Function).apply(this, [statusCode, ...args]);
-  }
-
-  this.removeHeader('X-Frame-Options');
-  this.removeHeader('Expires');
-  this.setHeader('X-Content-Type-Options', 'nosniff');
-
-  args.forEach((arg) => {
-    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
-      const headerObj = arg as Record<string, unknown>;
-      Object.keys(headerObj).forEach((key) => {
-        const lowerKey = key.toLowerCase();
-        if (lowerKey === 'x-frame-options' || lowerKey === 'expires') {
-          delete headerObj[key];
-        } else if (lowerKey === 'cache-control' && typeof headerObj[key] === 'string') {
-          let cleanCache = (headerObj[key] as string)
-            .replace(/post-check=\d+/gi, '')
-            .replace(/pre-check=\d+/gi, '')
-            .replace(/no-store/gi, 'no-cache')
-            .replace(/must-revalidate/gi, '')
-            .replace(/,\s*,/g, ',')
-            .replace(/^,\s*|\s*,\s*$/g, '')
-            .trim();
-          if (!cleanCache) cleanCache = 'no-cache';
-          headerObj[key] = cleanCache;
-        } else if (lowerKey === 'content-type' && typeof headerObj[key] === 'string') {
-          const val = headerObj[key] as string;
-          if (val.startsWith('text/') && !val.toLowerCase().includes('charset')) {
-            headerObj[key] = `${val}; charset=utf-8`;
-          }
-        }
-      });
-    }
-  });
-
-  return (originalWriteHead as Function).apply(this, [statusCode, ...args]);
-};
-
+// Standardisierte HTTP Express Middleware (Bypass für Node.js Native Core Response Prototypen)
 const app = express();
 const server = http.createServer(app);
 
