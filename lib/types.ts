@@ -1,4 +1,4 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.4)
+// Version Tracker: lib/types.ts (GAP-Flow v1.0.5)
 
 /**
  * Repräsentiert einen registrierten Anwärter.
@@ -99,6 +99,7 @@ export interface SystemState {
   isCleared: boolean;
   pendingLogCancellations: number[];
   settings?: SystemSettings;
+  _examFinishedNotificationSent?: boolean;
 }
 
 /**
