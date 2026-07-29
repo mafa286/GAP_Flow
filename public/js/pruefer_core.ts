@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.20)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.21)
 
 interface GroupMember {
   name: string;
