@@ -106,6 +106,7 @@ interface ExaminerComponent {
   
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
+  subscribeToWebPush(): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
   requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void;
   init(): void;
