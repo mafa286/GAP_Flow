@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.67)
+// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.68)
 
 interface AdminSocketIoClient {
   disconnect: () => void;
@@ -240,7 +240,7 @@ interface AdminPanelBase {
           this.authenticated = true;
           this.authError = false;
 
-          if (!isToken && data.token) {
+          if (data.token) {
             localStorage.setItem('admin_token', data.token);
             this.password = data.token;
           }
