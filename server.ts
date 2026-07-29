@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.5)
+// Version Tracker: server.ts (GAP-Flow v1.2.6)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -671,6 +671,14 @@ export async function sendWebPushNotification(
 
     const payloadStr = JSON.stringify(payload);
 
+    // High Priority Header (Urgency: high, TTL: 86400) für sofortiges Aufwachen im Android Doze-Modus
+    const pushOptions = {
+      TTL: 86400,
+      headers: {
+        Urgency: 'high',
+      },
+    };
+
     rows.forEach((r) => {
       const sub = {
         endpoint: r.endpoint,
@@ -690,7 +698,7 @@ export async function sendWebPushNotification(
       }
 
       webpush
-        .sendNotification(sub, payloadStr)
+        .sendNotification(sub, payloadStr, pushOptions)
         .then((res) => {
           console.log(
             `[WebPush Erfolgreich] ID: ${r.id} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | Status: ${res.statusCode} | Titel: "${pushTitle}"`
