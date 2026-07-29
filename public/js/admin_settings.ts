@@ -1,13 +1,23 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.4)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.5)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
  */
+interface CallbackItem {
+  target: string;
+  subId: string;
+  examinerName: string;
+  phoneNumber: string;
+  timestamp: number;
+}
+
 interface AdminSettingsComponent {
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
   phonePruefungsleitungName: string;
   phonePruefungsleitungNumber: string;
+  broadcastText: string;
+  incomingCallbacks: CallbackItem[];
   isSubmitting: boolean;
   password: string;
   showUpdateStatusModal: boolean;
@@ -16,6 +26,11 @@ interface AdminSettingsComponent {
 
   initSocket(): void;
   saveSettings(): Promise<void>;
+  sendLeitstelleCallback(): Promise<void>;
+  sendPruefungsleitungCallback(): Promise<void>;
+  sendBroadcastMessage(): Promise<void>;
+  sendErgebnisbekanntgabe(): Promise<void>;
+  dismissCallback(index: number): void;
   triggerSystemRestart(): Promise<void>;
   pollServerPing(): Promise<void>;
   getUpdateTitle(): string;
@@ -30,6 +45,8 @@ window.adminPanel = function (): Record<string, unknown> {
     phoneLeitstelleNumber: '',
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
+    broadcastText: '',
+    incomingCallbacks: [] as CallbackItem[],
     isSubmitting: false,
     showUpdateStatusModal: false,
     updateStep: '',
@@ -44,6 +61,134 @@ window.adminPanel = function (): Record<string, unknown> {
         self.phonePruefungsleitungName = settings.phonePruefungsleitungName || '';
         self.phonePruefungsleitungNumber = settings.phonePruefungsleitungNumber || '';
       });
+
+      if (window.adminSocket) {
+        window.adminSocket.on('callbackRequested', (data: unknown) => {
+          const item = data as CallbackItem;
+          self.incomingCallbacks.unshift(item);
+        });
+      }
+    },
+
+    /**
+     * Sendet den Aufruf "Rückruf Leitstelle" an alle Prüfer-Smartphones im Gelände.
+     */
+    async sendLeitstelleCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (!confirm('Soll ein dringender Rückrufwunsch der LEITSTELLE an alle Prüfer gesendet werden?')) return;
+      
+      self.isSubmitting = true;
+      try {
+        await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'callback_leitstelle',
+            title: '🚨 LEITSTELLE BITTET UM RÜCKRUF!',
+            body: 'Bitte wähle die Leitstelle über den Menü-Button.',
+            vibrate: [500, 150, 500, 150, 500, 300, 1000],
+          }),
+        });
+        alert('Rückrufwunsch wurde gesendet.');
+      } catch (e) {
+        console.error(e);
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
+     * Sendet den Aufruf "Rückruf Prüfungsleitung" an alle Prüfer-Smartphones im Gelände.
+     */
+    async sendPruefungsleitungCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (!confirm('Soll ein dringender Rückrufwunsch der PRÜFUNGSLEITUNG an alle Prüfer gesendet werden?')) return;
+
+      self.isSubmitting = true;
+      try {
+        await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'callback_pruefungsleitung',
+            title: '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF!',
+            body: 'Bitte wähle die Prüfungsleitung über den Menü-Button.',
+            vibrate: [500, 150, 500, 150, 500, 300, 1000],
+          }),
+        });
+        alert('Rückrufwunsch wurde gesendet.');
+      } catch (e) {
+        console.error(e);
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
+     * Sendet einen individuellen Rundruf-Text an alle Prüfer.
+     */
+    async sendBroadcastMessage(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      const text = self.broadcastText.trim();
+      if (!text) return;
+
+      self.isSubmitting = true;
+      try {
+        await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'broadcast',
+            title: '📢 Rundruf der Prüfungsleitung',
+            body: text,
+            vibrate: [300, 100, 300, 100, 300],
+          }),
+        });
+        self.broadcastText = '';
+        alert('Rundruf wurde erfolgreich gesendet.');
+      } catch (e) {
+        console.error(e);
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
+     * Sendet die Benachrichtigung zur Ergebnisbekanntgabe.
+     */
+    async sendErgebnisbekanntgabe(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (!confirm('Soll die Ergebnisbekanntgabe an alle Geräte ausgerufen werden?')) return;
+
+      self.isSubmitting = true;
+      try {
+        await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'result_announcement',
+            title: '🏆 ERGEBNISBEKANNTGABE!',
+            body: 'Alle Ergebnisse sind ausgewertet! Bitte alle in den Sammelraum für die Ergebnisbekanntgabe.',
+            vibrate: [300, 100, 300, 100, 300, 100, 600],
+          }),
+        });
+        alert('Ergebnisbekanntgabe wurde gesendet.');
+      } catch (e) {
+        console.error(e);
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
+     * Quittiert einen eingehenden Rückrufwunsch im Leitstand.
+     * @param {number} index - Index des Listenelements.
+     */
+    dismissCallback(index: number): void {
+      const self = this as unknown as AdminSettingsComponent;
+      if (index >= 0 && index < self.incomingCallbacks.length) {
+        self.incomingCallbacks.splice(index, 1);
+      }
     },
 
     /**
