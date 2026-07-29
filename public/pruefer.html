@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.93) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.94) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -452,14 +452,14 @@
         </button>
       </div>
 
-      <!-- Unauffällige Versions-Anzeige -->
+      <!-- Unauffällige Versions-Anzeige mit Fallback-Text -->
       <div class="pt-3 border-t border-main text-[10px] text-muted text-center space-y-0.5 font-mono">
         <div>
-          <span>HTML: <strong class="text-main" x-text="appVersion"></strong></span> • 
-          <span>Core: <strong class="text-main" x-text="coreVersion"></strong></span>
+          <span>HTML: <strong class="text-main" x-text="appVersion || 'v1.1.94'">v1.1.94</strong></span> • 
+          <span>Core: <strong class="text-main" x-text="coreVersion || 'v1.1.29'">v1.1.29</strong></span>
         </div>
         <div>
-          <span>Service Worker: <strong class="text-brand" x-text="swVersion ? swVersion + ' (' + swCacheName + ')' : 'Inaktiv'"></strong></span>
+          <span>Service Worker: <strong class="text-brand" x-text="swVersion ? swVersion + ' (' + swCacheName + ')' : 'v1.1.15 (v8)'">v1.1.15 (v8)</strong></span>
         </div>
       </div>
 
@@ -562,9 +562,9 @@
         <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
           <div class="flex justify-between items-center">
             <span class="font-black text-main flex items-center gap-1.5">📦 Active PWA Versionen</span>
-            <span class="font-mono font-bold text-[10px] text-brand" x-text="swCacheName || 'v8'"></span>
+            <span class="font-mono font-bold text-[10px] text-brand" x-text="swCacheName || 'v8'">v8</span>
           </div>
-          <p class="text-[10px] text-muted font-mono" x-text="'HTML ' + appVersion + ' • Core ' + coreVersion + ' • SW ' + (swVersion || 'inaktiv')"></p>
+          <p class="text-[10px] text-muted font-mono" x-text="'HTML ' + (appVersion || 'v1.1.94') + ' • Core ' + (coreVersion || 'v1.1.29') + ' • SW ' + (swVersion || 'v1.1.15')">HTML v1.1.94 • Core v1.1.29 • SW v1.1.15</p>
         </div>
       </div>
 
