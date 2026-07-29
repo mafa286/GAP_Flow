@@ -1,4 +1,4 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.3)
+// Version Tracker: lib/types.ts (GAP-Flow v1.0.4)
 
 /**
  * Repräsentiert einen registrierten Anwärter.
@@ -99,4 +99,57 @@ export interface SystemState {
   isCleared: boolean;
   pendingLogCancellations: number[];
   settings?: SystemSettings;
+}
+
+/**
+ * Push-Subscription Schlüssel für die W3C Web Push API.
+ */
+export interface PushSubscriptionKeys {
+  p256dh: string;
+  auth: string;
+}
+
+/**
+ * Web Push Subscription Datenstrukturen zur Speicherung in der Datenbank.
+ */
+export interface PushSubscriptionData {
+  endpoint: string;
+  keys: PushSubscriptionKeys;
+  role: 'examiner' | 'admin' | 'pruefungsleitung' | 'leitstelle';
+  targetId?: string;
+}
+
+/**
+ * Aktions-Button in einer PWA-Push-Benachrichtigung.
+ */
+export interface NotificationAction {
+  action: string;
+  title: string;
+  icon?: string;
+}
+
+/**
+ * Einheitliches Payload-Format für Push-Benachrichtigungen.
+ */
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  renotify?: boolean;
+  vibrate?: number[];
+  data?: Record<string, unknown>;
+  actions?: NotificationAction[];
+}
+
+/**
+ * Sprechwunsch-Anforderung von einer Prüfstation an die Leitung.
+ */
+export interface CallbackRequest {
+  target: 'leitstelle' | 'pruefungsleitung';
+  subId: string;
+  examinerName: string;
+  phoneNumber: string;
+  timestamp: number;
 }
