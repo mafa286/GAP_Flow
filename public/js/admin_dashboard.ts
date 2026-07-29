@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.15)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.16)
 
 interface CalcRowData {
   id: string;
@@ -175,6 +175,7 @@ window.adminPanel = function (): Record<string, unknown> {
         self.firstAssignmentTime = state.firstAssignmentTime || null;
 
         setTimeout(() => {
+          self._cachedFilteredLogs = null;
           self.updateChart();
           self.renderLock = false;
         }, 0);
