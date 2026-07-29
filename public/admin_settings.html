@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.6) -->
+<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.7) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -125,7 +125,92 @@
         </div>
       </div>
 
-      <!-- SEKTION 2: SYSTEM-NEUSTART & AUTOMATISCHES BACKUP -->
+      <!-- SEKTION 2: SYSTEM-BENACHRICHTIGUNGEN, RUNDRUFE & SPRECHWÜNSCHE -->
+      <div class="app-card p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-main">2. System-Benachrichtigungen &amp; Rundrufe</h2>
+          <p class="text-xs text-muted leading-relaxed">
+            Senden Sie manuelle Benachrichtigungen und Alarmierungen per Push &amp; WebSockets an die Prüfer-Smartphones im Gelände.
+          </p>
+        </div>
+
+        <!-- Eingehende Sprechwünsche Banner -->
+        <div x-show="incomingCallbacks.length > 0" class="p-4 rounded-lg border border-main space-y-3" style="background-color: var(--sig-warning-bg) !important;" x-cloak>
+          <h3 class="text-sm font-black uppercase flex items-center gap-2" style="color: var(--sig-warning-text) !important;">
+            <span class="animate-bounce">🚨</span> Eingehende Rückrufwünsche aus dem Gelände (<span x-text="incomingCallbacks.length"></span>)
+          </h3>
+          <div class="space-y-2">
+            <template x-for="(cb, idx) in incomingCallbacks" :key="idx">
+              <div class="p-3 app-card flex justify-between items-center">
+                <div>
+                  <span class="font-bold text-main text-xs block" x-text="'Station ' + cb.subId + ' (' + cb.examinerName + ')'"></span>
+                  <span class="text-[10px] text-muted block" x-text="'Ziel: ' + (cb.target === 'pruefungsleitung' ? 'Prüfungsleitung' : 'Leitstelle')"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <a :href="'tel:' + cb.phoneNumber" class="px-3 py-1.5 btn-sig-green text-xs font-bold uppercase tracking-wider rounded flex items-center gap-1">
+                    📞 Jetzt Anrufen
+                  </a>
+                  <button @click="dismissCallback(idx)" class="px-2 py-1.5 app-card-accent text-xs font-bold rounded">✕</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dringender Rückruf Leitstelle -->
+          <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">🚨 Rückruf Leitstelle</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Fordert alle Prüfer im Gelände mit BOS-Vibrationsmuster auf, die Leitstelle anzurufen.
+              </p>
+            </div>
+            <button @click="sendLeitstelleCallback()" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
+              🚨 Leitstellen-Rückruf senden
+            </button>
+          </div>
+
+          <!-- Dringender Rückruf Prüfungsleitung -->
+          <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">🚨 Rückruf Prüfungsleitung</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Fordert alle Prüfer im Gelände mit BOS-Vibrationsmuster auf, die Prüfungsleitung anzurufen.
+              </p>
+            </div>
+            <button @click="sendPruefungsleitungCallback()" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
+              🚨 Prüfungsleitungs-Rückruf senden
+            </button>
+          </div>
+
+          <!-- Ergebnisbekanntgabe -->
+          <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">🏆 Ergebnisbekanntgabe</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Ruft alle Prüfer und Anwärter nach Auswertung aller Daten in den Sammelraum.
+              </p>
+            </div>
+            <button @click="sendErgebnisbekanntgabe()" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-green text-xs font-black uppercase tracking-wider shadow">
+              🏆 Ergebnisbekanntgabe ausrufen
+            </button>
+          </div>
+        </div>
+
+        <!-- Rundruf Nachrichting -->
+        <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main">
+          <h3 class="text-sm font-bold text-brand uppercase">📢 Rundruf an alle Prüfer</h3>
+          <div class="flex gap-3">
+            <input type="text" x-model="broadcastText" placeholder="z. B. Verpflegung: Nach der aktuellen Gruppe zur Pause an die Verpflegungsstelle!" class="flex-1 px-3 py-2 input-text text-sm">
+            <button @click="sendBroadcastMessage()" :disabled="isSubmitting || !broadcastText.trim()" class="px-6 py-2 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow">
+              📢 Senden
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKTION 3: SYSTEM-NEUSTART & AUTOMATISCHES BACKUP -->
       <div class="app-card p-6 space-y-6">
         <div>
           <h2 class="text-xl font-bold text-main">2. System-Neustart &amp; Automatisches Backup</h2>
