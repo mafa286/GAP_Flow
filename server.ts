@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.93)
+// Version Tracker: server.ts (GAP-Flow v1.1.94)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -726,6 +726,18 @@ app.post('/api/examiner/pause_immediate', authenticateExaminer, (req: Authentica
 
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
 app.post('/api/admin/verify_token', adminController.verifyToken);
+
+app.get('/api/admin/dashboard/status', adminAuth, (_req: Request, res: Response) => {
+  res.json(getAdminDashboardState());
+});
+
+app.get('/api/admin/groups/status', adminAuth, (_req: Request, res: Response) => {
+  res.json(getAdminGroupsState());
+});
+
+app.get('/api/admin/stations/status', adminAuth, (_req: Request, res: Response) => {
+  res.json(getAdminStationsState());
+});
 
 app.post('/api/admin/logs/revert', adminAuth, adminController.revertLog);
 
