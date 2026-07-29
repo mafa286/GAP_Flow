@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.0)
+// Version Tracker: server.ts (GAP-Flow v1.2.1)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -460,7 +460,7 @@ socketsModule.init(
   getAdminStationsState
 );
 allocatorModule.init({ writeSystemLog });
-allocatorModule.startAutoUnpauseDaemon(systemState, getUniqueTimestamp, dbScheduleSave, ioBroadcast);
+allocatorModule.startAutoUnpauseDaemon(systemState, dbScheduleSave, ioBroadcast);
 
 fileProcessor.init({ systemState, dbDir: DB_DIR, backupDir: BACKUP_DIR, appDir: __dirname, shutdown });
 
