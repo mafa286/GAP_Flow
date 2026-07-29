@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.24)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.25)
 
 interface GroupMember {
   name: string;
@@ -474,7 +474,7 @@ function examiner(): ExaminerComponent {
             }, 0);
           });
 
-          // Empfang von Echtzeit-Systembenachrichtigungen, Rundrufen & Alarmen
+          // Empfang von Echtzeit-Systembenachrichtigungen & in-app Feedback
           window.examinerSocket.on('systemNotification', (payload: unknown) => {
             const data = payload as { title?: string; body?: string; vibrate?: number[]; type?: string };
             if (!data) return;
@@ -491,7 +491,9 @@ function examiner(): ExaminerComponent {
               }
             }
 
-            if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+            // Fallback für OS-Banner nur wenn Web Push (PushManager) nicht unterstützt oder inaktiv ist
+            const hasWebPush = 'PushManager' in window && 'serviceWorker' in navigator;
+            if (!hasWebPush && 'Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then((reg) => {
                 const options: any = {
                   body: data.body || '',
@@ -529,6 +531,7 @@ function examiner(): ExaminerComponent {
       const oldGroupId = this.currentGroup ? this.currentGroup.id : null;
       const oldPaused = this.isPaused;
 
+      const oldSubId = this.subId;
       this.subId = data.subStation.id;
       this.examinerName = data.subStation.examiner;
       this.masterName = data.masterName;
@@ -543,6 +546,13 @@ function examiner(): ExaminerComponent {
       this.isRegistered = data.isRegistered || false;
       this.isAuthorized = data.isAuthorized || false;
       this.isClaimed = data.isClaimed || false;
+
+      if (this.subId && (this.subId !== oldSubId || !this._lastSubscribedSubId)) {
+        this._lastSubscribedSubId = this.subId;
+        if ('Notification' in window && Notification.permission === 'granted') {
+          this.subscribeToWebPush();
+        }
+      }
 
       if (data.settings) {
         this.phoneLeitstelleName = data.settings.phoneLeitstelleName || '';
