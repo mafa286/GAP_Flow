@@ -1,8 +1,6 @@
-// Version Tracker: package.json (GAP-Flow v1.0.2)
-
 {
   "name": "GAP-Flow",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Echtzeit GA-Prüfungs-Management-System mit automatisierter Gruppenzuteilung",
   "main": "server.ts",
   "license": "MIT",
