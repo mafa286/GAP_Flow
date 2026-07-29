@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.27)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.28)
 
 interface GroupMember {
   name: string;
@@ -104,7 +104,12 @@ interface ExaminerComponent {
   phonePruefungsleitungName: string;
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
+  appVersion: string;
+  coreVersion: string;
+  swVersion: string;
+  swCacheName: string;
   
+  forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
   subscribeToWebPush(): Promise<void>;
@@ -202,6 +207,34 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
+    appVersion: 'v1.1.93',
+    coreVersion: 'v1.1.28',
+    swVersion: '',
+    swCacheName: '',
+
+    /**
+     * Erzwingt ein Leeren des lokalen PWA-Caches und lädt die Anwendung frisch vom Server.
+     */
+    async forceAppUpdate(): Promise<void> {
+      if (!confirm('Soll der lokale PWA-Cache geleert und die App neu vom Server geladen werden?')) return;
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.unregister();
+          }
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (const key of keys) {
+            await caches.delete(key);
+          }
+        }
+      } catch (e) {
+        console.error('Fehler beim Leeren des Caches:', e);
+      }
+      window.location.reload();
+    },
 
     /**
      * Sendet eine sofortige Rückrufanforderung an die Leitstelle oder Prüfungsleitung.
@@ -413,11 +446,25 @@ function examiner(): ExaminerComponent {
       }
 
       if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+          if (event.data && event.data.type === 'SW_VERSION_RESPONSE') {
+            this.swVersion = event.data.version || '';
+            this.swCacheName = event.data.cacheName || '';
+          }
+        });
+
+        const requestSwVersion = () => {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+          }
+        };
+
         window.addEventListener('load', () => {
           navigator.serviceWorker
             .register('/sw.js')
             .then((reg) => {
               console.log('[PWA] Service Worker erfolgreich registriert:', reg.scope);
+              requestSwVersion();
             })
             .catch((err) => {
               console.error('[PWA] Service Worker Registrierung fehlgeschlagen:', err);
@@ -430,6 +477,10 @@ function examiner(): ExaminerComponent {
           refreshing = true;
           window.location.reload();
         });
+
+        setTimeout(() => {
+          requestSwVersion();
+        }, 1000);
       }
 
       if (window.prueferPwaHelper) {
