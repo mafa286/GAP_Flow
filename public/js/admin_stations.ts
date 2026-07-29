@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.10)
+// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.11)
 
 interface ClientSubStation {
   id: string;
@@ -130,16 +130,28 @@ window.adminPanel = function (): Record<string, unknown> {
       },
 
       initSocket(): void {
-      const self = this as unknown as AdminStationsComponent;
+      const self = this as unknown as AdminStationsComponent & { fetchAdminStatus(): Promise<any> };
+
+      // 1. Sofortiger HTTP REST Load für 100 % Lade-Garantie
+      self.fetchAdminStatus().then((state) => {
+        if (state) {
+          self._cachedStationList = null;
+          self.groups = state.groups || {};
+          self.stations = state.stations || {};
+          self.autoAllocationActive = !!state.autoAllocationActive;
+        }
+      });
+
+      // 2. WebSocket Live-Stream für Echtzeit-Updates
       self.connectSocket((state) => {
         self._cachedStationList = null;
         const cleanState = JSON.parse(JSON.stringify(state));
 
         self.renderLock = true;
 
-        self.groups = cleanState.groups;
-        self.autoAllocationActive = cleanState.autoAllocationActive;
-        self.stations = cleanState.stations;
+        self.groups = cleanState.groups || {};
+        self.autoAllocationActive = !!cleanState.autoAllocationActive;
+        self.stations = cleanState.stations || {};
 
         setTimeout(() => {
           self.renderLock = false;
