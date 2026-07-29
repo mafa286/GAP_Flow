@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.17)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.18)
 
 interface CalcRowData {
   id: string;
@@ -166,7 +166,7 @@ window.adminPanel = function (): Record<string, unknown> {
       // 2. WebSocket Live-Stream
       self.connectSocket((state) => {
         self._cachedFilteredLogs = null;
-        self.renderLock = false;
+        self.renderLock = true;
 
         self.groups = state.groups || {};
         self.stations = state.stations || {};
@@ -174,7 +174,11 @@ window.adminPanel = function (): Record<string, unknown> {
         self.autoAllocationActive = !!state.autoAllocationActive;
         self.firstAssignmentTime = state.firstAssignmentTime || null;
 
-        self.updateChart();
+        setTimeout(() => {
+          self._cachedFilteredLogs = null;
+          self.updateChart();
+          self.renderLock = false;
+        }, 0);
       });
     },
 
