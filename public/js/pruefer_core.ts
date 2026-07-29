@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.23)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.24)
 
 interface GroupMember {
   name: string;
@@ -281,10 +281,11 @@ function examiner(): ExaminerComponent {
             return outputArray;
           };
 
-          sub = await reg.pushManager.subscribe({
+          const options: any = {
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicKey),
-          });
+          };
+          sub = await reg.pushManager.subscribe(options);
         }
 
         const subRes = await fetch('/api/examiner/push-subscription', {
