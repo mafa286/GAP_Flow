@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.14)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.15)
 
 interface GroupMember {
   name: string;
@@ -97,6 +97,7 @@ interface ExaminerComponent {
   showFunctionsMenu: boolean;
   showPermissionsModal: boolean;
   showGuideModal: boolean;
+  showNotificationSettingsModal: boolean;
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
   phonePruefungsleitungName: string;
@@ -106,6 +107,7 @@ interface ExaminerComponent {
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
+  requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void;
   init(): void;
   isIOS(): boolean;
   triggerAndroidInstallPrompt(): void;
@@ -191,11 +193,35 @@ function examiner(): ExaminerComponent {
     showFunctionsMenu: false,
     showPermissionsModal: false,
     showGuideModal: false,
+    showNotificationSettingsModal: false,
     phoneLeitstelleName: '',
     phoneLeitstelleNumber: '',
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
+
+    /**
+     * Sendet eine sofortige Rückrufanforderung an die Leitstelle oder Prüfungsleitung.
+     * @param {'leitstelle' | 'pruefungsleitung'} target - Das Ziel der Rückrufanforderung.
+     * @returns {void}
+     */
+    requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void {
+      const targetName = target === 'pruefungsleitung' ? 'Prüfungsleitung' : 'Leitstelle';
+      if (!confirm(`Möchten Sie wirklich einen dringenden Rückruf durch die ${targetName} anfordern?`)) return;
+
+      const myPhone = target === 'pruefungsleitung' ? this.phonePruefungsleitungNumber : this.phoneLeitstelleNumber;
+      if (window.examinerSocket && window.examinerSocket.connected) {
+        window.examinerSocket.emit('requestCallback', {
+          target,
+          subId: this.subId,
+          examinerName: this.examinerName,
+          phoneNumber: myPhone || '',
+        });
+        alert(`🚨 Rückrufwunsch an die ${targetName} wurde erfolgreich übermittelt!`);
+      } else {
+        alert('Keine Verbindung zum Server. Rückrufwunsch konnte nicht übermittelt werden.');
+      }
+    },
     
     /**
      * Überprüft den aktuellen Berechtigungsstatus im Browser (z.B. System-Push-Benachrichtigungen).
@@ -280,6 +306,10 @@ function examiner(): ExaminerComponent {
       };
       document.addEventListener('click', silentUnlock);
       document.addEventListener('touchend', silentUnlock);
+
+      if (window.location.hash === '#settings-notifications') {
+        this.showNotificationSettingsModal = true;
+      }
 
       if (this.token) {
         this.fetchStatus();
