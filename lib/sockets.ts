@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.62)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.63)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -53,7 +53,12 @@ export function init(
   getAdminGroupsState: GetAdminStateFn,
   getAdminStationsState: GetAdminStateFn
 ): Server {
-  io = new Server(server, { cors: { origin: '*' } });
+  io = new Server(server, {
+    cors: { origin: '*' },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 20000,
+    pingInterval: 10000,
+  });
 
   io.use((socket: AuthenticatedSocket, next) => {
     const auth = socket.handshake.auth || {};
