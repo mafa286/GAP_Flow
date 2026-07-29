@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.22)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.23)
 
 interface GroupMember {
   name: string;
@@ -287,7 +287,7 @@ function examiner(): ExaminerComponent {
           });
         }
 
-        await fetch('/api/examiner/push-subscription', {
+        const subRes = await fetch('/api/examiner/push-subscription', {
           method: 'POST',
           headers: {
             Authorization: this.token,
@@ -299,7 +299,9 @@ function examiner(): ExaminerComponent {
             targetId: this.subId,
           }),
         });
-        console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert.');
+        if (subRes.ok) {
+          console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert:', sub.endpoint);
+        }
       } catch (e) {
         console.error('[PWA Web Push] Registrierungsfehler:', e);
       }
