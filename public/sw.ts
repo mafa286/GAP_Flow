@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.14)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.15)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -56,12 +56,15 @@ sw.addEventListener('activate', (event: any) => {
  */
 sw.addEventListener('message', (event: any) => {
   if (event.data && event.data.type === 'GET_VERSION') {
-    if (event.source && event.source.postMessage) {
-      event.source.postMessage({
-        type: 'SW_VERSION_RESPONSE',
-        version: SW_VERSION,
-        cacheName: CACHE_NAME,
-      });
+    const response = {
+      type: 'SW_VERSION_RESPONSE',
+      version: SW_VERSION,
+      cacheName: CACHE_NAME,
+    };
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage(response);
+    } else if (event.source && event.source.postMessage) {
+      event.source.postMessage(response);
     }
   }
 });
