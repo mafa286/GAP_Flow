@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.10)
+// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.11)
 
 interface ClientAnwaerter {
   id: string;
@@ -125,12 +125,18 @@ window.adminPanel = function (): Record<string, unknown> {
       self.connectSocket((state) => {
         self._cachedSortedGroups = null;
         self._cachedSortedAnwaerter = null;
-        self.renderLock = false;
+        self.renderLock = true;
 
         self.anwaerter = state.anwaerter || {};
         self.groups = state.groups || {};
         self.autoAllocationActive = !!state.autoAllocationActive;
         self.updateDefaultGroupName();
+
+        setTimeout(() => {
+          self._cachedSortedGroups = null;
+          self._cachedSortedAnwaerter = null;
+          self.renderLock = false;
+        }, 0);
       });
     },
 
