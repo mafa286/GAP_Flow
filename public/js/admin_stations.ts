@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.13)
+// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.14)
 
 interface ClientSubStation {
   id: string;
@@ -147,10 +147,15 @@ window.adminPanel = function (): Record<string, unknown> {
         self._cachedStationList = null;
         const cleanState = JSON.parse(JSON.stringify(state));
 
-        self.renderLock = false;
+        self.renderLock = true;
         self.groups = cleanState.groups || {};
         self.autoAllocationActive = !!cleanState.autoAllocationActive;
         self.stations = cleanState.stations || {};
+
+        setTimeout(() => {
+          self._cachedStationList = null;
+          self.renderLock = false;
+        }, 0);
       });
     },
 
