@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.4)
+// Version Tracker: server.ts (GAP-Flow v1.2.5)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -417,6 +417,9 @@ export const allocatorCheck = (): boolean => {
               tag: `allocation-${sub.id}`,
               title: '📥 Prüfungsleitstand: Neue Zuteilung!',
               body: `Gruppe ${group.name} wurde der Station ${sub.id} zugewiesen!${memberListStr}`,
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              url: '/pruefer.html',
               vibrate: [300, 100, 300, 100, 300],
               timestamp: Date.now(),
             };
@@ -900,8 +903,12 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
   const { type, title, body, vibrate } = req.body || {};
   const notificationPayload = {
     type: type || 'broadcast',
+    tag: type || 'broadcast',
     title: sanitizeContactName(title || '', 64),
     body: sanitizeName(body || '', 256),
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    url: '/pruefer.html',
     vibrate: Array.isArray(vibrate) ? vibrate : [300, 100, 300],
     timestamp: getUniqueTimestamp(),
   };
@@ -947,6 +954,9 @@ function startNotificationDaemon(): void {
           tag: `inactivity-${inactive.subId}`,
           title: 'Prüfungsleitstand: Inaktivitäts-Erinnerung',
           body: `Station ${inactive.subId} seit ${inactive.pausedMinutes} Min. pausiert. Bist du bereit für die nächste Gruppe?`,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          url: '/pruefer.html',
           vibrate: [200, 100, 200],
           actions: [{ action: 'end_pause', title: '▶️ Pause beenden' }],
           timestamp: Date.now(),
@@ -962,6 +972,9 @@ function startNotificationDaemon(): void {
           tag: `overtime-${ot.subId}`,
           title: '⏱️ Richtzeit-Hinweis',
           body: `Gruppe ${ot.groupName} seit ${ot.overtimeMinutes} Min. über Durchschnitt in der Prüfung!`,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          url: '/pruefer.html',
           vibrate: [200, 100, 200],
           actions: [{ action: 'deactivate', title: '⚙ deaktivieren?' }],
           timestamp: Date.now(),
@@ -986,6 +999,9 @@ function startNotificationDaemon(): void {
             tag: 'exam-finished',
             title: '🏆 PRÜFUNGEN BEENDET!',
             body: 'Alle Gruppen haben sämtliche Stationen absolviert.',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            url: '/pruefer.html',
             vibrate: [300, 100, 300, 100, 300, 100, 600],
             timestamp: Date.now(),
           };
