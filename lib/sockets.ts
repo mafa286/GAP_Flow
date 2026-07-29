@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.63)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.64)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -148,7 +148,7 @@ export function broadcastState(
         const roomKey = `room_examiner_${token}`;
 
         const socketsInRoom = io?.sockets.adapter.rooms.get(roomKey);
-        if (socketsInRoom) {
+        if (socketsInRoom && socketsInRoom.size > 0) {
           for (const socketId of socketsInRoom) {
             const clientSocket = io?.sockets.sockets.get(socketId) as AuthenticatedSocket | undefined;
             if (clientSocket) {
@@ -157,6 +157,11 @@ export function broadcastState(
                 clientSocket.emit('stateUpdate', examinerState);
               }
             }
+          }
+        } else {
+          const fallbackState = getFlatExaminerState(token, null);
+          if (fallbackState) {
+            io?.to(roomKey).emit('stateUpdate', fallbackState);
           }
         }
       });
