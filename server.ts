@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import webpush from 'web-push';
 
 import { SystemState, Station, SubStation, Group, LogEntry } from './lib/types';
 import * as dbModule from './lib/db';
@@ -585,10 +586,113 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction): void
   }
 };
 
+let vapidPublicKey = '';
+let vapidPrivateKey = '';
+
+/**
+ * Initialisiert das VAPID-Schlüsselpaar für W3C Web Push Notifications.
+ */
+async function initVapidKeys(): Promise<void> {
+  const db = dbModule.getDb();
+  if (db && !dbModule.getUseJsonFallback()) {
+    db.get("SELECT value FROM meta WHERE key = 'vapid_public_key'", [], (err, rowPublic: any) => {
+      if (!err && rowPublic && rowPublic.value) {
+        vapidPublicKey = rowPublic.value;
+        db.get("SELECT value FROM meta WHERE key = 'vapid_private_key'", [], (err2, rowPrivate: any) => {
+          if (!err2 && rowPrivate && rowPrivate.value) {
+            vapidPrivateKey = rowPrivate.value;
+            webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+          }
+        });
+      } else {
+        const keys = webpush.generateVAPIDKeys();
+        vapidPublicKey = keys.publicKey;
+        vapidPrivateKey = keys.privateKey;
+        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
+        db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
+        webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+      }
+    });
+  } else {
+    const keys = webpush.generateVAPIDKeys();
+    vapidPublicKey = keys.publicKey;
+    vapidPrivateKey = keys.privateKey;
+    webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+  }
+}
+
+/**
+ * Sendet eine W3C Web Push Benachrichtigung an registrierte Geräte.
+ */
+export async function sendWebPushNotification(roleTarget: string, payload: Record<string, unknown>): Promise<void> {
+  const db = dbModule.getDb();
+  if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
+
+  db.all('SELECT * FROM push_subscriptions WHERE role = ? OR ? = "all"', [roleTarget, roleTarget], (err, rows: any[]) => {
+    if (err || !rows) return;
+    const payloadStr = JSON.stringify(payload);
+
+    rows.forEach((r) => {
+      const sub = {
+        endpoint: r.endpoint,
+        keys: {
+          p256dh: r.keys_p256dh,
+          auth: r.keys_auth,
+        },
+      };
+
+      webpush.sendNotification(sub, payloadStr).catch((pushErr) => {
+        if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+          db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
+        }
+      });
+    });
+  });
+}
+
 app.get('/api/ping', (_req: Request, res: Response) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'no-cache');
   res.json({ status: 'ok' });
+});
+
+app.get('/api/push/vapid-public-key', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.json({ publicKey: vapidPublicKey });
+});
+
+app.post('/api/examiner/push-subscription', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
+  const { subscription, role, targetId } = req.body || {};
+  if (!subscription || !subscription.endpoint || !subscription.keys) {
+    res.status(400).json({ error: 'Ungültige Subscription' });
+    return;
+  }
+
+  const db = dbModule.getDb();
+  if (db && !dbModule.getUseJsonFallback()) {
+    const id = crypto.createHash('sha256').update(subscription.endpoint).digest('hex').substring(0, 16);
+    db.run(
+      'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [
+        id,
+        subscription.endpoint,
+        subscription.keys.p256dh,
+        subscription.keys.auth,
+        role || 'examiner',
+        targetId || req.subStation?.id || '',
+        Date.now(),
+      ],
+      (err) => {
+        if (err) {
+          res.status(500).json({ error: 'Speicherfehler' });
+        } else {
+          res.json({ success: true });
+        }
+      }
+    );
+  } else {
+    res.json({ success: true });
+  }
 });
 
 app.post('/api/examiner/register', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
@@ -747,6 +851,7 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
   };
 
   socketsModule.broadcastNotification(notificationPayload);
+  sendWebPushNotification('all', notificationPayload);
   res.json({ success: true });
 });
 
@@ -829,11 +934,13 @@ function startNotificationDaemon(): void {
   }, 60000);
 }
 
-dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimestamp).then(() => {
+dbModule.initializeSystem(DB_PATH, JSON_BACKUP_PATH, systemState, getUniqueTimestamp).then(async () => {
   calculateStationsStats();
   startNotificationDaemon();
+  await initVapidKeys();
   server.listen(PORT, () => {
     console.log(`Prüfungs-Management-System läuft aktiv auf Port ${PORT}`);
     fileProcessor.createAutoBackupZip();
   });
 });
+  startNotificationDaemon();
