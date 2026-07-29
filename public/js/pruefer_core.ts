@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.16)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.17)
 
 interface GroupMember {
   name: string;
@@ -384,6 +384,7 @@ function examiner(): ExaminerComponent {
           });
 
           window.examinerSocket.on('connect_error', (err: unknown) => {
+            this.connected = false;
             const error = err as Error;
             if (error.message === 'Authentication error' || error.message === 'Invalid role') {
               this.tokenError = true;
