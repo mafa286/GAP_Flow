@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.61)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.62)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -60,39 +60,6 @@ export function init(
     const role = auth.role as string | undefined;
 
     if (role === 'admin') {
-      const rawSecret = (auth.password || auth.token) as string | string[] | undefined;
-      const secret = Array.isArray(rawSecret) ? rawSecret[0] : rawSecret;
-      if (secret && (secret.trim() === adminPassword || secret.trim() === getAdminSessionToken())) {
-        socket.role = 'admin';
-        return next();
-      }
-      return next(new Error('Authentication error'));
-    }
-
-    if (role === 'beamer') {
-      socket.role = 'beamer';
-      return next();
-    }
-
-    if (role === 'examiner') {
-      const rawToken = auth.token as string | string[] | undefined;
-      const token = Array.isArray(rawToken) ? rawToken[0] : rawToken;
-      if (token && isValidExaminerToken(token)) {
-        socket.role = 'examiner';
-        socket.token = token;
-        socket.deviceToken = (auth.deviceToken as string) || null;
-        return next();
-      }
-      return next(new Error('Authentication error'));
-    }
-
-    return next(new Error('Invalid role'));
-  });
-
-  io.on('connection', (socket: AuthenticatedSocket) => {
-    const role = socket.role;
-
-    if (role === 'admin') {
       const page = (socket.handshake.auth.page as string) || 'dashboard';
 
       if (page === 'groups') {
@@ -113,6 +80,29 @@ export function init(
       socket.join(`room_examiner_${token}`);
       socket.emit('stateUpdate', getFlatExaminerState(token, socket.deviceToken));
     }
+
+    // Behandlung von mobilen Sprechwunsch-Anforderungen von Prüfstellen
+    socket.on('requestCallback', (data: { target: 'leitstelle' | 'pruefungsleitung'; subId?: string; examinerName?: string; phoneNumber?: string }) => {
+      if (socket.role !== 'examiner') return;
+
+      const targetLabel = data.target === 'pruefungsleitung' ? 'PRÜFUNGSLEITUNG' : 'LEITSTELLE';
+      const notificationData = {
+        title: `🚨 Rückruf durch ${targetLabel}!`,
+        body: `Station ${data.subId || 'unbekannt'} bittet um Rückruf.\nRückruf an folgende Nummer: ${data.phoneNumber || 'Keine Telefonnummer hinterlegt'}`,
+        target: data.target,
+        subId: data.subId,
+        examinerName: data.examinerName,
+        phoneNumber: data.phoneNumber,
+        vibrate: [500, 150, 500, 150, 500, 300, 1000],
+        timestamp: Date.now(),
+      };
+
+      io?.to('room_admin_dashboard').emit('callbackRequested', notificationData);
+      io?.to('room_admin_stations').emit('callbackRequested', notificationData);
+      io?.to('room_admin_groups').emit('callbackRequested', notificationData);
+      io?.to('room_pruefungsleitung').emit('callbackRequested', notificationData);
+      io?.to('room_leitstelle').emit('callbackRequested', notificationData);
+    });
   });
 
   return io;
