@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.14)
+// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.15)
 
 interface CalcRowData {
   id: string;
@@ -148,16 +148,31 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     initSocket(): void {
-      const self = this as unknown as AdminDashboardComponent;
+      const self = this as unknown as AdminDashboardComponent & { fetchAdminStatus(): Promise<any> };
+      
+      // 1. Sofortiger HTTP REST Load
+      self.fetchAdminStatus().then((state) => {
+        if (state) {
+          self._cachedFilteredLogs = null;
+          self.groups = state.groups || {};
+          self.stations = state.stations || {};
+          self.logs = state.logs || [];
+          self.autoAllocationActive = !!state.autoAllocationActive;
+          self.firstAssignmentTime = state.firstAssignmentTime || null;
+          self.$nextTick(() => self.updateChart());
+        }
+      });
+
+      // 2. WebSocket Live-Stream
       self.connectSocket((state) => {
         self._cachedFilteredLogs = null;
         self.renderLock = true;
 
-        self.groups = state.groups;
-        self.stations = state.stations;
-        self.logs = state.logs;
-        self.autoAllocationActive = state.autoAllocationActive;
-        self.firstAssignmentTime = state.firstAssignmentTime;
+        self.groups = state.groups || {};
+        self.stations = state.stations || {};
+        self.logs = state.logs || [];
+        self.autoAllocationActive = !!state.autoAllocationActive;
+        self.firstAssignmentTime = state.firstAssignmentTime || null;
 
         setTimeout(() => {
           self.updateChart();
