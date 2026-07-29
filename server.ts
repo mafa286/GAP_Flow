@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.92)
+// Version Tracker: server.ts (GAP-Flow v1.1.93)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -767,6 +767,20 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
   } else {
     res.status(400).json({ error: 'Ungültige Einstellungen' });
   }
+});
+
+app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
+  const { type, title, body, vibrate } = req.body || {};
+  const notificationPayload = {
+    type: type || 'broadcast',
+    title: sanitizeContactName(title || '', 64),
+    body: sanitizeName(body || '', 256),
+    vibrate: Array.isArray(vibrate) ? vibrate : [300, 100, 300],
+    timestamp: getUniqueTimestamp(),
+  };
+
+  socketsModule.broadcastNotification(notificationPayload);
+  res.json({ success: true });
 });
 
 app.post('/api/admin/stations/clear', adminAuth, adminStationsController.clearStations);
