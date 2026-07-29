@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.10)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.11)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
