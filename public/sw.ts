@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.13)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.14)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,7 +6,8 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const CACHE_NAME = 'gap-flow-v7';
+const SW_VERSION = 'v1.1.14';
+const CACHE_NAME = 'gap-flow-v8';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
   '/icon-192.png',
@@ -51,6 +52,21 @@ sw.addEventListener('activate', (event: any) => {
 });
 
 /**
+ * Message-Event: Beantwortet Versionsanfragen der PWA-Clientansicht.
+ */
+sw.addEventListener('message', (event: any) => {
+  if (event.data && event.data.type === 'GET_VERSION') {
+    if (event.source && event.source.postMessage) {
+      event.source.postMessage({
+        type: 'SW_VERSION_RESPONSE',
+        version: SW_VERSION,
+        cacheName: CACHE_NAME,
+      });
+    }
+  }
+});
+
+/**
  * Fetch-Event: Network-First für HTML-Seiten (sofortige Updates), Cache-First für Offline-Assets.
  * @param {any} event - Das abgefangene HTTP-Anfrage-Event.
  * @returns {void}
@@ -65,8 +81,10 @@ sw.addEventListener('fetch', (event: any) => {
     event.request.mode === 'navigate' ||
     (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
 
-  if (isHtmlRequest) {
-    // Network-First Strategie für HTML: Holt online immer die neuste HTML-Datei vom Server, weicht im Funkloch auf Cache aus
+  const isJsRequest = event.request.url.includes('/js/') || event.request.url.endsWith('.js');
+
+  if (isHtmlRequest || isJsRequest) {
+    // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
@@ -88,7 +106,7 @@ sw.addEventListener('fetch', (event: any) => {
         })
     );
   } else {
-    // Cache-First Strategie für statische Assets (JS, CSS, Bilder)
+    // Cache-First Strategie für statische Assets (Bilder, Icons)
     event.respondWith(
       caches.match(event.request).then((response) => {
         if (response) {
