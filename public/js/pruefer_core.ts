@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.17)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.18)
 
 interface GroupMember {
   name: string;
@@ -360,6 +360,11 @@ function examiner(): ExaminerComponent {
     },
 
     initSocket(): void {
+      if (!this.token) {
+        this.connected = false;
+        return;
+      }
+
       try {
         if (window.examinerSocket) {
           window.examinerSocket.disconnect();
