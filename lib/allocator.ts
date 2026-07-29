@@ -1,4 +1,4 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.67)
+// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.68)
 
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
@@ -162,6 +162,66 @@ export function executeAllocation(
   }
 
   return selectedGroup;
+}
+
+/**
+ * Ermittelt die Namen aller aktiven Mitglieder einer bestimmten Gruppe für Push-Payloads.
+ * @param {string} groupId - Die Gruppen-ID.
+ * @param {SystemState} systemState - Der aktuelle Systemzustand.
+ * @returns {string[]} Liste der Anwärternamen.
+ */
+export function getGroupMemberNames(groupId: string, systemState: SystemState): string[] {
+  if (!groupId || !systemState.anwaerter) return [];
+  return Object.values(systemState.anwaerter)
+    .filter((a) => a.groupId === groupId && a.active !== false)
+    .map((a) => a.name);
+}
+
+/**
+ * Scannt alle pausierten oder überzogenen Stationen für automatische Erinnerungs-Notifications.
+ * @param {SystemState} systemState - Der aktuelle Systemzustand.
+ * @returns {{ inactives: Array<Record<string, unknown>>, overtimes: Array<Record<string, unknown>> }} Erinnerungsdaten.
+ */
+export function scanReminderEvents(systemState: SystemState): {
+  inactives: Array<{ subId: string; pausedMinutes: number }>;
+  overtimes: Array<{ subId: string; groupName: string; overtimeMinutes: number }>;
+} {
+  const inactives: Array<{ subId: string; pausedMinutes: number }> = [];
+  const overtimes: Array<{ subId: string; groupName: string; overtimeMinutes: number }> = [];
+  const now = Date.now();
+
+  Object.values(systemState.stations || {}).forEach((master) => {
+    if (!master || !master.subStations) return;
+    const avgDuration = master.stats?.avgDuration || master.targetAvgDuration || 15;
+
+    Object.values(master.subStations).forEach((sub) => {
+      if (!sub) return;
+
+      // 1. Inaktivitätsprüfung (Pausiert & Leer)
+      if (sub.paused && !sub.currentGroupId && sub.startTime) {
+        const pausedMinutes = Math.floor((now - sub.startTime) / 60000);
+        if (pausedMinutes >= 30 && (pausedMinutes - 30) % 10 === 0) {
+          inactives.push({ subId: sub.id, pausedMinutes });
+        }
+      }
+
+      // 2. Richtzeit-Überschreitung (Aktiv mit Gruppe)
+      if (sub.currentGroupId && sub.startTime && !sub.paused) {
+        const elapsedMinutes = Math.floor((now - sub.startTime) / 60000);
+        const overtime = elapsedMinutes - avgDuration;
+        if (overtime >= 10 && (overtime - 10) % 10 === 0) {
+          const group = systemState.groups[sub.currentGroupId];
+          overtimes.push({
+            subId: sub.id,
+            groupName: group ? group.name : 'Unbekannt',
+            overtimeMinutes: overtime,
+          });
+        }
+      }
+    });
+  });
+
+  return { inactives, overtimes };
 }
 
 /**
