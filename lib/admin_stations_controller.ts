@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.11)
+// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.12)
 
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry } from './types';
@@ -224,8 +224,11 @@ export function subConfig(req: Request, res: Response): void {
       sub.paused = true;
       if (!cleanExaminer) {
         sub.deviceToken = null;
+        if (sub.currentGroupId) {
+          allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
+        }
       }
-      writeSystemLog('System', subId, -13, sub.examiner || 'Abgemeldet');
+      writeSystemLog('System', subId, -13, cleanExaminer ? cleanExaminer : 'Prüfer entfernt');
     }
   }
 
