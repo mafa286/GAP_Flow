@@ -244,9 +244,63 @@ function examiner(): ExaminerComponent {
         try {
           const res = await Notification.requestPermission();
           this.notificationPermissionStatus = res;
+          if (res === 'granted') {
+            await this.subscribeToWebPush();
+          }
         } catch (e) {
           console.error('Fehler beim Anfragen der Benachrichtigungsberechtigung:', e);
         }
+      }
+    },
+
+    /**
+     * Registriert das Smartphone beim W3C Web Push Service für Push-Benachrichtigungen im Standby.
+     */
+    async subscribeToWebPush(): Promise<void> {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !this.token) return;
+
+      try {
+        const keyRes = await fetch('/api/push/vapid-public-key');
+        if (!keyRes.ok) return;
+        const { publicKey } = await keyRes.json();
+        if (!publicKey) return;
+
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+
+        if (!sub) {
+          const urlBase64ToUint8Array = (base64String: string) => {
+            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; i += 1) {
+              outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+          };
+
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+          });
+        }
+
+        await fetch('/api/examiner/push-subscription', {
+          method: 'POST',
+          headers: {
+            Authorization: this.token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            subscription: sub,
+            role: 'examiner',
+            targetId: this.subId,
+          }),
+        });
+        console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert.');
+      } catch (e) {
+        console.error('[PWA Web Push] Registrierungsfehler:', e);
       }
     },
 
@@ -314,6 +368,10 @@ function examiner(): ExaminerComponent {
       if (this.token) {
         this.fetchStatus();
         this.initSocket();
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          this.subscribeToWebPush();
+        }
 
         setInterval(() => {
           this.now = Date.now();
