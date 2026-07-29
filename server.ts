@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.1)
+// Version Tracker: server.ts (GAP-Flow v1.2.2)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -402,7 +402,7 @@ export const allocatorCheck = (): boolean => {
   );
 
   if (allocationOccurred) {
-    // Sende Zuteilungs-Push mit Anwärternamen an zugewiesene Stationen
+    // Sende Zuteilungs-Push mit Anwärternamen an zugewiesene Stationen via Web Push API
     Object.values(systemState.stations || {}).forEach((master) => {
       if (!master || !master.subStations) return;
       Object.values(master.subStations).forEach((sub) => {
@@ -412,13 +412,17 @@ export const allocatorCheck = (): boolean => {
             const memberNames = allocatorModule.getGroupMemberNames(group.id, systemState);
             const memberListStr = memberNames.length > 0 ? `\n${memberNames.join('\n')}` : '';
 
-            socketsModule.broadcastNotification({
+            const payload = {
               type: `allocation-${sub.id}`,
+              tag: `allocation-${sub.id}`,
               title: '📥 Prüfungsleitstand: Neue Zuteilung!',
               body: `Gruppe ${group.name} wurde der Station ${sub.id} zugewiesen!${memberListStr}`,
               vibrate: [300, 100, 300, 100, 300],
               timestamp: Date.now(),
-            });
+            };
+
+            socketsModule.broadcastNotification(payload);
+            sendWebPushNotification('examiner', payload, sub.id);
           }
         }
       });
@@ -629,11 +633,23 @@ function initVapidKeys(): Promise<void> {
 /**
  * Sendet eine W3C Web Push Benachrichtigung an registrierte Geräte.
  */
-export async function sendWebPushNotification(roleTarget: string, payload: Record<string, unknown>): Promise<void> {
+export async function sendWebPushNotification(
+  roleTarget: string,
+  payload: Record<string, unknown>,
+  targetSubId?: string
+): Promise<void> {
   const db = dbModule.getDb();
   if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
 
-  db.all('SELECT * FROM push_subscriptions WHERE role = ? OR ? = "all"', [roleTarget, roleTarget], (err, rows: any[]) => {
+  let query = 'SELECT * FROM push_subscriptions WHERE (role = ? OR ? = "all")';
+  const params: unknown[] = [roleTarget, roleTarget];
+
+  if (targetSubId) {
+    query += ' AND (targetId = ? OR targetId = "" OR targetId IS NULL)';
+    params.push(targetSubId);
+  }
+
+  db.all(query, params, (err, rows: any[]) => {
     if (err || !rows) return;
     const payloadStr = JSON.stringify(payload);
 
@@ -890,31 +906,37 @@ function startNotificationDaemon(): void {
       // 1. Scanne Inaktivitäten & Richtzeit-Überschreitungen
       const reminders = allocatorModule.scanReminderEvents(systemState);
 
-      // Inaktivitäts-Pushs (30 Min / +10 Min)
+      // Inaktivitäts-Pushs (30 Min / +10 Min) via Web Push & WebSockets
       reminders.inactives.forEach((inactive) => {
-        socketsModule.broadcastNotification({
+        const payload = {
           type: `inactivity-${inactive.subId}`,
+          tag: `inactivity-${inactive.subId}`,
           title: 'Prüfungsleitstand: Inaktivitäts-Erinnerung',
           body: `Station ${inactive.subId} seit ${inactive.pausedMinutes} Min. pausiert. Bist du bereit für die nächste Gruppe?`,
           vibrate: [200, 100, 200],
           actions: [{ action: 'end_pause', title: '▶️ Pause beenden' }],
           timestamp: Date.now(),
-        });
+        };
+        socketsModule.broadcastNotification(payload);
+        sendWebPushNotification('examiner', payload, inactive.subId);
       });
 
-      // Richtzeit-Überschreitungs-Pushs (+10 Min über Durchschnitt)
+      // Richtzeit-Überschreitungs-Pushs (+10 Min über Durchschnitt) via Web Push & WebSockets
       reminders.overtimes.forEach((ot) => {
-        socketsModule.broadcastNotification({
+        const payload = {
           type: `overtime-${ot.subId}`,
+          tag: `overtime-${ot.subId}`,
           title: '⏱️ Richtzeit-Hinweis',
           body: `Gruppe ${ot.groupName} seit ${ot.overtimeMinutes} Min. über Durchschnitt in der Prüfung!`,
           vibrate: [200, 100, 200],
           actions: [{ action: 'deactivate', title: '⚙ deaktivieren?' }],
           timestamp: Date.now(),
-        });
+        };
+        socketsModule.broadcastNotification(payload);
+        sendWebPushNotification('examiner', payload, ot.subId);
       });
 
-      // 2. Automatisches Gesamt-Prüfungsende
+      // 2. Automatisches Gesamt-Prüfungsende via Web Push & WebSockets
       const activeMasterIds = allocatorModule.getActiveMasterIds(systemState);
       const activeGroups = Object.values(systemState.groups || {}).filter((g) => g.active !== false);
 
@@ -925,13 +947,16 @@ function startNotificationDaemon(): void {
       ) {
         if (!systemState.isCleared && !systemState._examFinishedNotificationSent) {
           systemState._examFinishedNotificationSent = true;
-          socketsModule.broadcastNotification({
+          const payload = {
             type: 'exam-finished',
+            tag: 'exam-finished',
             title: '🏆 PRÜFUNGEN BEENDET!',
             body: 'Alle Gruppen haben sämtliche Stationen absolviert.',
             vibrate: [300, 100, 300, 100, 300, 100, 600],
             timestamp: Date.now(),
-          });
+          };
+          socketsModule.broadcastNotification(payload);
+          sendWebPushNotification('all', payload);
         }
       }
     } catch (err) {
