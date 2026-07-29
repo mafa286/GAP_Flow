@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.1.95)
+// Version Tracker: server.ts (GAP-Flow v1.1.96)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -28,6 +28,12 @@ export interface AuthenticatedExaminerRequest extends Request {
 // Low-Level HTTP Header-Patching: Bereinigt Socket.io/Engine.io Polling-Header & veraltete Direktiven für WebHint
 const originalSetHeader = http.ServerResponse.prototype.setHeader;
 http.ServerResponse.prototype.setHeader = function (name: string, value: unknown) {
+  // WICHTIG: Socket.io / Engine.io Handshake- & Polling-Header niemals manipulieren!
+  const reqUrl = (this.req && typeof this.req.url === 'string') ? this.req.url : '';
+  if (reqUrl.includes('/socket.io/')) {
+    return originalSetHeader.call(this, name, value as any);
+  }
+
   if (typeof name === 'string') {
     const lowerName = name.toLowerCase();
 
@@ -65,6 +71,12 @@ http.ServerResponse.prototype.setHeader = function (name: string, value: unknown
 
 const originalWriteHead = http.ServerResponse.prototype.writeHead;
 http.ServerResponse.prototype.writeHead = function (this: http.ServerResponse, statusCode: number, ...args: unknown[]) {
+  // WICHTIG: Socket.io / Engine.io Handshake- & Polling-Header niemals manipulieren!
+  const reqUrl = (this.req && typeof this.req.url === 'string') ? this.req.url : '';
+  if (reqUrl.includes('/socket.io/')) {
+    return (originalWriteHead as Function).apply(this, [statusCode, ...args]);
+  }
+
   this.removeHeader('X-Frame-Options');
   this.removeHeader('Expires');
   this.setHeader('X-Content-Type-Options', 'nosniff');
