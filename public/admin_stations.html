@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.73) -->
+<!-- Version Tracker: public/admin_stations.html (GAP-Flow v1.1.74) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Stationen</title>
   <script src="/js/theme_config.js?v=1.1.95"></script>
@@ -174,9 +174,9 @@
                           x-text="'Station ' + sub.id"></span>
 
                     <!-- Prüfer Name -->
-                    <span class="badge-name-active text-[11px] select-all cursor-text font-bold"
-                          :class="!sub.active ? 'opacity-30 line-through' : ''"
-                          x-text="'Prüfer: ' + sub.examiner"></span>
+                    <span class="text-[11px] select-all cursor-text font-bold px-1.5 py-0.5 rounded transition"
+                          :class="!sub.active ? 'opacity-30 line-through badge-name-inactive' : (sub.examiner ? 'badge-name-active' : 'badge-name-inactive')"
+                          x-text="sub.examiner ? 'Prüfer: ' + sub.examiner : 'Kein Prüfer zugewiesen'"></span>
                     
                     <!-- Statusanzeige für Pause -->
                     <span class="px-1.5 py-0.5 sig-badge-red text-[11px]"
