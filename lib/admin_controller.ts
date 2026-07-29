@@ -1,4 +1,4 @@
-// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.64)
+// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.65)
 
 import { Request, Response } from 'express';
 import { SystemState, Group, Station, LogEntry } from './types';
@@ -153,6 +153,7 @@ export function verifyToken(req: Request, res: Response): void {
   if (token && token.trim() === getAdminSessionToken()) {
     res.json({
       success: true,
+      token: getAdminSessionToken(),
       counts: getSystemStats(),
     });
   } else {
