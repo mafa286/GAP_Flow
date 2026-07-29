@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.8)
+// Version Tracker: public/js/admin_groups.ts (GAP-Flow v1.1.9)
 
 interface ClientAnwaerter {
   id: string;
@@ -133,6 +133,8 @@ window.adminPanel = function (): Record<string, unknown> {
         self.updateDefaultGroupName();
 
         setTimeout(() => {
+          self._cachedSortedGroups = null;
+          self._cachedSortedAnwaerter = null;
           self.renderLock = false;
         }, 0);
       });
