@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.11)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.12)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,7 +6,7 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const CACHE_NAME = 'gap-flow-v5';
+const CACHE_NAME = 'gap-flow-v6';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
   '/js/theme_config.js',
@@ -107,30 +107,59 @@ sw.addEventListener('fetch', (event: any) => {
 
 /**
  * Push-Event: Empfängt eingehende Web-Push-Benachrichtigungen vom Server/Push-Dienst.
+ * Garantiert Chrome-Android-Konformität (kein generischer Fallback-Text).
  * @param {any} event - Das native PushEvent der Service Worker API.
  * @returns {void}
  */
 sw.addEventListener('push', (event: any) => {
-  if (!event.data) return;
+  const promiseChain = Promise.resolve()
+    .then(() => {
+      let payload: any = {};
+      if (event.data) {
+        try {
+          payload = event.data.json();
+        } catch (_) {
+          payload = { title: 'GAP-Flow Benachrichtigung', body: event.data.text() };
+        }
+      }
 
-  try {
-    const payload = event.data.json();
-    const title = payload.title || 'GAP-Flow Benachrichtigung';
-    const options = {
-      body: payload.body || '',
-      icon: payload.icon || '/manifest.json',
-      badge: payload.badge || '/manifest.json',
-      tag: payload.tag || payload.type || 'gap-flow-notification',
-      renotify: payload.renotify !== false,
-      vibrate: payload.vibrate || [200, 100, 200],
-      data: payload.data || payload,
-      actions: payload.actions || [],
-    };
+      const title = payload.title || 'GAP-Flow Benachrichtigung';
+      const options: any = {
+        body: payload.body || '',
+        icon: payload.icon && !payload.icon.endsWith('.json') ? payload.icon : '/icon-192.png',
+        badge: payload.badge && !payload.badge.endsWith('.json') ? payload.badge : '/icon-192.png',
+        tag: payload.tag || payload.type || 'gap-flow-notification',
+        renotify: payload.renotify !== false,
+        vibrate: payload.vibrate || [300, 100, 300],
+        data: {
+          url: payload.url || '/pruefer.html',
+          ...(payload.data || {}),
+          ...payload,
+        },
+      };
 
-    event.waitUntil(sw.registration.showNotification(title, options));
-  } catch (err) {
-    console.error('[SW] Fehler beim Verarbeiten der Push-Nachricht:', err);
-  }
+      if (Array.isArray(payload.actions) && payload.actions.length > 0) {
+        options.actions = payload.actions.map((act: any) => ({
+          action: act.action,
+          title: act.title,
+        }));
+      }
+
+      return sw.registration.showNotification(title, options);
+    })
+    .catch((err) => {
+      console.error('[SW Push-Verarbeitungsfehler]', err);
+      // Garantierter Fallback: showNotification muss immer mit gültigen PNG-Bildern aufgerufen werden
+      return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
+        body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'gap-flow-fallback',
+        data: { url: '/pruefer.html' },
+      });
+    });
+
+  event.waitUntil(promiseChain);
 });
 
 /**
@@ -197,16 +226,16 @@ sw.addEventListener('notificationclick', (event: any) => {
     return;
   }
 
-  const targetUrl = data.url || '/pruefer.html';
+  const rawUrl = data.url || '/pruefer.html';
   event.waitUntil(
     sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
       for (const client of clientList) {
-        if (client.url.includes(targetUrl) && 'focus' in client) {
+        if (client.url.includes('pruefer.html') && 'focus' in client) {
           return client.focus();
         }
       }
       if (sw.clients.openWindow) {
-        return sw.clients.openWindow(targetUrl);
+        return sw.clients.openWindow(rawUrl);
       }
       return null;
     })
