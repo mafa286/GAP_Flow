@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.19)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.20)
 
 interface GroupMember {
   name: string;
@@ -397,7 +397,7 @@ function examiner(): ExaminerComponent {
           });
 
           window.examinerSocket.on('stateUpdate', (state: unknown) => {
-            this.renderLock = false;
+            this.renderLock = true;
             this.receivedSocketUpdate = true;
 
             if (this.isNetworkErrorAlert && this.retryAction) {
@@ -406,6 +406,10 @@ function examiner(): ExaminerComponent {
             }
 
             this.updateFromState(state as FlatExaminerPayload);
+
+            setTimeout(() => {
+              this.renderLock = false;
+            }, 0);
           });
         }
       } catch (e) {
