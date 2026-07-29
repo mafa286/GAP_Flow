@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.28)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.29)
 
 interface GroupMember {
   name: string;
@@ -207,8 +207,8 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
-    appVersion: 'v1.1.93',
-    coreVersion: 'v1.1.28',
+    appVersion: 'v1.1.94',
+    coreVersion: 'v1.1.29',
     swVersion: '',
     swCacheName: '',
 
@@ -456,6 +456,12 @@ function examiner(): ExaminerComponent {
         const requestSwVersion = () => {
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+          } else {
+            navigator.serviceWorker.ready.then((reg) => {
+              if (reg.active) {
+                reg.active.postMessage({ type: 'GET_VERSION' });
+              }
+            });
           }
         };
 
