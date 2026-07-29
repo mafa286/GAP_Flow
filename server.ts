@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.3)
+// Version Tracker: server.ts (GAP-Flow v1.2.4)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -662,7 +662,10 @@ export async function sendWebPushNotification(
     }
     if (!rows || rows.length === 0) return;
 
-    console.log(`[WebPush] Sende Push an ${rows.length} Abonnenten (Rolle: ${roleTarget}, TargetId: ${targetSubId || 'alle'})`);
+    const pushTitle = String(payload.title || 'Benachrichtigung');
+    const pushType = String(payload.tag || payload.type || 'standard');
+    console.log(`[WebPush Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${rows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
+
     const payloadStr = JSON.stringify(payload);
 
     rows.forEach((r) => {
@@ -674,12 +677,31 @@ export async function sendWebPushNotification(
         },
       };
 
-      webpush.sendNotification(sub, payloadStr).catch((pushErr) => {
-        console.error('[WebPush Zustellungsfehler]', pushErr.statusCode, pushErr.message);
-        if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
-          db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
+      let endpointDomain = 'unbekannt';
+      try {
+        if (r.endpoint) {
+          endpointDomain = new URL(r.endpoint).hostname;
         }
-      });
+      } catch (_) {
+        // Fallback wenn Endpoint-URL unvollständig ist
+      }
+
+      webpush
+        .sendNotification(sub, payloadStr)
+        .then((res) => {
+          console.log(
+            `[WebPush Erfolgreich] ID: ${r.id} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | Status: ${res.statusCode} | Titel: "${pushTitle}"`
+          );
+        })
+        .catch((pushErr) => {
+          console.error(
+            `[WebPush Fehler] ID: ${r.id} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | HTTP ${pushErr.statusCode || 'N/A'}: ${pushErr.message}`
+          );
+          if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+            console.log(`[WebPush Bereinigung] Entferne abgelaufene Subscription ${r.id} aus der Datenbank.`);
+            db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
+          }
+        });
     });
   });
 }
