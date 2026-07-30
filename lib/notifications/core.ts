@@ -80,15 +80,13 @@ export async function sendNotification(
   targetSubId?: string
 ): Promise<void> {
   const db = dbModule.getDb();
-  if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
-
-  let query = "SELECT * FROM push_subscriptions WHERE 1=1";
-  const params: unknown[] = [];
-
-  if (roleTarget && roleTarget !== 'all') {
-    query += " AND role = ?";
-    params.push(roleTarget);
+  if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) {
+    console.warn('[WebPush Core] WebPush abgebrochen: SQLite inaktiv (JSON-Fallback active) oder VAPID-Public-Key fehlt.');
+    return;
   }
+
+  let query = "SELECT * FROM push_subscriptions WHERE (role = ? OR ? = 'all')";
+  const params: unknown[] = [roleTarget, roleTarget];
 
   if (targetSubId) {
     query += " AND (targetId = ? OR targetId = '' OR targetId IS NULL)";
@@ -100,7 +98,10 @@ export async function sendNotification(
       console.error('[WebPush SQL Fehler]', err.message);
       return;
     }
-    if (!rows || rows.length === 0) return;
+    if (!rows || rows.length === 0) {
+      console.warn(`[WebPush Core] Keine passenden Subscriptions in DB gefunden (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'}). Push übersprungen.`);
+      return;
+    }
 
     // Deduplizierung: Pro Unterstation (targetId) nur die neueste Subscription verwenden,
     // um simultane Doppel-Pushs an dasselbe Gerät zu verhindern
