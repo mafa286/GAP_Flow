@@ -1,4 +1,4 @@
-// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.64)
+// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.65)
 
 import fs from 'fs';
 import path from 'path';
@@ -421,6 +421,51 @@ export async function exportCsv(req: Request, res: Response): Promise<void> {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename=pruefungs_protokoll.csv');
     res.status(200).send(Buffer.from(`\uFEFF${csv}`, 'utf-8'));
+  } catch (err) {
+    const error = err as Error;
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Bereinigt alte Repomix-Dateien, führt `npx repomix` aus und sendet die XML-Datei als Download an den Client.
+ * @param {Request} req - Express Request.
+ * @param {Response} res - Express Response.
+ * @returns {void}
+ */
+export function generateAndDownloadRepomix(req: Request, res: Response): void {
+  try {
+    // 1. Alte Repomix-Dateien im App- und Data-Verzeichnis bereinigen
+    const appFiles = fs.readdirSync(appDir);
+    appFiles.forEach((file) => {
+      if (file.startsWith('repomix-output') && (file.endsWith('.xml') || file.endsWith('.txt') || file.endsWith('.json'))) {
+        try {
+          fs.unlinkSync(path.join(appDir, file));
+        } catch (_) {}
+      }
+    });
+
+    const targetOutput = path.join(dbDir, 'repomix-output.xml');
+    if (fs.existsSync(targetOutput)) {
+      try {
+        fs.unlinkSync(targetOutput);
+      } catch (_) {}
+    }
+
+    // 2. npx repomix ausführen und XML generieren
+    exec(`npx repomix --output "${targetOutput}" --style xml`, { cwd: appDir }, (err, _stdout, stderr) => {
+      if (err || !fs.existsSync(targetOutput)) {
+        console.error('[Repomix Error]', err?.message || stderr);
+        res.status(500).json({ error: `Repomix-Generierung fehlgeschlagen: ${err?.message || stderr || 'Unbekannter Fehler'}` });
+        return;
+      }
+
+      // 3. Generierte XML-Datei zum Download senden
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename=repomix-output.xml');
+      const fileStream = fs.createReadStream(targetOutput);
+      fileStream.pipe(res);
+    });
   } catch (err) {
     const error = err as Error;
     res.status(500).json({ error: error.message });
