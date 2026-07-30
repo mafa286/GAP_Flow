@@ -242,7 +242,7 @@ function examiner(): ExaminerComponent {
     /**
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
-    async sendFcmTestNotification(): Promise<void> {
+    async sendServerTestNotification(): Promise<void> {
       if (!('serviceWorker' in navigator) || !('Notification' in window)) {
         alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
         return;
@@ -253,8 +253,18 @@ function examiner(): ExaminerComponent {
         return;
       }
 
-      this.isSubmitting = true;
+      if (!this.token) {
+        alert('Kein Token vorhanden. Bitte scanne zuerst den QR-Code deiner Station.');
+        return;
+      }
+
       try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (!reg || !reg.active) {
+          alert('Kein aktiver Service Worker geladen. Bitte lade die Seite einmal neu.');
+          return;
+        }
+
         await this.subscribeToWebPush();
 
         const response = await fetch('/api/examiner/test-push', {
@@ -266,16 +276,14 @@ function examiner(): ExaminerComponent {
         });
 
         if (response.ok) {
-          alert('Befehl ausgeführt: Der GAP-Flow Server hat die VAPID-Testnachricht an den Push-Dienst (Google FCM) gesendet!');
+          alert('Befehl ausgeführt: Der Server hat die Web Push Benachrichtigung über die Google/W3C API versendet!');
         } else {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          alert(`Server-Fehler beim Auslösen des Pushs: ${errData.error || response.statusText}`);
+          alert(`Server-Rückmeldung: ${errData.error || response.statusText}`);
         }
       } catch (e) {
         const error = e as Error;
-        alert(`Netzwerkfehler beim Anfordern des Test-Pushs: ${error.message}`);
-      } finally {
-        this.isSubmitting = false;
+        alert(`Fehler beim Senden des Server Web Push Tests: ${error.message}`);
       }
     },
 
