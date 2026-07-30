@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.18)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.19)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,7 +6,7 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const SW_VERSION = 'v1.1.18';
+const SW_VERSION = 'v1.1.19';
 const CACHE_NAME = 'gap-flow-v8';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
@@ -136,53 +136,55 @@ sw.addEventListener('fetch', (event: any) => {
  * @returns {void}
  */
 sw.addEventListener('push', (event: any) => {
-  const promiseChain = Promise.resolve()
-    .then(() => {
-      let payload: any = {};
-      if (event.data) {
-        try {
-          payload = event.data.json();
-        } catch (_) {
-          payload = { title: 'GAP-Flow Benachrichtigung', body: event.data.text() };
-        }
+  let payload: any = {};
+  if (event && event.data) {
+    try {
+      payload = event.data.json();
+    } catch (_) {
+      try {
+        payload = { title: 'GAP-Flow Benachrichtigung', body: event.data.text() };
+      } catch (_) {
+        payload = { title: 'GAP-Flow Benachrichtigung', body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.' };
       }
+    }
+  }
 
-      console.log('[SW Push Empfangen]', payload);
+  console.log('[SW Push Event]', payload);
 
-      const origin = self.location ? self.location.origin : '';
-      const title = (payload && payload.title) ? String(payload.title) : 'GAP-Flow Benachrichtigung';
-      const body = (payload && payload.body) ? String(payload.body) : 'Neue Benachrichtigung aus dem Prüfungsleitstand.';
+  const origin = self.location ? self.location.origin : '';
+  const title = (payload && payload.title) ? String(payload.title) : 'GAP-Flow Benachrichtigung';
+  const body = (payload && payload.body) ? String(payload.body) : 'Neue Benachrichtigung aus dem Prüfungsleitstand.';
 
-      const options: any = {
-        body,
-        icon: `${origin}/icon-192.png`,
-        badge: `${origin}/icon-192.png`,
-        tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
-        data: {
-          url: (payload && payload.url) ? String(payload.url) : '/pruefer.html',
-        },
-      };
+  const options: any = {
+    body,
+    icon: `${origin}/icon-192.png`,
+    badge: `${origin}/icon-192.png`,
+    tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
+    data: {
+      url: (payload && payload.url) ? String(payload.url) : '/pruefer.html',
+    },
+  };
 
-      if (Array.isArray(payload?.vibrate) && payload.vibrate.length > 0) {
-        options.vibrate = payload.vibrate;
-      }
+  if (Array.isArray(payload?.vibrate) && payload.vibrate.length > 0) {
+    options.vibrate = payload.vibrate.map((v: any) => Math.abs(parseInt(String(v), 10) || 100));
+  }
 
-      if (payload?.renotify === true && options.tag) {
-        options.renotify = true;
-      }
+  if (payload?.renotify === true && options.tag) {
+    options.renotify = true;
+  }
 
-      if (Array.isArray(payload?.actions) && payload.actions.length > 0) {
-        options.actions = payload.actions.map((act: any) => ({
-          action: String(act.action || ''),
-          title: String(act.title || ''),
-        }));
-      }
+  if (Array.isArray(payload?.actions) && payload.actions.length > 0) {
+    options.actions = payload.actions
+      .filter((act: any) => act && act.action && act.title)
+      .map((act: any) => ({
+        action: String(act.action),
+        title: String(act.title),
+      }));
+  }
 
-      return sw.registration.showNotification(title, options);
-    })
-    .catch((err) => {
-      console.error('[SW Push-Verarbeitungsfehler]', err);
-      const origin = self.location ? self.location.origin : '';
+  const pushPromise = sw.registration.showNotification(title, options)
+    .catch((err: unknown) => {
+      console.error('[SW showNotification Error]', err);
       return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
         body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
         icon: `${origin}/icon-192.png`,
@@ -192,7 +194,7 @@ sw.addEventListener('push', (event: any) => {
       });
     });
 
-  event.waitUntil(promiseChain);
+  event.waitUntil(pushPromise);
 });
 
 /**
