@@ -1,5 +1,4 @@
 #!/bin/sh
-# Version Tracker: entrypoint.sh (GAP-Flow v1.2.0)
 set -e
 
 echo "[GAP-Flow] Prüfe Systemumgebung..."
@@ -36,7 +35,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         node -e "
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const parts = (pkg.version || '1.0').split('.');
+          const parts = (pkg.version || '0.0').split('.');
           const release = parts[0] || '1';
           const dev = parseInt(parts[1] || '0', 10) + 1;
           pkg.version = \`\${release}.\${dev}\`;
