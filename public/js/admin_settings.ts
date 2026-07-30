@@ -89,7 +89,7 @@ window.adminPanel = function (): Record<string, unknown> {
       
       self.isSubmitting = true;
       try {
-        await fetch('/api/admin/notify', {
+        const response = await fetch('/api/admin/notify', {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -99,9 +99,15 @@ window.adminPanel = function (): Record<string, unknown> {
             vibrate: [500, 150, 500, 150, 500, 300, 1000],
           }),
         });
-        alert('Rückrufwunsch wurde gesendet.');
+        if (response.ok) {
+          alert('Rückrufwunsch wurde erfolgreich gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
       } catch (e) {
         console.error(e);
+        alert('Netzwerk-Fehler beim Senden des Rückrufwunsches.');
       } finally {
         self.isSubmitting = false;
       }
@@ -116,7 +122,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
       self.isSubmitting = true;
       try {
-        await fetch('/api/admin/notify', {
+        const response = await fetch('/api/admin/notify', {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -126,9 +132,15 @@ window.adminPanel = function (): Record<string, unknown> {
             vibrate: [500, 150, 500, 150, 500, 300, 1000],
           }),
         });
-        alert('Rückrufwunsch wurde gesendet.');
+        if (response.ok) {
+          alert('Rückrufwunsch wurde erfolgreich gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
       } catch (e) {
         console.error(e);
+        alert('Netzwerk-Fehler beim Senden des Rückrufwunsches.');
       } finally {
         self.isSubmitting = false;
       }
@@ -144,7 +156,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
       self.isSubmitting = true;
       try {
-        await fetch('/api/admin/notify', {
+        const response = await fetch('/api/admin/notify', {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -154,10 +166,16 @@ window.adminPanel = function (): Record<string, unknown> {
             vibrate: [300, 100, 300, 100, 300],
           }),
         });
-        self.broadcastText = '';
-        alert('Rundruf wurde erfolgreich gesendet.');
+        if (response.ok) {
+          self.broadcastText = '';
+          alert('Rundruf wurde erfolgreich gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden des Rundrufs: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
       } catch (e) {
         console.error(e);
+        alert('Netzwerk-Fehler beim Senden des Rundrufs.');
       } finally {
         self.isSubmitting = false;
       }
@@ -172,7 +190,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
       self.isSubmitting = true;
       try {
-        await fetch('/api/admin/notify', {
+        const response = await fetch('/api/admin/notify', {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -182,9 +200,15 @@ window.adminPanel = function (): Record<string, unknown> {
             vibrate: [300, 100, 300, 100, 300, 100, 600],
           }),
         });
-        alert('Ergebnisbekanntgabe wurde gesendet.');
+        if (response.ok) {
+          alert('Ergebnisbekanntgabe wurde erfolgreich gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
       } catch (e) {
         console.error(e);
+        alert('Netzwerk-Fehler beim Ausrufen der Ergebnisbekanntgabe.');
       } finally {
         self.isSubmitting = false;
       }
