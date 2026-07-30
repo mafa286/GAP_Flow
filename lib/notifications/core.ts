@@ -82,8 +82,13 @@ export async function sendNotification(
   const db = dbModule.getDb();
   if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
 
-  let query = "SELECT * FROM push_subscriptions WHERE (role = ? OR ? = 'all')";
-  const params: unknown[] = [roleTarget, roleTarget];
+  let query = "SELECT * FROM push_subscriptions WHERE 1=1";
+  const params: unknown[] = [];
+
+  if (roleTarget && roleTarget !== 'all') {
+    query += " AND role = ?";
+    params.push(roleTarget);
+  }
 
   if (targetSubId) {
     query += " AND (targetId = ? OR targetId = '' OR targetId IS NULL)";
