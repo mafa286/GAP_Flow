@@ -1,4 +1,4 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.65)
+// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.66)
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
@@ -144,16 +144,6 @@ export function init(
   });
 
   return io;
-}
-
-/**
- * Broadcastet eine System-Benachrichtigung an alle verbundenen Sockets.
- * @param {Record<string, unknown>} payload - Die Benachrichtigungsdaten.
- * @returns {void}
- */
-export function broadcastNotification(payload: Record<string, unknown>): void {
-  if (!io) return;
-  io.emit('systemNotification', payload);
 }
 
 /**
