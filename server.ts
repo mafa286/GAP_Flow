@@ -663,6 +663,14 @@ app.post('/api/examiner/push-subscription', authenticateExaminer, (req: Authenti
   const db = dbModule.getDb();
   if (db && !dbModule.getUseJsonFallback()) {
     const id = crypto.createHash('sha256').update(subscription.endpoint).digest('hex').substring(0, 16);
+    const subTargetId = targetId || req.subStation?.id || '';
+
+    // Altdaten-Bereinigung: Veraltete Subscriptions der gleichen Unterstation löschen,
+    // um Doppel-Push Kollisionen auf dem Smartphone zu verhindern
+    if (subTargetId) {
+      db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subTargetId]);
+    }
+
     db.run(
       'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, os, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
@@ -671,7 +679,7 @@ app.post('/api/examiner/push-subscription', authenticateExaminer, (req: Authenti
         subscription.keys.p256dh,
         subscription.keys.auth,
         role || 'examiner',
-        targetId || req.subStation?.id || '',
+        subTargetId,
         os || 'android',
         Date.now(),
       ],
