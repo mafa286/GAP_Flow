@@ -102,11 +102,22 @@ export async function sendNotification(
     }
     if (!rows || rows.length === 0) return;
 
+    // Deduplizierung: Pro Unterstation (targetId) nur die neueste Subscription verwenden,
+    // um simultane Doppel-Pushs an dasselbe Gerät zu verhindern
+    const subMap = new Map<string, any>();
+    rows.forEach((r) => {
+      const key = r.targetId || r.endpoint;
+      if (!subMap.has(key) || (r.timestamp && r.timestamp > subMap.get(key).timestamp)) {
+        subMap.set(key, r);
+      }
+    });
+    const deduplicatedRows = Array.from(subMap.values());
+
     const pushTitle = String(basePayload.title || 'Benachrichtigung');
     const pushType = String(basePayload.tag || basePayload.type || 'standard');
-    console.log(`[WebPush Core Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${rows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
+    console.log(`[WebPush Core Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${deduplicatedRows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
 
-    rows.forEach((r) => {
+    deduplicatedRows.forEach((r) => {
       const sub = {
         endpoint: r.endpoint,
         keys: {
