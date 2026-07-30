@@ -31,6 +31,19 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       if npm run build:frontend > data/build_error.log 2>&1; then
         echo "[GAP-Flow] ✅ Staging-Build ERFOLGREICH! Update übernommen."
         rm -f data/build_error.log
+
+        # Automatische Erhöhung der Dev-Zahl (+1) in package.json bei GitHub-Updates
+        node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const parts = (pkg.version || '1.0').split('.');
+          const release = parts[0] || '1';
+          const dev = parseInt(parts[1] || '0', 10) + 1;
+          pkg.version = \`\${release}.\${dev}\`;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          console.log('[Version] Auto-incremented dev version to v' + pkg.version);
+        "
+        npm run build:frontend >/dev/null 2>&1 || true
       else
         echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
         git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
