@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.8)
+// Version Tracker: server.ts (GAP-Flow v1.2.9)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -425,7 +425,6 @@ export const allocatorCheck = (): boolean => {
               timestamp: Date.now(),
             };
 
-            socketsModule.broadcastNotification(payload);
             sendWebPushNotification('examiner', payload, sub.id);
           }
         }
@@ -817,7 +816,6 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
     timestamp: getUniqueTimestamp(),
   };
 
-  socketsModule.broadcastNotification(notificationPayload);
   sendWebPushNotification('all', notificationPayload);
   res.json({ success: true });
 });
@@ -868,7 +866,6 @@ function startNotificationDaemon(): void {
           actions: [{ action: 'end_pause', title: '▶️ Pause beenden' }],
           timestamp: Date.now(),
         };
-        socketsModule.broadcastNotification(payload);
         sendWebPushNotification('examiner', payload, inactive.subId);
       });
 
@@ -886,7 +883,6 @@ function startNotificationDaemon(): void {
           actions: [{ action: 'deactivate', title: '⚙ deaktivieren?' }],
           timestamp: Date.now(),
         };
-        socketsModule.broadcastNotification(payload);
         sendWebPushNotification('examiner', payload, ot.subId);
       });
 
@@ -912,7 +908,6 @@ function startNotificationDaemon(): void {
             vibrate: [300, 100, 300, 100, 300, 100, 600],
             timestamp: Date.now(),
           };
-          socketsModule.broadcastNotification(payload);
           sendWebPushNotification('all', payload);
         }
       }
