@@ -205,7 +205,7 @@ sw.addEventListener('push', (event: any) => {
     tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
     renotify: true,
     data: {
-      url: (payload && payload.url) ? String(payload.url) : '/pruefer.html',
+      url: (payload && (payload.url || payload.data?.url)) ? String(payload.url || payload.data?.url) : '/pruefer.html',
     },
   };
 
