@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.34)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.35)
 
 interface GroupMember {
   name: string;
@@ -494,6 +494,15 @@ function examiner(): ExaminerComponent {
           if (event.data && event.data.type === 'SW_VERSION_RESPONSE') {
             this.swVersion = event.data.version || '';
             this.swCacheName = event.data.cacheName || '';
+          } else if (event.data && event.data.type === 'PUSH_RECEIVED') {
+            const payload = event.data.payload || {};
+            if (this.soundUnlocked) {
+              this.playInfoSound();
+            }
+            if ('vibrate' in navigator && payload.vibrate) {
+              try { navigator.vibrate(payload.vibrate); } catch (_) {}
+            }
+            this.fetchStatus();
           }
         });
 
