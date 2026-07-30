@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.19)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.20)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,7 +6,7 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const SW_VERSION = 'v1.1.19';
+const SW_VERSION = 'v1.1.20';
 const CACHE_NAME = 'gap-flow-v8';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
@@ -169,32 +169,37 @@ sw.addEventListener('push', (event: any) => {
     options.vibrate = payload.vibrate.map((v: any) => Math.abs(parseInt(String(v), 10) || 100));
   }
 
-  if (payload?.renotify === true && options.tag) {
-    options.renotify = true;
-  }
-
   if (Array.isArray(payload?.actions) && payload.actions.length > 0) {
-    options.actions = payload.actions
-      .filter((act: any) => act && act.action && act.title)
-      .map((act: any) => ({
-        action: String(act.action),
-        title: String(act.title),
-      }));
-  }
+        options.actions = payload.actions
+          .filter((act: any) => act && act.action && act.title)
+          .map((act: any) => ({
+            action: String(act.action),
+            title: String(act.title),
+          }));
+      }
 
-  const pushPromise = sw.registration.showNotification(title, options)
-    .catch((err: unknown) => {
-      console.error('[SW showNotification Error]', err);
-      return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
-        body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
-        icon: `${origin}/icon-192.png`,
-        badge: `${origin}/icon-192.png`,
-        tag: 'gap-flow-fallback',
-        data: { url: '/pruefer.html' },
+      // In-App-Signal an alle geöffneten PWA-Fenster senden (Vordergrund-Feedback)
+      sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
+        for (const client of clientList) {
+          if ('postMessage' in client) {
+            client.postMessage({ type: 'PUSH_RECEIVED', payload });
+          }
+        }
       });
-    });
 
-  event.waitUntil(pushPromise);
+      const pushPromise = sw.registration.showNotification(title, options)
+        .catch((err: unknown) => {
+          console.error('[SW showNotification Error]', err);
+          return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
+            body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
+            icon: `${origin}/icon-192.png`,
+            badge: `${origin}/icon-192.png`,
+            tag: 'gap-flow-fallback',
+            data: { url: '/pruefer.html' },
+          });
+        });
+
+      event.waitUntil(pushPromise);
 });
 
 /**
