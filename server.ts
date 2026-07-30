@@ -505,6 +505,16 @@ adminStationsController.init({
   writeSystemLog,
 });
 
+// Dynamisches Auslesen der zentralen Version aus package.json
+let appVersion = '1.0';
+try {
+  const pkgPath = path.join(__dirname, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    appVersion = pkg.version || '1.0';
+  }
+} catch (_) {}
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.removeHeader('X-Powered-By');
   res.removeHeader('Content-Security-Policy-Report-Only');
@@ -534,10 +544,31 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-cache');
   } else if (isHtml) {
-    res.setHeader(
-      'Content-Security-Policy',
-      "default-src 'self'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; connect-src 'self' ws: wss: http: https: https://*.googleapis.com https://fcm.googleapis.com; img-src 'self' data: blob:;"
-    );
+    const fileToServe = reqPath === '/' ? 'monitor.html' : reqPath.replace(/^\//, '');
+    const fullHtmlPath = path.join(__dirname, 'public', fileToServe);
+
+    if (fs.existsSync(fullHtmlPath) && fs.statSync(fullHtmlPath).isFile()) {
+      let html = fs.readFileSync(fullHtmlPath, 'utf8');
+
+      // 1. Injiziere globale GAP_FLOW_VERSION Variable in <head>
+      const versionScript = `<script>window.GAP_FLOW_VERSION="${appVersion}";</script>`;
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', `${versionScript}\n</head>`);
+      }
+
+      // 2. Ersetze oder hänge ?v=${appVersion} an alle .js Skripte dynamisch an
+      html = html.replace(/src="(\/js\/[^"]+?)(?:\?v=[^"]*)?"/g, `src="$1?v=${appVersion}"`);
+      html = html.replace(/href="(\/css\/[^"]+?)(?:\?v=[^"]*)?"/g, `href="$1?v=${appVersion}"`);
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; connect-src 'self' ws: wss: http: https: https://*.googleapis.com https://fcm.googleapis.com; img-src 'self' data: blob:;"
+      );
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      res.send(html);
+      return;
+    }
   } else {
     // Entferne CSP explizit für alle Bilder, Favicons und Nicht-HTML-Assets
     res.removeHeader('Content-Security-Policy');
