@@ -558,19 +558,11 @@
           </div>
         </div>
 
-        <!-- PWA Versionen Status -->
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
-          <div class="flex justify-between items-center">
-            <span class="font-black text-main flex items-center gap-1.5">📦 System-Release</span>
-            <span class="font-mono font-bold text-[10px] text-brand" x-text="appVersion"></span>
-          </div>
-          <p class="text-[10px] text-muted font-mono" x-text="'Release: ' + appVersion + ' • Cache: ' + (swCacheName || ('gap-flow-v' + (appVersion || '').replace('v', '')))"></p>
         </div>
-      </div>
 
-      <button @click="showPermissionsModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
-        Schließen
-      </button>
+          <button @click="showPermissionsModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
+            Schließen
+          </button>
     </div>
   </div>
 
