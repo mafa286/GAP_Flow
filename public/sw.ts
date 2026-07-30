@@ -1,4 +1,4 @@
-// Version Tracker: public/sw.ts (GAP-Flow v1.1.17)
+// Version Tracker: public/sw.ts (GAP-Flow v1.1.18)
 
 /* eslint-disable no-restricted-globals */
 'use strict';
@@ -6,7 +6,7 @@
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
 
-const SW_VERSION = 'v1.1.17';
+const SW_VERSION = 'v1.1.18';
 const CACHE_NAME = 'gap-flow-v8';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
@@ -149,25 +149,32 @@ sw.addEventListener('push', (event: any) => {
 
       console.log('[SW Push Empfangen]', payload);
 
-      const title = payload.title || 'GAP-Flow Benachrichtigung';
+      const origin = self.location ? self.location.origin : '';
+      const title = (payload && payload.title) ? String(payload.title) : 'GAP-Flow Benachrichtigung';
+      const body = (payload && payload.body) ? String(payload.body) : 'Neue Benachrichtigung aus dem Prüfungsleitstand.';
+
       const options: any = {
-        body: payload.body || '',
-        icon: payload.icon && !payload.icon.endsWith('.json') ? payload.icon : '/icon-192.png',
-        badge: payload.badge && !payload.badge.endsWith('.json') ? payload.badge : '/icon-192.png',
-        tag: payload.tag || payload.type || 'gap-flow-notification',
-        renotify: payload.renotify !== false,
-        vibrate: payload.vibrate || [300, 100, 300],
+        body,
+        icon: `${origin}/icon-192.png`,
+        badge: `${origin}/icon-192.png`,
+        tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
         data: {
-          url: payload.url || '/pruefer.html',
-          ...(payload.data || {}),
-          ...payload,
+          url: (payload && payload.url) ? String(payload.url) : '/pruefer.html',
         },
       };
 
-      if (Array.isArray(payload.actions) && payload.actions.length > 0) {
+      if (Array.isArray(payload?.vibrate) && payload.vibrate.length > 0) {
+        options.vibrate = payload.vibrate;
+      }
+
+      if (payload?.renotify === true && options.tag) {
+        options.renotify = true;
+      }
+
+      if (Array.isArray(payload?.actions) && payload.actions.length > 0) {
         options.actions = payload.actions.map((act: any) => ({
-          action: act.action,
-          title: act.title,
+          action: String(act.action || ''),
+          title: String(act.title || ''),
         }));
       }
 
@@ -175,11 +182,11 @@ sw.addEventListener('push', (event: any) => {
     })
     .catch((err) => {
       console.error('[SW Push-Verarbeitungsfehler]', err);
-      // Garantierter Fallback: showNotification muss immer mit gültigen PNG-Bildern aufgerufen werden
+      const origin = self.location ? self.location.origin : '';
       return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
         body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
+        icon: `${origin}/icon-192.png`,
+        badge: `${origin}/icon-192.png`,
         tag: 'gap-flow-fallback',
         data: { url: '/pruefer.html' },
       });
