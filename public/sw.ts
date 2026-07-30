@@ -158,6 +158,7 @@ sw.addEventListener('push', (event: any) => {
     icon: `${origin}/icon-192.png`,
     badge: `${origin}/icon-192.png`,
     tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
+    renotify: true,
     data: {
       url: (payload && payload.url) ? String(payload.url) : '/pruefer.html',
     },
@@ -168,36 +169,43 @@ sw.addEventListener('push', (event: any) => {
   }
 
   if (Array.isArray(payload?.actions) && payload.actions.length > 0) {
-        options.actions = payload.actions
-          .filter((act: any) => act && act.action && act.title)
-          .map((act: any) => ({
-            action: String(act.action),
-            title: String(act.title),
-          }));
-      }
+    options.actions = payload.actions
+      .filter((act: any) => act && act.action && act.title)
+      .map((act: any) => ({
+        action: String(act.action),
+        title: String(act.title),
+      }));
+  }
 
-      // In-App-Signal an alle geöffneten PWA-Fenster senden (Vordergrund-Feedback)
-      sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
-        for (const client of clientList) {
-          if ('postMessage' in client) {
-            client.postMessage({ type: 'PUSH_RECEIVED', payload });
-          }
+  // 1. In-App-Signal an alle geöffneten PWA-Fenster senden
+  const messageClientsPromise = sw.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clientList: any[]) => {
+      for (const client of clientList) {
+        if ('postMessage' in client) {
+          client.postMessage({ type: 'PUSH_RECEIVED', payload });
         }
+      }
+    })
+    .catch((err: unknown) => {
+      console.warn('[SW matchAll Error]', err);
+    });
+
+  // 2. Betriebssystem-Benachrichtigung rendern
+  const pushPromise = sw.registration.showNotification(title, options)
+    .catch((err: unknown) => {
+      console.error('[SW showNotification Error]', err);
+      return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
+        body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
+        icon: `${origin}/icon-192.png`,
+        badge: `${origin}/icon-192.png`,
+        tag: 'gap-flow-fallback',
+        renotify: true,
+        data: { url: '/pruefer.html' },
       });
+    });
 
-      const pushPromise = sw.registration.showNotification(title, options)
-        .catch((err: unknown) => {
-          console.error('[SW showNotification Error]', err);
-          return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
-            body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
-            icon: `${origin}/icon-192.png`,
-            badge: `${origin}/icon-192.png`,
-            tag: 'gap-flow-fallback',
-            data: { url: '/pruefer.html' },
-          });
-        });
-
-      event.waitUntil(pushPromise);
+  // Beide Asynchronitäten zwingend bündeln, um vorzeitigen SW-Abbruch durch das OS zu verhindern
+  event.waitUntil(Promise.all([pushPromise, messageClientsPromise]));
 });
 
 /**
