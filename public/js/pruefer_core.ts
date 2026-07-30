@@ -242,7 +242,7 @@ function examiner(): ExaminerComponent {
     /**
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
-    async sendLocalTestNotification(): Promise<void> {
+    async sendFcmTestNotification(): Promise<void> {
       if (!('serviceWorker' in navigator) || !('Notification' in window)) {
         alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
         return;
@@ -253,25 +253,29 @@ function examiner(): ExaminerComponent {
         return;
       }
 
+      this.isSubmitting = true;
       try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (!reg || !reg.active) {
-          alert('Kein aktiver Service Worker geladen. Bitte lade die Seite einmal neu.');
-          return;
-        }
+        await this.subscribeToWebPush();
 
-        const origin = window.location.origin;
-        await reg.showNotification('GAP-Flow Diagnose', {
-          body: 'Lokaler PWA-Benachrichtigungstest erfolgreich!',
-          icon: `${origin}/icon-192.png`,
-          badge: `${origin}/icon-192.png`,
-          tag: 'pwa-local-diagnostic-test',
+        const response = await fetch('/api/examiner/test-push', {
+          method: 'POST',
+          headers: {
+            Authorization: this.token,
+            'Content-Type': 'application/json',
+          },
         });
 
-        alert('Befehl ausgeführt: Benachrichtigung an das Betriebssystem gesendet!');
+        if (response.ok) {
+          alert('Befehl ausgeführt: Der GAP-Flow Server hat die VAPID-Testnachricht an den Push-Dienst (Google FCM) gesendet!');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Server-Fehler beim Auslösen des Pushs: ${errData.error || response.statusText}`);
+        }
       } catch (e) {
         const error = e as Error;
-        alert(`Fehler bei showNotification: ${error.message}`);
+        alert(`Netzwerkfehler beim Anfordern des Test-Pushs: ${error.message}`);
+      } finally {
+        this.isSubmitting = false;
       }
     },
 
