@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.7)
+// Version Tracker: server.ts (GAP-Flow v1.2.8)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -17,6 +17,7 @@ import * as adminController from './lib/admin_controller';
 import * as adminGroupsController from './lib/admin_groups_controller';
 import * as adminStationsController from './lib/admin_stations_controller';
 import * as stateFilters from './lib/state_filters';
+import * as notificationCore from './lib/notifications/core';
 
 /**
  * Erweitertes Express Request-Interface für authentifizierte Prüfer-Anfragen.
@@ -593,128 +594,22 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction): void
   }
 };
 
-let vapidPublicKey = '';
-let vapidPrivateKey = '';
-
 /**
- * Initialisiert das VAPID-Schlüsselpaar für W3C Web Push Notifications.
+ * Delegiert VAPID Key Initialisierung an das Benachrichtigungs-Modul.
  */
-function generateAndSaveVapidKeys(db: any, resolve: () => void): void {
-  const keys = webpush.generateVAPIDKeys();
-  vapidPublicKey = keys.publicKey;
-  vapidPrivateKey = keys.privateKey;
-  if (db && !dbModule.getUseJsonFallback()) {
-    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
-    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
-  }
-  webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-  console.log('[WebPush] Neues VAPID Schlüsselpaar generiert und aktiviert.');
-  resolve();
-}
-
 function initVapidKeys(): Promise<void> {
-  return new Promise((resolve) => {
-    const db = dbModule.getDb();
-    if (db && !dbModule.getUseJsonFallback()) {
-      db.get("SELECT value FROM meta WHERE key = 'vapid_public_key'", [], (err, rowPublic: any) => {
-        if (!err && rowPublic && rowPublic.value) {
-          vapidPublicKey = rowPublic.value;
-          db.get("SELECT value FROM meta WHERE key = 'vapid_private_key'", [], (err2, rowPrivate: any) => {
-            if (!err2 && rowPrivate && rowPrivate.value) {
-              vapidPrivateKey = rowPrivate.value;
-              webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
-              console.log('[WebPush] VAPID Schlüsselpaar aus Datenbank geladen.');
-              resolve();
-            } else {
-              generateAndSaveVapidKeys(db, resolve);
-            }
-          });
-        } else {
-          generateAndSaveVapidKeys(db, resolve);
-        }
-      });
-    } else {
-      generateAndSaveVapidKeys(null, resolve);
-    }
-  });
+  return notificationCore.initVapidKeys();
 }
 
 /**
- * Sendet eine W3C Web Push Benachrichtigung an registrierte Geräte.
+ * Sendet eine W3C Web Push Benachrichtigung über das modulare Notification-Core System.
  */
 export async function sendWebPushNotification(
   roleTarget: string,
-  payload: Record<string, unknown>,
+  payload: any,
   targetSubId?: string
 ): Promise<void> {
-  const db = dbModule.getDb();
-  if (!db || dbModule.getUseJsonFallback() || !vapidPublicKey) return;
-
-  let query = "SELECT * FROM push_subscriptions WHERE (role = ? OR ? = 'all')";
-  const params: unknown[] = [roleTarget, roleTarget];
-
-  if (targetSubId) {
-    query += " AND (targetId = ? OR targetId = '' OR targetId IS NULL)";
-    params.push(targetSubId);
-  }
-
-  db.all(query, params, (err, rows: any[]) => {
-    if (err) {
-      console.error('[WebPush SQL Fehler]', err.message);
-      return;
-    }
-    if (!rows || rows.length === 0) return;
-
-    const pushTitle = String(payload.title || 'Benachrichtigung');
-    const pushType = String(payload.tag || payload.type || 'standard');
-    console.log(`[WebPush Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${rows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
-
-    const payloadStr = JSON.stringify(payload);
-
-    // High Priority Header (Urgency: high, TTL: 86400) für sofortiges Aufwachen im Android Doze-Modus
-    const pushOptions = {
-      TTL: 86400,
-      headers: {
-        Urgency: 'high',
-      },
-    };
-
-    rows.forEach((r) => {
-      const sub = {
-        endpoint: r.endpoint,
-        keys: {
-          p256dh: r.keys_p256dh,
-          auth: r.keys_auth,
-        },
-      };
-
-      let endpointDomain = 'unbekannt';
-      try {
-        if (r.endpoint) {
-          endpointDomain = new URL(r.endpoint).hostname;
-        }
-      } catch (_) {
-        // Fallback wenn Endpoint-URL unvollständig ist
-      }
-
-      webpush
-        .sendNotification(sub, payloadStr, pushOptions)
-        .then((res) => {
-          console.log(
-            `[WebPush Erfolgreich] ID: ${r.id} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | Status: ${res.statusCode} | Titel: "${pushTitle}"`
-          );
-        })
-        .catch((pushErr) => {
-          console.error(
-            `[WebPush Fehler] ID: ${r.id} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | HTTP ${pushErr.statusCode || 'N/A'}: ${pushErr.message}`
-          );
-          if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
-            console.log(`[WebPush Bereinigung] Entferne abgelaufene Subscription ${r.id} aus der Datenbank.`);
-            db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
-          }
-        });
-    });
-  });
+  return notificationCore.sendNotification(roleTarget, payload, targetSubId);
 }
 
 app.get('/api/ping', (_req: Request, res: Response) => {
@@ -725,11 +620,11 @@ app.get('/api/ping', (_req: Request, res: Response) => {
 
 app.get('/api/push/vapid-public-key', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.json({ publicKey: vapidPublicKey });
+  res.json({ publicKey: notificationCore.getVapidPublicKey() });
 });
 
 app.post('/api/examiner/push-subscription', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { subscription, role, targetId } = req.body || {};
+  const { subscription, role, targetId, os } = req.body || {};
   if (!subscription || !subscription.endpoint || !subscription.keys) {
     res.status(400).json({ error: 'Ungültige Subscription' });
     return;
@@ -739,7 +634,7 @@ app.post('/api/examiner/push-subscription', authenticateExaminer, (req: Authenti
   if (db && !dbModule.getUseJsonFallback()) {
     const id = crypto.createHash('sha256').update(subscription.endpoint).digest('hex').substring(0, 16);
     db.run(
-      'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, os, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         subscription.endpoint,
@@ -747,6 +642,7 @@ app.post('/api/examiner/push-subscription', authenticateExaminer, (req: Authenti
         subscription.keys.auth,
         role || 'examiner',
         targetId || req.subStation?.id || '',
+        os || 'android',
         Date.now(),
       ],
       (err) => {
