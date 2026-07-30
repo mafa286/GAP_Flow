@@ -198,8 +198,9 @@ export function scanReminderEvents(systemState: SystemState): {
       if (!sub) return;
 
       // 1. Inaktivitätsprüfung (Pausiert & Leer)
-      if (sub.paused && !sub.currentGroupId && sub.startTime) {
-        const pausedMinutes = Math.floor((now - sub.startTime) / 60000);
+      const pauseRefTime = sub.pausedAt || sub.startTime;
+      if (sub.paused && !sub.currentGroupId && pauseRefTime) {
+        const pausedMinutes = Math.floor((now - pauseRefTime) / 60000);
         if (pausedMinutes >= 30 && (pausedMinutes - 30) % 10 === 0) {
           inactives.push({ subId: sub.id, pausedMinutes });
         }
