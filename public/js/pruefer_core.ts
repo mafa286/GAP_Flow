@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.32)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.33)
 
 interface GroupMember {
   name: string;
@@ -112,6 +112,7 @@ interface ExaminerComponent {
   forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
+  sendLocalTestNotification(): Promise<void>;
   subscribeToWebPush(): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
   requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void;
@@ -234,6 +235,29 @@ function examiner(): ExaminerComponent {
         console.error('Fehler beim Leeren des Caches:', e);
       }
       window.location.reload();
+    },
+
+    /**
+     * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
+     */
+    async sendLocalTestNotification(): Promise<void> {
+      if (!('serviceWorker' in navigator)) {
+        alert('Service Worker wird auf diesem Gerät nicht unterstützt.');
+        return;
+      }
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const origin = window.location.origin;
+        await reg.showNotification('GAP-Flow Diagnose', {
+          body: 'Lokaler PWA-Benachrichtigungstest erfolgreich!',
+          icon: `${origin}/icon-192.png`,
+          badge: `${origin}/icon-192.png`,
+          tag: 'pwa-local-diagnostic-test',
+        });
+      } catch (e) {
+        const error = e as Error;
+        alert(`Lokaler Test fehlgeschlagen: ${error.message}`);
+      }
     },
 
     /**
