@@ -125,8 +125,8 @@ export function init(
 
       const targetLabel = data.target === 'pruefungsleitung' ? 'PRÜFUNGSLEITUNG' : 'LEITSTELLE';
       const notificationData = {
-        title: `🚨 Rückruf durch ${targetLabel}!`,
-        body: `Station ${data.subId || 'unbekannt'} bittet um Rückruf.\nRückruf an folgende Nummer: ${data.phoneNumber || 'Keine Telefonnummer hinterlegt'}`,
+        title: `🚨 Rückrufwunsch an ${targetLabel}!`,
+        body: `Station ${data.subId || 'unbekannt'} (${data.examinerName || 'Prüfer'}) bittet um Rückruf.\nZielkontakt: ${data.phoneNumber || 'Keine Telefonnummer hinterlegt'}`,
         target: data.target,
         subId: data.subId,
         examinerName: data.examinerName,
