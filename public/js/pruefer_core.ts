@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.29)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.30)
 
 interface GroupMember {
   name: string;
@@ -207,8 +207,8 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
-    appVersion: 'v1.1.94',
-    coreVersion: 'v1.1.29',
+    appVersion: 'v1.1.95',
+    coreVersion: 'v1.1.30',
     swVersion: '',
     swCacheName: '',
 
