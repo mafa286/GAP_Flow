@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.30)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.31)
 
 interface GroupMember {
   name: string;
@@ -345,6 +345,12 @@ function examiner(): ExaminerComponent {
           });
         }
 
+        const detectOs = (): string => {
+          if (this.isIOS()) return 'ios';
+          if (/Win/i.test(navigator.platform || '')) return 'windows';
+          return 'android';
+        };
+
         const subRes = await fetch('/api/examiner/push-subscription', {
           method: 'POST',
           headers: {
@@ -355,6 +361,7 @@ function examiner(): ExaminerComponent {
             subscription: sub,
             role: 'examiner',
             targetId: this.subId,
+            os: detectOs(),
           }),
         });
         if (subRes.ok) {
