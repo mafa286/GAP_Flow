@@ -284,13 +284,13 @@ function examiner(): ExaminerComponent {
       const targetName = target === 'pruefungsleitung' ? 'Prüfungsleitung' : 'Leitstelle';
       if (!confirm(`Möchten Sie wirklich einen dringenden Rückruf durch die ${targetName} anfordern?`)) return;
 
-      const myPhone = target === 'pruefungsleitung' ? this.phonePruefungsleitungNumber : this.phoneLeitstelleNumber;
+      const contactPhone = target === 'pruefungsleitung' ? this.phonePruefungsleitungNumber : this.phoneLeitstelleNumber;
       if (window.examinerSocket && window.examinerSocket.connected) {
         window.examinerSocket.emit('requestCallback', {
           target,
           subId: this.subId,
           examinerName: this.examinerName,
-          phoneNumber: myPhone || '',
+          phoneNumber: contactPhone || '',
         });
         alert(`🚨 Rückrufwunsch an die ${targetName} wurde erfolgreich übermittelt!`);
       } else {
