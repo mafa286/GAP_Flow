@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.101) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -15,12 +14,12 @@
   <meta name="apple-mobile-web-app-title" content="GF Prüfer">
   <link rel="apple-touch-icon" href="/icon-192.png?v=1.1.80">
   
-  <script src="/js/theme_config.js?v=1.1.68"></script>
-  <script src="/js/audio_engine.js?v=1.1.63"></script>
-  <script src="/js/gap_flow_utils.js?v=1.1.64"></script>
-  <script src="/js/pruefer_pwa_helper.js?v=1.1.2"></script>
-  <script src="/js/pruefer_core.js?v=1.1.35"></script>
-  <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
+  <script src="/js/version.js?v=1.3.0"></script>
+  <script src="/js/theme_config.js?v=1.3.0"></script>
+  <script src="/js/audio_engine.js?v=1.3.0"></script>
+  <script src="/js/gap_flow_utils.js?v=1.3.0"></script>
+  <script src="/js/pruefer_pwa_helper.js?v=1.3.0"></script>
+  <script src="/js/pruefer_core.js?v=1.3.0"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
   <!-- Socket.io-Client für Echtzeit-Push-Updates -->
   <script src="/socket.io/socket.io.js?v=4.0.0"></script>
@@ -567,10 +566,10 @@
         <!-- PWA Versionen Status -->
         <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
           <div class="flex justify-between items-center">
-            <span class="font-black text-main flex items-center gap-1.5">📦 Active PWA Versionen</span>
-            <span class="font-mono font-bold text-[10px] text-brand" x-text="swCacheName || 'v8'">v8</span>
+            <span class="font-black text-main flex items-center gap-1.5">📦 System-Release</span>
+            <span class="font-mono font-bold text-[10px] text-brand" x-text="appVersion">v1.3.0</span>
           </div>
-          <p class="text-[10px] text-muted font-mono" x-text="'HTML ' + (appVersion || 'v1.1.95') + ' • Core ' + (coreVersion || 'v1.1.30') + ' • SW ' + (swVersion || 'v1.1.16')">HTML v1.1.95 • Core v1.1.30 • SW v1.1.16</p>
+          <p class="text-[10px] text-muted font-mono" x-text="'Release: ' + appVersion + ' • Cache: ' + (swCacheName || 'gap-flow-v1.3.0')">Release: v1.3.0</p>
         </div>
       </div>
 
