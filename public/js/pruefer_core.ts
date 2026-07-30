@@ -110,7 +110,7 @@ interface ExaminerComponent {
   forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
-  sendLocalTestNotification(): Promise<void>;
+  sendServerTestNotification(): Promise<void>;
   subscribeToWebPush(): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
   requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void;
