@@ -519,7 +519,10 @@ export function saveStateToStoragePromise(
                   lastSavedLogTimestamp = Math.max(...clonedState.logs.map((l) => l.timestamp));
                 }
                 systemState.isCleared = false;
-                systemState.pendingLogCancellations = [];
+                const processedCancellations = clonedState.pendingLogCancellations || [];
+                systemState.pendingLogCancellations = (systemState.pendingLogCancellations || []).filter(
+                  (ts) => !processedCancellations.includes(ts)
+                );
 
                 if (systemState.logs.length > 1000) {
                   systemState.logs = systemState.logs.slice(-1000);
