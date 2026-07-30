@@ -1,4 +1,4 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.5)
+// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.6)
 
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
@@ -23,6 +23,10 @@ interface AdminSettingsComponent {
   showUpdateStatusModal: boolean;
   updateStep: string;
   updateErrorMessage: string;
+  showServerLogModal: boolean;
+  serverLogText: string;
+  hasBuildError: boolean;
+  isGeneratingRepomix: boolean;
 
   initSocket(): void;
   saveSettings(): Promise<void>;
@@ -32,6 +36,8 @@ interface AdminSettingsComponent {
   sendErgebnisbekanntgabe(): Promise<void>;
   dismissCallback(index: number): void;
   triggerSystemRestart(): Promise<void>;
+  downloadRepomix(): Promise<void>;
+  fetchServerLog(): Promise<void>;
   pollServerPing(): Promise<void>;
   getUpdateTitle(): string;
   getUpdateDescription(): string;
@@ -51,6 +57,10 @@ window.adminPanel = function (): Record<string, unknown> {
     showUpdateStatusModal: false,
     updateStep: '',
     updateErrorMessage: '',
+    showServerLogModal: false,
+    serverLogText: '',
+    hasBuildError: false,
+    isGeneratingRepomix: false,
 
     initSocket(): void {
       const self = this as unknown as AdminSettingsComponent;
@@ -337,6 +347,73 @@ window.adminPanel = function (): Record<string, unknown> {
 
     reloadAfterUpdate(): void {
       window.location.reload();
+    },
+
+    /**
+     * Bereinigt alte Repomix-Dateien, generiert ein frisches repomix-output.xml und lädt es herunter.
+     */
+    async downloadRepomix(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (self.isGeneratingRepomix) return;
+      self.isGeneratingRepomix = true;
+
+      try {
+        const response = await fetch('/api/admin/system/repomix', {
+          method: 'GET',
+          headers: { Authorization: self.password },
+        });
+
+        if (response.ok) {
+          if (window.gapFlowUtils) {
+            const success = await window.gapFlowUtils.downloadFileFromResponse(response, 'repomix-output.xml');
+            if (!success) {
+              alert('Download fehlgeschlagen.');
+            }
+          }
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(errData.error || 'Fehler bei der Repomix-Generierung.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Netzwerk-Fehler beim Generieren der Repomix-Datei.');
+      } finally {
+        self.isGeneratingRepomix = false;
+      }
+    },
+
+    /**
+     * Lädt das Server- und Kompilierungs-Protokoll ab.
+     */
+    async fetchServerLog(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      try {
+        const response = await fetch('/api/admin/system/logs', {
+          method: 'GET',
+          headers: { Authorization: self.password },
+        });
+        if (response.ok) {
+          const data = (await response.json()) as {
+            hasBuildError: boolean;
+            buildErrorLog: string;
+            uptimeSeconds: number;
+            serverTime: string;
+          };
+          self.hasBuildError = data.hasBuildError;
+          if (data.hasBuildError && data.buildErrorLog) {
+            self.serverLogText = `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
+          } else {
+            const mins = Math.floor(data.uptimeSeconds / 60);
+            self.serverLogText = `🟢 SYSTEM NORMAL & STABIL\n\nServer-Uptime: ${mins} Minuten\nServer-Zeit: ${data.serverTime}\n\nKeine Kompilierungsfehler aufgetreten. Das System arbeitet ordnungsgemäß.`;
+          }
+          self.showServerLogModal = true;
+        } else {
+          alert('Protokoll konnte nicht geladen werden.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Netzwerk-Fehler beim Abrufen des Protokolls.');
+      }
     },
   };
 
