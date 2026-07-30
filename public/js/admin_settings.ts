@@ -439,7 +439,34 @@ window.adminPanel = function (): Record<string, unknown> {
         alert('Netzwerk-Fehler beim Abrufen des Protokolls.');
       }
     },
-  };
+
+    /**
+     * Lädt die Remote-Diagnoseprotokolle des Service Workers direkt vom Smartphone.
+     */
+    async fetchSwDebugLogs(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      try {
+        const response = await fetch('/api/admin/system/sw-debug-logs', {
+          method: 'GET',
+          headers: { Authorization: self.password },
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { logs: Array<Record<string, unknown>> };
+          self.hasBuildError = false;
+          if (data.logs && data.logs.length > 0) {
+            self.serverLogText = `📱 EMPFANGENE SERVICE WORKER PUSH-DIAGNOSELOGS (Neueste zuerst):\n\n${JSON.stringify(data.logs, null, 2)}`;
+          } else {
+            self.serverLogText = '📱 Noch keine Service Worker Remote-Logs empfangen.\nSobald ein Push-Event auf einem Gerät verarbeitet wird, erscheinen hier alle Parameter, geparsten JSON-Daten und Ausführungsfehler.';
+          }
+          self.showServerLogModal = true;
+        } else {
+          alert('SW-Diagnoseprotokolle konnten nicht geladen werden.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Netzwerk-Fehler beim Abrufen der SW-Diagnoseprotokolle.');
+      }
+    },
 
   if (typeof window.createAdminPanel === 'function') {
     return window.createAdminPanel(coreConfig);
