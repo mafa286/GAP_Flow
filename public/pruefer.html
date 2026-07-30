@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="GF Prüfer">
-  <link rel="apple-touch-icon" href="/icon-192.png?v=1.1.80">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   
   <script src="/js/theme_config.js"></script>
   <script src="/js/audio_engine.js"></script>
@@ -452,15 +452,9 @@
         </button>
       </div>
 
-      <!-- Unauffällige Versions-Anzeige mit Fallback-Text -->
-      <div class="pt-3 border-t border-main text-[10px] text-muted text-center space-y-0.5 font-mono">
-        <div>
-          <span>HTML: <strong class="text-main" x-text="appVersion || 'v1.1.95'">v1.1.95</strong></span> • 
-          <span>Core: <strong class="text-main" x-text="coreVersion || 'v1.1.30'">v1.1.30</strong></span>
-        </div>
-        <div>
-          <span>Service Worker: <strong class="text-brand" x-text="swVersion ? swVersion + ' (' + swCacheName + ')' : 'v1.1.16 (v8)'">v1.1.16 (v8)</strong></span>
-        </div>
+      <!-- Unauffällige Versions-Anzeige -->
+      <div class="pt-3 border-t border-main text-[10px] text-muted text-center font-mono">
+        <span>GAP-Flow System-Release: <strong class="text-brand" x-text="appVersion"></strong></span>
       </div>
 
       <button @click="showFunctionsMenu = false" class="w-full py-2 mt-1 app-card-accent text-muted font-bold text-xs uppercase tracking-wider">
@@ -570,7 +564,7 @@
             <span class="font-black text-main flex items-center gap-1.5">📦 System-Release</span>
             <span class="font-mono font-bold text-[10px] text-brand" x-text="appVersion"></span>
           </div>
-          <p class="text-[10px] text-muted font-mono" x-text="'Release: ' + appVersion + ' • Cache: ' + (swCacheName || 'gap-flow-v' + (window.GAP_FLOW_VERSION || '0.0'))"></p>
+          <p class="text-[10px] text-muted font-mono" x-text="'Release: ' + appVersion + ' • Cache: ' + (swCacheName || ('gap-flow-v' + (appVersion || '').replace('v', '')))"></p>
         </div>
       </div>
 
