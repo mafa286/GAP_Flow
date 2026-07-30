@@ -776,6 +776,24 @@ app.post('/api/examiner/pause_immediate', authenticateExaminer, (req: Authentica
   commitAndRespond(res);
 });
 
+app.post('/api/examiner/test-push', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
+  const sub = req.subStation!;
+  const payload = {
+    type: `test-push-${sub.id}`,
+    tag: `test-push-${sub.id}`,
+    title: '🧪 FCM Push-Diagnose',
+    body: `Test-Nachricht für Station ${sub.id} erfolgreich über Google FCM / VAPID zugestellt!`,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    url: '/pruefer.html',
+    vibrate: [300, 100, 300],
+    timestamp: Date.now(),
+  };
+
+  sendWebPushNotification('examiner', payload, sub.id);
+  res.json({ success: true });
+});
+
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
 app.post('/api/admin/verify_token', adminController.verifyToken);
 
