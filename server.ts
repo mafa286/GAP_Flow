@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.6)
+// Version Tracker: server.ts (GAP-Flow v1.2.7)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -931,6 +931,9 @@ app.post('/api/admin/stations', adminAuth, adminStationsController.createStation
 app.put('/api/admin/stations/:id/sub_config', adminAuth, adminStationsController.subConfig);
 app.put('/api/admin/stations/:id', adminAuth, adminStationsController.updateStation);
 app.post('/api/admin/stations/batch', adminAuth, adminStationsController.batchStations);
+
+app.get('/api/admin/system/repomix', adminAuth, fileProcessor.generateAndDownloadRepomix);
+app.get('/api/admin/system/logs', adminAuth, adminController.getSystemLogs);
 
 app.get('/api/admin/update/download', adminAuth, fileProcessor.downloadCode);
 app.post('/api/admin/update/upload', adminAuth, express.raw({ type: 'application/zip', limit: '50mb' }), fileProcessor.uploadCode);
