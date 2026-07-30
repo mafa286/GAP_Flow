@@ -98,7 +98,7 @@ sw.addEventListener('fetch', (event: any) => {
           return networkResponse;
         })
         .catch(() => {
-          return caches.match(event.request).then((cachedResponse) => {
+          return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
             }
