@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.0.9) -->
+<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.1.0) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -210,28 +210,58 @@
         </div>
       </div>
 
-      <!-- SEKTION 3: SYSTEM-NEUSTART & AUTOMATISCHES BACKUP -->
+      <!-- SEKTION 3: SYSTEM-WERKZEUGE, NEUSTART, REPOMIX & LOGS -->
       <div class="app-card p-6 space-y-6">
         <div>
-          <h2 class="text-xl font-bold text-main">2. System-Neustart &amp; Automatisches Backup</h2>
+          <h2 class="text-xl font-bold text-main">3. System-Werkzeuge &amp; Verwaltung</h2>
           <p class="text-xs text-muted leading-relaxed">
-            Hier können Sie den Serverprozess kontrolliert neu starten. Bei jedem Neustart prüft das System den Quellcode und erstellt beim Hochfahren automatisch ein vollständiges, zeitsynchrones ZIP-Backup aller Datenbanken und Einstellungen im Backup-Ordner.
+            Verwaltung von Serverprozess, Quellcode-Export (Repomix) und Anzeige von System- &amp; Kompilierungsprotokollen.
           </p>
         </div>
 
-        <div class="max-w-md">
-          <!-- Neustart Kachel -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Kachel 1: Server Neustart -->
           <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
             <div>
-              <h3 class="text-sm font-bold text-brand uppercase">System neustarten</h3>
+              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">🔄 Server neustarten</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Beendet den Serverprozess kontrolliert. Docker startet den Container daraufhin neu (Dauer: ca. 2–5 Sek.). Beim Start erstellt das System automatisch ein frisches ZIP-Backup im Backup-Ordner.
+                Beendet den Serverprozess kontrolliert. Docker startet den Container neu. Vor dem Laden wird der neue Stand im Staging-Modus kompiliert; bei Fehlern wird der letzte stabile Stand geladen.
               </p>
             </div>
             <button @click="triggerSystemRestart()" 
                     :disabled="isSubmitting"
                     class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow">
               🔄 Server neustarten
+            </button>
+          </div>
+
+          <!-- Kachel 2: Repomix Export -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">📦 Repomix Export</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Löscht alte Repomix-Dateien, generiert eine frische <code class="text-brand">repomix-output.xml</code> aus der gesamten Codebasis und lädt diese direkt herunter.
+              </p>
+            </div>
+            <button @click="downloadRepomix()" 
+                    :disabled="isGeneratingRepomix"
+                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow flex items-center justify-center gap-2">
+              <span x-show="!isGeneratingRepomix">📦 Repomix XML generieren</span>
+              <span x-show="isGeneratingRepomix" class="animate-pulse">⏳ Generiere XML...</span>
+            </button>
+          </div>
+
+          <!-- Kachel 3: Server- & Build-Log -->
+          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">📄 Server- &amp; Build-Log</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Zeigt Uptime, Systemstatus sowie eventuelle Kompilierungsfehler an, falls ein GitHub-Update wegen Syntax- oder Typfehlern abgelehnt wurde.
+              </p>
+            </div>
+            <button @click="fetchServerLog()" 
+                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow flex items-center justify-center gap-2">
+              <span>📄 Server-Log anzeigen</span>
             </button>
           </div>
         </div>
@@ -274,6 +304,29 @@
             Schließen
           </button>
         </template>
+      </div>
+    </div>
+
+    <!-- MODAL: SERVER- & BUILD-LOG MONITOR -->
+    <div x-show="showServerLogModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+      <div class="app-card p-6 max-w-2xl w-full space-y-4 border-main">
+        <div class="flex justify-between items-center border-b border-main pb-3">
+          <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
+            <span>📄</span> System- &amp; Kompilierungs-Protokoll
+          </h3>
+          <button @click="showServerLogModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+        </div>
+
+        <div class="p-3 app-card-accent rounded-lg border border-main font-mono text-xs max-h-[60vh] overflow-y-auto whitespace-pre-wrap leading-relaxed text-main"
+             :style="hasBuildError ? 'color: var(--sig-danger-text) !important;' : ''"
+             x-text="serverLogText"></div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button @click="showServerLogModal = false" class="px-6 py-2 btn-brand text-xs font-bold uppercase tracking-wider shadow">
+            Schließen
+          </button>
+        </div>
       </div>
     </div>
   </div>
