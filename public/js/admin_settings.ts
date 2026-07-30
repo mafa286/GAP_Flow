@@ -407,17 +407,20 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Lädt das Server- und Kompilierungs-Protokoll ab.
+     * Lädt das Server-, Kompilierungs- und Service-Worker-Protokoll in einer kombinierten Ansicht.
      */
     async fetchServerLog(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
       try {
-        const response = await fetch('/api/admin/system/logs', {
-          method: 'GET',
-          headers: { Authorization: self.password },
-        });
-        if (response.ok) {
-          const data = (await response.json()) as {
+        const [logRes, swRes] = await Promise.all([
+          fetch('/api/admin/system/logs', { headers: { Authorization: self.password } }),
+          fetch('/api/admin/system/sw-debug-logs', { headers: { Authorization: self.password } }),
+        ]);
+
+        let logText = '';
+
+        if (logRes.ok) {
+          const data = (await logRes.json()) as {
             hasBuildError: boolean;
             buildErrorLog: string;
             uptimeSeconds: number;
@@ -425,46 +428,28 @@ window.adminPanel = function (): Record<string, unknown> {
           };
           self.hasBuildError = data.hasBuildError;
           if (data.hasBuildError && data.buildErrorLog) {
-            self.serverLogText = `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
+            logText += `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.\n\n`;
           } else {
             const mins = Math.floor(data.uptimeSeconds / 60);
-            self.serverLogText = `🟢 SYSTEM NORMAL & STABIL\n\nServer-Uptime: ${mins} Minuten\nServer-Zeit: ${data.serverTime}\n\nKeine Kompilierungsfehler aufgetreten. Das System arbeitet ordnungsgemäß.`;
+            logText += `🟢 SYSTEM NORMAL & STABIL\n• Server-Uptime: ${mins} Minuten\n• Server-Zeit: ${data.serverTime}\n• Status: Keine Kompilierungsfehler aufgetreten.\n\n`;
           }
-          self.showServerLogModal = true;
-        } else {
-          alert('Protokoll konnte nicht geladen werden.');
         }
-      } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Abrufen des Protokolls.');
-      }
-    },
 
-    /**
-     * Lädt die Remote-Diagnoseprotokolle des Service Workers direkt vom Smartphone.
-     */
-    async fetchSwDebugLogs(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      try {
-        const response = await fetch('/api/admin/system/sw-debug-logs', {
-          method: 'GET',
-          headers: { Authorization: self.password },
-        });
-        if (response.ok) {
-          const data = (await response.json()) as { logs: Array<Record<string, unknown>> };
-          self.hasBuildError = false;
-          if (data.logs && data.logs.length > 0) {
-            self.serverLogText = `📱 EMPFANGENE SERVICE WORKER PUSH-DIAGNOSELOGS (Neueste zuerst):\n\n${JSON.stringify(data.logs, null, 2)}`;
+        if (swRes.ok) {
+          const swData = (await swRes.json()) as { logs: Array<Record<string, unknown>> };
+          logText += `==================================================\n📱 SERVICE WORKER REMOTE-PUSH-LOGS (${swData.logs ? swData.logs.length : 0} Einträge):\n==================================================\n`;
+          if (swData.logs && swData.logs.length > 0) {
+            logText += JSON.stringify(swData.logs, null, 2);
           } else {
-            self.serverLogText = '📱 Noch keine Service Worker Remote-Logs empfangen.\nSobald ein Push-Event auf einem Gerät verarbeitet wird, erscheinen hier alle Parameter, geparsten JSON-Daten und Ausführungsfehler.';
+            logText += 'Noch keine Service Worker Remote-Logs empfangen.\n(Sobald ein Push-Event auf einem Smartphone empfangen wird, erscheinen hier alle empfangenen Parameter, JSON-Daten und Ausführungsfehler).';
           }
-          self.showServerLogModal = true;
-        } else {
-          alert('SW-Diagnoseprotokolle konnten nicht geladen werden.');
         }
+
+        self.serverLogText = logText;
+        self.showServerLogModal = true;
       } catch (e) {
         console.error(e);
-        alert('Netzwerk-Fehler beim Abrufen der SW-Diagnoseprotokolle.');
+        alert('Netzwerk-Fehler beim Abrufen der System-Protokolle.');
       }
     },
 
