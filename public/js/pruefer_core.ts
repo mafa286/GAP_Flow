@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.33)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.34)
 
 interface GroupMember {
   name: string;
@@ -241,12 +241,23 @@ function examiner(): ExaminerComponent {
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
     async sendLocalTestNotification(): Promise<void> {
-      if (!('serviceWorker' in navigator)) {
-        alert('Service Worker wird auf diesem Gerät nicht unterstützt.');
+      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
         return;
       }
+
+      if (Notification.permission !== 'granted') {
+        alert(`Hinweis: Benachrichtigungserlaubnis steht auf "${Notification.permission}". Bitte tippe zuerst auf "🔔 Benachrichtigungen anfragen"!`);
+        return;
+      }
+
       try {
-        const reg = await navigator.serviceWorker.ready;
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (!reg || !reg.active) {
+          alert('Kein aktiver Service Worker geladen. Bitte lade die Seite einmal neu.');
+          return;
+        }
+
         const origin = window.location.origin;
         await reg.showNotification('GAP-Flow Diagnose', {
           body: 'Lokaler PWA-Benachrichtigungstest erfolgreich!',
@@ -254,9 +265,11 @@ function examiner(): ExaminerComponent {
           badge: `${origin}/icon-192.png`,
           tag: 'pwa-local-diagnostic-test',
         });
+
+        alert('Befehl ausgeführt: Benachrichtigung an das Betriebssystem gesendet!');
       } catch (e) {
         const error = e as Error;
-        alert(`Lokaler Test fehlgeschlagen: ${error.message}`);
+        alert(`Fehler bei showNotification: ${error.message}`);
       }
     },
 
