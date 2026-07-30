@@ -13,7 +13,7 @@
   },
   "scripts": {
     "start": "npm run build:frontend && npx tsx server.ts",
-    "build:frontend": "node lib/inject-version.js && npx tsc -p tsconfig.frontend.json",
+    "build:frontend": "npx tsx lib/inject_version.ts && npx tsc -p tsconfig.frontend.json",
     "lint": "eslint ."
   },
   "dependencies": {
