@@ -128,6 +128,36 @@ sw.addEventListener('fetch', (event: any) => {
 });
 
 /**
+ * Rendert eine System-Benachrichtigung sturmfest mit mehrstufiger Fallback-Kaskade,
+ * um synchrone TypeErrors in Chrome Android ("Website im Hintergrund aktualisiert") zu verhindern.
+ */
+async function safeShowNotification(title: string, options: any, origin: string): Promise<void> {
+  try {
+    await sw.registration.showNotification(title, options);
+  } catch (firstErr) {
+    console.warn('[SW showNotification Erster Versuch fehlgeschlagen, nutze Basis-Fallback]', firstErr);
+    try {
+      // Versuch 2: Bereinigte Basis-Optionen ohne renotify/vibrate/actions
+      const safeOptions: any = {
+        body: options.body || '',
+        icon: `${origin}/icon-192.png`,
+        badge: `${origin}/icon-192.png`,
+        data: options.data || { url: '/pruefer.html' },
+      };
+      await sw.registration.showNotification(title, safeOptions);
+    } catch (secondErr) {
+      console.error('[SW showNotification Minimal-Fallback fehlgeschlagen]', secondErr);
+      // Versuch 3: Garantierter Minimal-Standard
+      await sw.registration.showNotification('GAP-Flow Benachrichtigung', {
+        body: options.body || 'Neue Mitteilung aus dem Prüfungsleitstand.',
+        icon: `${origin}/icon-192.png`,
+        data: { url: '/pruefer.html' },
+      });
+    }
+  }
+}
+
+/**
  * Push-Event: Empfängt eingehende Web-Push-Benachrichtigungen vom Server/Push-Dienst.
  * Garantiert Chrome-Android-Konformität (kein generischer Fallback-Text).
  * @param {any} event - Das native PushEvent der Service Worker API.
@@ -190,19 +220,8 @@ sw.addEventListener('push', (event: any) => {
       console.warn('[SW matchAll Error]', err);
     });
 
-  // 2. Betriebssystem-Benachrichtigung rendern
-  const pushPromise = sw.registration.showNotification(title, options)
-    .catch((err: unknown) => {
-      console.error('[SW showNotification Error]', err);
-      return sw.registration.showNotification('GAP-Flow Benachrichtigung', {
-        body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.',
-        icon: `${origin}/icon-192.png`,
-        badge: `${origin}/icon-192.png`,
-        tag: 'gap-flow-fallback',
-        renotify: true,
-        data: { url: '/pruefer.html' },
-      });
-    });
+  // 2. Betriebssystem-Benachrichtigung über sichere Fallback-Kaskade rendern
+  const pushPromise = safeShowNotification(title, options, origin);
 
   // Beide Asynchronitäten zwingend bündeln, um vorzeitigen SW-Abbruch durch das OS zu verhindern
   event.waitUntil(Promise.all([pushPromise, messageClientsPromise]));
