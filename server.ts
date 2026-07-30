@@ -753,6 +753,24 @@ app.get('/api/examiner/status', authenticateExaminer, (req: AuthenticatedExamine
   res.json(flatState);
 });
 
+app.post('/api/examiner/test-push', authenticateExaminer, async (req: AuthenticatedExaminerRequest, res: Response) => {
+  const sub = req.subStation!;
+  const payload = {
+    type: `test-push-${sub.id}`,
+    tag: `test-push-${sub.id}`,
+    title: '🧪 Server Web Push Test',
+    body: `Echter Server Web Push an Station ${sub.id} (${sub.examiner || 'Prüfer'}) via Google API zugestellt!`,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    url: '/pruefer.html',
+    vibrate: [300, 100, 300, 100, 300],
+    timestamp: Date.now(),
+  };
+
+  await sendWebPushNotification('examiner', payload, sub.id);
+  res.json({ success: true });
+});
+
 app.post('/api/examiner/complete', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
   const sub = req.subStation!;
   if (!sub.currentGroupId) {
