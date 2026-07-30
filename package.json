@@ -1,6 +1,6 @@
 {
   "name": "GAP-Flow",
-  "version": "1.3.0",
+  "version": "0.0",
   "description": "Echtzeit GA-Prüfungs-Management-System mit automatisierter Gruppenzuteilung",
   "main": "server.ts",
   "license": "MIT",
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "start": "npm run build:frontend && npx tsx server.ts",
-    "build:frontend": "npx tsc -p tsconfig.frontend.json",
+    "build:frontend": "node lib/inject-version.js && npx tsc -p tsconfig.frontend.json",
     "lint": "eslint ."
   },
   "dependencies": {
