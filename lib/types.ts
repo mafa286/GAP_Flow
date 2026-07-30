@@ -24,6 +24,8 @@ export interface SubStation {
   active?: boolean;
   reservedGroupId?: string | null;
   deviceToken?: string | null;
+  pausedAt?: number;
+  pauseDurationMinutes?: number;
 }
 
 /**
