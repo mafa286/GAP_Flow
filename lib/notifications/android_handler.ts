@@ -1,4 +1,4 @@
-// Version Tracker: lib/notifications/android_handler.ts (GAP-Flow v1.0.1)
+// Version Tracker: lib/notifications/android_handler.ts (GAP-Flow v1.0.2)
 
 import webpush from 'web-push';
 import { NotificationPayload } from '../types';
@@ -39,7 +39,6 @@ export function formatAndroidPayload(basePayload: NotificationPayload): Record<s
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: String(basePayload.tag || basePayload.type || 'gap-flow-android'),
-    renotify: basePayload.renotify !== false,
     vibrate: Array.isArray(basePayload.vibrate)
       ? basePayload.vibrate.map((v) => Math.abs(parseInt(String(v), 10) || 100))
       : [300, 100, 300],
