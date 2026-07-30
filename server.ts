@@ -1,4 +1,4 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.9)
+// Version Tracker: server.ts (GAP-Flow v1.2.10)
 
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
@@ -536,7 +536,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   } else if (isHtml) {
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; connect-src 'self' ws: wss: http: https:; img-src 'self' data: blob:;"
+      "default-src 'self'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; connect-src 'self' ws: wss: http: https: https://*.googleapis.com https://fcm.googleapis.com; img-src 'self' data: blob:;"
     );
   } else {
     // Entferne CSP explizit für alle Bilder, Favicons und Nicht-HTML-Assets
