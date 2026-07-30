@@ -108,22 +108,22 @@ sw.addEventListener('fetch', (event: any) => {
     );
   } else {
     // Cache-First Strategie für statische Assets (Bilder, Icons)
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).then((networkResponse) => {
-          if (event.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+      event.respondWith(
+        caches.match(event.request, { ignoreSearch: true }).then((response) => {
+          if (response) {
+            return response;
           }
-          return networkResponse;
-        });
-      })
-    );
+          return fetch(event.request).then((networkResponse) => {
+            if (event.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return networkResponse;
+          });
+        })
+      );
   }
 });
 
