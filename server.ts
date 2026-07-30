@@ -794,6 +794,25 @@ app.post('/api/examiner/test-push', authenticateExaminer, (req: AuthenticatedExa
   res.json({ success: true });
 });
 
+const swDebugLogs: Array<Record<string, unknown>> = [];
+
+app.post('/api/sw-debug-log', (req: Request, res: Response) => {
+  const logEntry = req.body || {};
+  swDebugLogs.unshift(logEntry);
+  if (swDebugLogs.length > 50) {
+    swDebugLogs.pop();
+  }
+  console.log('--------------------------------------------------');
+  console.log('🚨 [SW REMOTE DEBUG LOG EMPFANGEN VON CLIENT]');
+  console.log(JSON.stringify(logEntry, null, 2));
+  console.log('--------------------------------------------------');
+  res.json({ success: true });
+});
+
+app.get('/api/admin/system/sw-debug-logs', adminAuth, (_req: Request, res: Response) => {
+  res.json({ success: true, logs: swDebugLogs });
+});
+
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
 app.post('/api/admin/verify_token', adminController.verifyToken);
 
