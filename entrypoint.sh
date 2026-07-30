@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version Tracker: entrypoint.sh (GAP-Flow v1.1.3)
+# Version Tracker: entrypoint.sh (GAP-Flow v1.2.0)
 set -e
 
 echo "[GAP-Flow] Prüfe Systemumgebung..."
@@ -12,16 +12,38 @@ fi
 
 git config --global --add safe.directory '*' || true
 
-# 2. Repository aktualisieren
+# 2. Sicheres Update von GitHub mit Staging-Kompilierungstest
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "[GAP-Flow] Ziehe neuesten Stand von GitHub..."
-  git pull origin main || echo "[GAP-Flow] Git Pull fehlgeschlagen. Starte vorhandenen Stand..."
+  OLD_COMMIT=$(git rev-parse HEAD || echo "")
+  echo "[GAP-Flow] Prüfe auf GitHub-Updates..."
+  
+  if git fetch origin main >/dev/null 2>&1; then
+    NEW_COMMIT=$(git rev-parse origin/main || echo "")
+    
+    if [ "$OLD_COMMIT" != "$NEW_COMMIT" ] && [ -n "$NEW_COMMIT" ]; then
+      echo "[GAP-Flow] Neues Update gefunden! Teste Kompilierung..."
+      
+      git merge origin/main --no-edit >/dev/null 2>&1 || true
+      
+      mkdir -p data
+      rm -f data/build_error.log
+      
+      if npm run build:frontend > data/build_error.log 2>&1; then
+        echo "[GAP-Flow] ✅ Staging-Build ERFOLGREICH! Update übernommen."
+        rm -f data/build_error.log
+      else
+        echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
+        git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
+        echo "[GAP-Flow] Alter stabiler Stand wiederhergestellt. Fehlerprotokoll in data/build_error.log gespeichert."
+      fi
+    fi
+  fi
 fi
 
-# 3. Update-Hinweise stummschalten & native Abhängigkeiten blitzschnell installieren
+# 3. Update-Hinweise stummschalten & native Abhängigkeiten installieren
 npm config set update-notifier false >/dev/null 2>&1 || true
 
-echo "[GAP-Flow] Installiere Abhängigkeiten (inkl. Dev-Tools)..."
+echo "[GAP-Flow] Installiere Abhängigkeiten..."
 npm install --include=dev --foreground-scripts
 
 echo "[GAP-Flow] Kompiliere native C++ Module (sqlite3)..."
