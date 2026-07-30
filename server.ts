@@ -856,8 +856,8 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
   const notificationPayload = {
     type: type || 'broadcast',
     tag: type || 'broadcast',
-    title: sanitizeContactName(title || '', 64),
-    body: sanitizeName(body || '', 256),
+    title: String(title || 'Mitteilung der Prüfungsleitung').trim().substring(0, 100),
+    body: String(body || '').trim().substring(0, 500),
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     url: '/pruefer.html',
