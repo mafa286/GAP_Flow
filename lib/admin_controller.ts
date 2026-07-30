@@ -1,6 +1,8 @@
-// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.65)
+// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.66)
 
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { SystemState, Group, Station, LogEntry } from './types';
 import * as dbModule from './db';
 import * as allocatorModule from './allocator';
@@ -227,6 +229,38 @@ export async function revertLog(req: Request, res: Response): Promise<void> {
 
     processLogCancellation(timestamp, group, station, targetLog.stationId, 'Leitstand');
     commitAndRespond(res);
+  } catch (err) {
+    const error = err as Error;
+    res.status(500).json({ error: error.message });
+  }
+}
+
+/**
+ * Liefert das aktuelle Server-Boot-Protokoll und Kompilierungsfehler von verworfenen Updates.
+ * @param {Request} req - Express Request.
+ * @param {Response} res - Express Response.
+ * @returns {void}
+ */
+export function getSystemLogs(req: Request, res: Response): void {
+  try {
+    const dbDir = path.join(__dirname, '..', 'data');
+    const errorLogPath = path.join(dbDir, 'build_error.log');
+
+    let buildErrorLog = '';
+    let hasBuildError = false;
+
+    if (fs.existsSync(errorLogPath)) {
+      buildErrorLog = fs.readFileSync(errorLogPath, 'utf-8');
+      hasBuildError = true;
+    }
+
+    res.json({
+      success: true,
+      hasBuildError,
+      buildErrorLog,
+      serverTime: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+    });
   } catch (err) {
     const error = err as Error;
     res.status(500).json({ error: error.message });
