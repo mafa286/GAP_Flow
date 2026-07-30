@@ -1,4 +1,4 @@
-// Version Tracker: lib/db.ts (GAP-Flow v1.1.67)
+// Version Tracker: lib/db.ts (GAP-Flow v1.1.68)
 
 import sqlite3 from 'sqlite3';
 import { SystemState, Anwaerter, Group, Station, SubStation, LogEntry } from './types';
@@ -133,7 +133,7 @@ export function initializeSystem(
           db?.run(`CREATE TABLE IF NOT EXISTS sub_stations (id TEXT PRIMARY KEY, parentId TEXT, examiner TEXT, paused INTEGER, currentGroupId TEXT, token TEXT, startTime INTEGER, active INTEGER DEFAULT 1, reservedGroupId TEXT, deviceToken TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS logs (timestamp INTEGER, groupName TEXT, stationId TEXT, durationMinutes REAL, cancelled INTEGER DEFAULT 0, examiner TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)`);
-          db?.run(`CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, endpoint TEXT UNIQUE, keys_p256dh TEXT, keys_auth TEXT, role TEXT, targetId TEXT, timestamp INTEGER)`);
+          db?.run(`CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, endpoint TEXT UNIQUE, keys_p256dh TEXT, keys_auth TEXT, role TEXT, targetId TEXT, os TEXT DEFAULT 'android', timestamp INTEGER)`);
 
           db?.run('ALTER TABLE groups ADD COLUMN paused INTEGER DEFAULT 0', () => {});
           db?.run('ALTER TABLE groups ADD COLUMN active INTEGER DEFAULT 1', () => {});
@@ -144,6 +144,7 @@ export function initializeSystem(
           db?.run('ALTER TABLE sub_stations ADD COLUMN reservedGroupId TEXT', () => {});
           db?.run('ALTER TABLE sub_stations ADD COLUMN deviceToken TEXT', () => {});
           db?.run('ALTER TABLE stations ADD COLUMN targetAvgDuration REAL DEFAULT 15.0', () => {});
+          db?.run("ALTER TABLE push_subscriptions ADD COLUMN os TEXT DEFAULT 'android'", () => {});
 
           loadStateFromDb(dbPath, jsonBackupPath, systemState, getUniqueTimestamp).then(resolve);
         });
