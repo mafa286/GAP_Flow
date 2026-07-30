@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.94) -->
+<!-- Version Tracker: public/pruefer.html (GAP-Flow v1.1.95) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer-Panel</title>
@@ -19,7 +19,7 @@
   <script src="/js/audio_engine.js?v=1.1.63"></script>
   <script src="/js/gap_flow_utils.js?v=1.1.64"></script>
   <script src="/js/pruefer_pwa_helper.js?v=1.1.2"></script>
-  <script src="/js/pruefer_core.js?v=1.1.28"></script>
+  <script src="/js/pruefer_core.js?v=1.1.30"></script>
   <script src="https://cdn.tailwindcss.com?v=3.4.17"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js?v=3.14.0" integrity="sha384-O8NPfezTLQ/sgLfQYBJEnezJLlum9L6KOqHsfIWauzaFfD1TQSuvA4iUpgWGHeuZ" crossorigin="anonymous"></script>
   <!-- Socket.io-Client für Echtzeit-Push-Updates -->
@@ -455,11 +455,11 @@
       <!-- Unauffällige Versions-Anzeige mit Fallback-Text -->
       <div class="pt-3 border-t border-main text-[10px] text-muted text-center space-y-0.5 font-mono">
         <div>
-          <span>HTML: <strong class="text-main" x-text="appVersion || 'v1.1.94'">v1.1.94</strong></span> • 
-          <span>Core: <strong class="text-main" x-text="coreVersion || 'v1.1.29'">v1.1.29</strong></span>
+          <span>HTML: <strong class="text-main" x-text="appVersion || 'v1.1.95'">v1.1.95</strong></span> • 
+          <span>Core: <strong class="text-main" x-text="coreVersion || 'v1.1.30'">v1.1.30</strong></span>
         </div>
         <div>
-          <span>Service Worker: <strong class="text-brand" x-text="swVersion ? swVersion + ' (' + swCacheName + ')' : 'v1.1.15 (v8)'">v1.1.15 (v8)</strong></span>
+          <span>Service Worker: <strong class="text-brand" x-text="swVersion ? swVersion + ' (' + swCacheName + ')' : 'v1.1.16 (v8)'">v1.1.16 (v8)</strong></span>
         </div>
       </div>
 
@@ -564,7 +564,7 @@
             <span class="font-black text-main flex items-center gap-1.5">📦 Active PWA Versionen</span>
             <span class="font-mono font-bold text-[10px] text-brand" x-text="swCacheName || 'v8'">v8</span>
           </div>
-          <p class="text-[10px] text-muted font-mono" x-text="'HTML ' + (appVersion || 'v1.1.94') + ' • Core ' + (coreVersion || 'v1.1.29') + ' • SW ' + (swVersion || 'v1.1.15')">HTML v1.1.94 • Core v1.1.29 • SW v1.1.15</p>
+          <p class="text-[10px] text-muted font-mono" x-text="'HTML ' + (appVersion || 'v1.1.95') + ' • Core ' + (coreVersion || 'v1.1.30') + ' • SW ' + (swVersion || 'v1.1.16')">HTML v1.1.95 • Core v1.1.30 • SW v1.1.16</p>
         </div>
       </div>
 
