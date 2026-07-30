@@ -1,4 +1,4 @@
-// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.31)
+// Version Tracker: public/js/pruefer_core.ts (GAP-Flow v1.1.32)
 
 interface GroupMember {
   name: string;
@@ -562,46 +562,6 @@ function examiner(): ExaminerComponent {
             setTimeout(() => {
               this.renderLock = false;
             }, 0);
-          });
-
-          // Empfang von Echtzeit-Systembenachrichtigungen & in-app Feedback
-          window.examinerSocket.on('systemNotification', (payload: unknown) => {
-            const data = payload as { title?: string; body?: string; vibrate?: number[]; type?: string };
-            if (!data) return;
-
-            if (this.soundUnlocked) {
-              this.playInfoSound();
-            }
-
-            if ('vibrate' in navigator && data.vibrate) {
-              try {
-                navigator.vibrate(data.vibrate);
-              } catch (e) {
-                console.warn('[PWA] Vibration vom Gerät blockiert:', e);
-              }
-            }
-
-            // Fallback für OS-Banner nur wenn Web Push (PushManager) nicht unterstützt oder inaktiv ist
-            const hasWebPush = 'PushManager' in window && 'serviceWorker' in navigator;
-            if (!hasWebPush && 'Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-              navigator.serviceWorker.ready.then((reg) => {
-                const options: any = {
-                  body: data.body || '',
-                  icon: '/manifest.json',
-                  badge: '/manifest.json',
-                  tag: data.type || 'system-notification',
-                  renotify: true,
-                  vibrate: data.vibrate || [300, 100, 300],
-                  data,
-                  actions: [
-                    { action: 'deactivate', title: '⚙ Einstellungen' },
-                  ],
-                };
-                reg.showNotification(data.title || 'GAP-Flow Benachrichtigung', options);
-              }).catch((err) => {
-                console.error('[PWA Notification Error]', err);
-              });
-            }
           });
         }
       } catch (e) {
