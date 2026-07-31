@@ -73,9 +73,6 @@ window.adminPanel = function (): Record<string, unknown> {
     showUpdateStatusModal: false,
     updateStep: '',
     updateErrorMessage: '',
-    showServerLogModal: false,
-    serverLogText: '',
-    hasBuildError: false,
     isGeneratingRepomix: false,
 
     showCallbackModal: false,
