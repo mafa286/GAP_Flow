@@ -63,19 +63,7 @@ export function init(options: AdminGroupsControllerOptions): void {
  */
 export async function clearAnwaerter(req: Request, res: Response): Promise<void> {
   try {
-    systemState.logs = [];
-    systemState.firstAssignmentTime = null;
-    systemState.pendingLogCancellations = [];
-    systemState.isCleared = true;
-    systemState.autoAllocationActive = false;
-    systemState.anwaerter = {};
-    systemState.groups = {};
-    systemState.settings = {
-      phoneLeitstelleName: '',
-      phoneLeitstelleNumber: '',
-      phonePruefungsleitungName: '',
-      phonePruefungsleitungNumber: '',
-    };
+    resetSystemState(systemState);
 
     await dbImmediateSave();
     ioBroadcast();
@@ -133,19 +121,7 @@ export async function batchAnwaerter(req: Request, res: Response): Promise<void>
     return;
   }
 
-  systemState.logs = [];
-  systemState.firstAssignmentTime = null;
-  systemState.pendingLogCancellations = [];
-  systemState.isCleared = true;
-  systemState.autoAllocationActive = false;
-  systemState.anwaerter = {};
-  systemState.groups = {};
-  systemState.settings = {
-    phoneLeitstelleName: '',
-    phoneLeitstelleNumber: '',
-    phonePruefungsleitungName: '',
-    phonePruefungsleitungNumber: '',
-  };
+  resetSystemState(systemState);
 
   const imported: Anwaerter[] = [];
   const seen = new Set<string>();
