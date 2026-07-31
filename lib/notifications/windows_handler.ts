@@ -16,7 +16,7 @@ export interface WindowsPushOptions extends webpush.RequestOptions {
  */
 export function getWindowsPushOptions(): WindowsPushOptions {
   return {
-    TTL: 86400,
+    TTL: 5400,
   };
 }
 
