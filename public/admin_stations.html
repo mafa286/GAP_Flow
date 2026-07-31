@@ -313,7 +313,8 @@
     <!-- MODAL: UPDATE STATUS MONITOR -->
     <div x-show="showUpdateStatusModal" 
          class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal">
-      <div class="app-card p-6 max-w-sm w-full space-y-5 text-center border-main">
+      <div class="app-card p-6 w-full space-y-5 text-center border-main transition-all"
+           :class="updateStep === 'failed' ? 'max-w-2xl' : 'max-w-sm'">
         
         <!-- Icons je nach Status-Schritt -->
         <template x-if="updateStep === 'upload' || updateStep === 'extract'">
@@ -329,20 +330,31 @@
           <div class="text-4xl">🎉</div>
         </template>
         <template x-if="updateStep === 'failed'">
-          <div class="text-4xl">❌</div>
+          <div class="text-4xl">⚠️</div>
         </template>
 
         <!-- Titel -->
         <h3 class="text-base font-black text-main uppercase tracking-wide" x-text="getUpdateTitle()"></h3>
         
-        <!-- Beschreibung -->
-        <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+        <!-- Beschreibung für normale Schritte -->
+        <template x-if="updateStep !== 'failed'">
+          <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+        </template>
+
+        <!-- Detailliertes Fehlerprotokoll bei Kompilierungsfehlern -->
+        <template x-if="updateStep === 'failed'">
+          <div class="space-y-3 text-left">
+            <div class="p-3 app-card-accent rounded-lg border border-main font-mono text-xs max-h-[50vh] overflow-y-auto whitespace-pre-wrap leading-relaxed"
+                 style="color: var(--sig-danger-text) !important;"
+                 x-text="updateErrorMessage"></div>
+          </div>
+        </template>
 
         <!-- Aktionstasten -->
         <template x-if="updateStep === 'ready'">
           <button @click="reloadAfterUpdate()" 
                   class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg">
-            Update abschließen
+            Update &amp; Neustart abschließen
           </button>
         </template>
         <template x-if="updateStep === 'failed'">
