@@ -1,5 +1,3 @@
-// Version Tracker: lib/notifications/android_handler.ts (GAP-Flow v1.0.2)
-
 import webpush from 'web-push';
 import { NotificationPayload } from '../types';
 
