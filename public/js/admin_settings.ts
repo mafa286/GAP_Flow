@@ -43,6 +43,7 @@ interface AdminSettingsComponent {
   callbackAckReceived: boolean;
   callbackAckTimeout: ReturnType<typeof setTimeout> | null;
   callbackError: string;
+  activePushTag: string;
 
   initSocket(): void;
   openCallbackModal(type: 'leitstelle' | 'pruefungsleitung'): Promise<void>;
@@ -83,12 +84,13 @@ window.adminPanel = function (): Record<string, unknown> {
 
     showCallbackModal: false,
     callbackType: 'leitstelle' as 'leitstelle' | 'pruefungsleitung',
-    selectedStationId: 'all',
+    selectedStationId: '',
     registeredStations: [] as PushStationItem[],
     isSendingCallback: false,
     callbackAckReceived: false,
     callbackAckTimeout: null as ReturnType<typeof setTimeout> | null,
     callbackError: '',
+    activePushTag: '',
 
     initSocket(): void {
       const self = this as unknown as AdminSettingsComponent;
@@ -108,14 +110,13 @@ window.adminPanel = function (): Record<string, unknown> {
 
         window.adminSocket.on('pushAckReceived', (data: unknown) => {
           const ack = data as { tag: string; subId: string; os: string; timestamp: number };
-          if (self.isSendingCallback || self.showCallbackModal) {
-            if (ack.subId === self.selectedStationId || !self.selectedStationId) {
-              self.callbackAckReceived = true;
-              self.isSendingCallback = false;
-              if (self.callbackAckTimeout) {
-                clearTimeout(self.callbackAckTimeout);
-                self.callbackAckTimeout = null;
-              }
+          if (self.showCallbackModal && self.activePushTag && ack.tag === self.activePushTag) {
+            self.callbackAckReceived = true;
+            self.isSendingCallback = false;
+            self.callbackError = '';
+            if (self.callbackAckTimeout) {
+              clearTimeout(self.callbackAckTimeout);
+              self.callbackAckTimeout = null;
             }
           }
         });
@@ -135,6 +136,7 @@ window.adminPanel = function (): Record<string, unknown> {
       self.isSendingCallback = false;
       self.callbackAckReceived = false;
       self.callbackError = '';
+      self.activePushTag = '';
       if (self.callbackAckTimeout) {
         clearTimeout(self.callbackAckTimeout);
         self.callbackAckTimeout = null;
@@ -167,6 +169,7 @@ window.adminPanel = function (): Record<string, unknown> {
       self.isSendingCallback = false;
       self.callbackAckReceived = false;
       self.callbackError = '';
+      self.activePushTag = '';
       if (self.callbackAckTimeout) {
         clearTimeout(self.callbackAckTimeout);
         self.callbackAckTimeout = null;
@@ -191,6 +194,8 @@ window.adminPanel = function (): Record<string, unknown> {
         ? 'Bitte wähle die Leitstelle über den Menü-Button.'
         : 'Bitte wähle die Prüfungsleitung über den Menü-Button.';
       const type = isLeitstelle ? 'callback_leitstelle' : 'callback_pruefungsleitung';
+      const currentPushTag = `cb_${type}_${self.selectedStationId}_${Date.now()}`;
+      self.activePushTag = currentPushTag;
 
       try {
         const response = await fetch('/api/admin/notify', {
@@ -198,6 +203,7 @@ window.adminPanel = function (): Record<string, unknown> {
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type,
+            tag: currentPushTag,
             title,
             body,
             targetSubId: self.selectedStationId,
