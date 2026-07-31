@@ -265,7 +265,8 @@ function examiner(): ExaminerComponent {
           return;
         }
 
-        await this.subscribeToWebPush();
+        // Erzwinge eine frische Subscription bei Google FCM, um veraltete Endpunkte auszuschließen
+        await this.subscribeToWebPush(true);
 
         const response = await fetch('/api/examiner/test-push', {
           method: 'POST',
@@ -276,7 +277,7 @@ function examiner(): ExaminerComponent {
         });
 
         if (response.ok) {
-          alert('Befehl ausgeführt: Der Server hat die Web Push Benachrichtigung über die Google/W3C API versendet!');
+          alert('Befehl ausgeführt: Subscription wurde frisch bei Google FCM registriert und Test-Push wurde gesendet! Prüfe jetzt das Server-Log.');
         } else {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
           alert(`Server-Rückmeldung: ${errData.error || response.statusText}`);
@@ -343,7 +344,7 @@ function examiner(): ExaminerComponent {
     /**
      * Registriert das Smartphone beim W3C Web Push Service für Push-Benachrichtigungen im Standby.
      */
-    async subscribeToWebPush(): Promise<void> {
+    async subscribeToWebPush(forceFresh = false): Promise<void> {
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || !this.token) return;
 
       try {
@@ -368,7 +369,11 @@ function examiner(): ExaminerComponent {
 
         const newKeyBytes = urlBase64ToUint8Array(publicKey);
 
-        if (sub) {
+        if (sub && forceFresh) {
+          console.log('[PWA Web Push] Erneuere Subscription erzwungen...');
+          await sub.unsubscribe().catch(() => {});
+          sub = null;
+        } else if (sub) {
           const existingKey = sub.options.applicationServerKey;
           if (existingKey) {
             const existingKeyArray = new Uint8Array(existingKey);
@@ -383,7 +388,7 @@ function examiner(): ExaminerComponent {
             }
             if (!match) {
               console.log('[PWA Web Push] VAPID Key aktualisiert. Erneuere Push-Subscription...');
-              await sub.unsubscribe();
+              await sub.unsubscribe().catch(() => {});
               sub = null;
             }
           }
