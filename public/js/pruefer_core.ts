@@ -111,7 +111,7 @@ interface ExaminerComponent {
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
   sendServerTestNotification(): Promise<void>;
-  subscribeToWebPush(): Promise<void>;
+  subscribeToWebPush(forceFresh?: boolean): Promise<void>;
   openCallLink(phoneNumber: string, label: string): void;
   requestCallback(target: 'leitstelle' | 'pruefungsleitung'): void;
   init(): void;
