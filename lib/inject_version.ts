@@ -13,13 +13,14 @@ const versionTsPath = path.join(rootDir, 'public', 'js', 'version.ts');
 try {
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   const version = pkg.version || '0.0';
+  const buildTime = Date.now().toString();
 
   if (fs.existsSync(swPath)) {
     let swContent = fs.readFileSync(swPath, 'utf8');
     swContent = swContent.replace(/const SW_VERSION = '.*?';/, `const SW_VERSION = '${version}';`);
-    swContent = swContent.replace(/const CACHE_NAME = '.*?';/, `const CACHE_NAME = 'gap-flow-v${version}';`);
+    swContent = swContent.replace(/const CACHE_NAME = '.*?';/, `const CACHE_NAME = 'gap-flow-v${version}-${buildTime}';`);
     fs.writeFileSync(swPath, swContent);
-    console.log(`[Inject-Version] Synchronized sw.ts to version v${version}`);
+    console.log(`[Inject-Version] Synchronized sw.ts to version v${version} (Build: ${buildTime})`);
   }
 
   if (fs.existsSync(versionTsPath)) {
