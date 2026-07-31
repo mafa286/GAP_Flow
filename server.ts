@@ -906,6 +906,8 @@ app.get('/api/admin/push-stations', adminAuth, async (_req: Request, res: Respon
     if (master && master.subStations) {
       Object.values(master.subStations).forEach((sub) => {
         const hasPush = registeredStationIds.has(sub.id);
+        if (!hasPush) return;
+
         const examinerName = sub.examiner || '';
         let label = `Station ${sub.id}`;
         if (master.name && master.name !== `Station ${sub.parentId}`) {
@@ -914,15 +916,12 @@ app.get('/api/admin/push-stations', adminAuth, async (_req: Request, res: Respon
         if (examinerName) {
           label += ` – Prüfer: ${examinerName}`;
         }
-        if (hasPush) {
-          label += ' [🔔 Push-Aktiv]';
-        }
 
         stationList.push({
           id: sub.id,
           label,
           examiner: examinerName,
-          hasPushSub: hasPush,
+          hasPushSub: true,
         });
       });
     }
