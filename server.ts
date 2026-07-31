@@ -769,6 +769,12 @@ app.post('/api/examiner/test-push', authenticateExaminer, async (req: Authentica
   res.json({ success: true });
 });
 
+app.post('/api/examiner/push-ack', (req: Request, res: Response) => {
+  const { tag, subId, os } = req.body || {};
+  console.log(`[WebPush ACK Empfangen] Service Worker auf dem Smartphone (${os || 'Gerät'}) hat Push-Tag "${tag || 'unbekannt'}" an Station ${subId || 'alle'} erfolgreich empfangen!`);
+  res.json({ success: true });
+});
+
 app.post('/api/examiner/complete', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
   const sub = req.subStation!;
   if (!sub.currentGroupId) {
