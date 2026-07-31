@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
-import webpush from 'web-push';
 
 import { SystemState, Station, SubStation, Group, LogEntry } from './lib/types';
 import * as dbModule from './lib/db';
