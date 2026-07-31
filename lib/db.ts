@@ -511,14 +511,14 @@ export function saveStateToStoragePromise(
           } else {
             db?.run('COMMIT', (commitErr) => {
               if (commitErr) {
-                db?.run('ROLLBACK', () => {
-                  reject(commitErr);
-                });
-              } else {
-                if (clonedState.logs.length > 0) {
-                  lastSavedLogTimestamp = Math.max(...clonedState.logs.map((l) => l.timestamp));
-                }
-                systemState.isCleared = false;
+              db?.run('ROLLBACK', () => {
+                reject(commitErr);
+              });
+            } else {
+              if (clonedState.logs.length > 0) {
+                lastSavedLogTimestamp = clonedState.logs.reduce((max, l) => (l.timestamp > max ? l.timestamp : max), 0);
+              }
+              systemState.isCleared = false;
                 const processedCancellations = clonedState.pendingLogCancellations || [];
                 systemState.pendingLogCancellations = (systemState.pendingLogCancellations || []).filter(
                   (ts) => !processedCancellations.includes(ts)
