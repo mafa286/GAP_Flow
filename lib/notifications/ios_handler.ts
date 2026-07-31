@@ -20,7 +20,7 @@ export interface IosPushOptions extends webpush.RequestOptions {
  */
 export function getIosPushOptions(): IosPushOptions {
   return {
-    TTL: 86400,
+    TTL: 5400,
     headers: {
       'apns-priority': '10',
     },
