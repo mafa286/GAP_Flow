@@ -1,5 +1,3 @@
-// Version Tracker: lib/admin_controller.ts (GAP-Flow v1.1.66)
-
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -230,7 +228,7 @@ export async function revertLog(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    processLogCancellation(timestamp, group, station, targetLog.stationId, 'Leitstand');
+    processLogCancellation(timestamp, group, station, logToRevert.stationId, 'Leitstand');
     commitAndRespond(res);
   } catch (err) {
     const error = err as Error;
@@ -323,11 +321,7 @@ export function correctionsComplete(req: Request, res: Response): void {
     }
     group.lastStatusChange = getUniqueTimestamp();
 
-    Object.keys(station.subStations).forEach((sId) => {
-      if (station.subStations[sId].reservedGroupId === group.id) {
-        station.subStations[sId].reservedGroupId = null;
-      }
-    });
+    allocatorModule.clearGroupReservation(station, group.id);
 
     writeSystemLog(group.name, station.name, -11, 'Leitstand (Nachmeldung)', { cancelled: false });
     checkAndLogGroupCompletion(group);
