@@ -109,7 +109,7 @@ window.adminPanel = function (): Record<string, unknown> {
         window.adminSocket.on('pushAckReceived', (data: unknown) => {
           const ack = data as { tag: string; subId: string; os: string; timestamp: number };
           if (self.isSendingCallback || self.showCallbackModal) {
-            if (self.selectedStationId === 'all' || ack.subId === self.selectedStationId || !self.selectedStationId) {
+            if (ack.subId === self.selectedStationId || !self.selectedStationId) {
               self.callbackAckReceived = true;
               self.isSendingCallback = false;
               if (self.callbackAckTimeout) {
@@ -131,7 +131,7 @@ window.adminPanel = function (): Record<string, unknown> {
       const self = this as unknown as AdminSettingsComponent;
       self.callbackType = type;
       self.showCallbackModal = true;
-      self.selectedStationId = 'all';
+      self.selectedStationId = '';
       self.isSendingCallback = false;
       self.callbackAckReceived = false;
       self.callbackError = '';
@@ -148,10 +148,7 @@ window.adminPanel = function (): Record<string, unknown> {
           const data = (await response.json()) as { stations: PushStationItem[] };
           self.registeredStations = data.stations || [];
 
-          const activeStation = self.registeredStations.find((s) => s.hasPushSub);
-          if (activeStation) {
-            self.selectedStationId = activeStation.id;
-          } else if (self.registeredStations.length > 0) {
+          if (self.registeredStations.length > 0) {
             self.selectedStationId = self.registeredStations[0].id;
           }
         }
@@ -182,7 +179,7 @@ window.adminPanel = function (): Record<string, unknown> {
      */
     async sendCallbackPush(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
-      if (self.isSendingCallback) return;
+      if (self.isSendingCallback || !self.selectedStationId) return;
 
       self.isSendingCallback = true;
       self.callbackAckReceived = false;
@@ -218,11 +215,7 @@ window.adminPanel = function (): Record<string, unknown> {
         self.callbackAckTimeout = setTimeout(() => {
           if (self.isSendingCallback && !self.callbackAckReceived) {
             self.isSendingCallback = false;
-            if (self.selectedStationId === 'all') {
-              self.callbackAckReceived = true;
-            } else {
-              self.callbackError = 'Anforderung an Server gesendet. Noch keine Empfangsbestätigung vom Gerät erhalten (evtl. offline oder im Standby).';
-            }
+            self.callbackError = 'Anforderung an Server gesendet. Noch keine Empfangsbestätigung vom Gerät erhalten (evtl. offline oder im Standby).';
           }
         }, 8000);
       } catch (e) {
