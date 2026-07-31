@@ -30,9 +30,6 @@ interface AdminSettingsComponent {
   showUpdateStatusModal: boolean;
   updateStep: string;
   updateErrorMessage: string;
-  showServerLogModal: boolean;
-  serverLogText: string;
-  hasBuildError: boolean;
   isGeneratingRepomix: boolean;
 
   showCallbackModal: boolean;
@@ -57,7 +54,6 @@ interface AdminSettingsComponent {
   dismissCallback(index: number): void;
   triggerSystemRestart(): Promise<void>;
   downloadRepomix(): Promise<void>;
-  fetchServerLog(): Promise<void>;
   pollServerPing(): Promise<void>;
   getUpdateTitle(): string;
   getUpdateDescription(): string;
@@ -420,7 +416,7 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Pollt die `/api/ping`-Schnittstelle nach einem Server-Neustart.
+     * Pollt die `/api/ping`-Schnittstelle nach einem Server-Neustart und prüft anschließend Kompilierungsfehler.
      * @returns {Promise<void>}
      */
     async pollServerPing(): Promise<void> {
@@ -435,6 +431,22 @@ window.adminPanel = function (): Record<string, unknown> {
           const res = await fetch('/api/ping', { cache: 'no-store' });
           if (res.ok) {
             clearInterval(interval);
+            try {
+              const logRes = await fetch('/api/admin/system/logs', {
+                headers: { Authorization: self.password },
+              });
+              if (logRes.ok) {
+                const logData = (await logRes.json()) as {
+                  hasBuildError: boolean;
+                  buildErrorLog: string;
+                };
+                if (logData.hasBuildError && logData.buildErrorLog) {
+                  self.updateStep = 'failed';
+                  self.updateErrorMessage = `⚠️ FEHLER BEIM LETZTEN KOMPILIEREN:\n\n${logData.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
+                  return;
+                }
+              }
+            } catch (_) {}
             self.updateStep = 'ready';
           }
         } catch (e) {
@@ -454,8 +466,8 @@ window.adminPanel = function (): Record<string, unknown> {
         case 'extract': return 'Update wird entpackt & verifiziert...';
         case 'restarting': return 'Server startet neu...';
         case 'reconnecting': return 'Warte auf Server-Verbindung...';
-        case 'ready': return 'Update erfolgreich!';
-        case 'failed': return 'Update fehlgeschlagen';
+        case 'ready': return 'Neustart erfolgreich!';
+        case 'failed': return 'Kompilierungsfehler beim Neustart';
         default: return 'System-Aktualisierung';
       }
     },
@@ -464,11 +476,11 @@ window.adminPanel = function (): Record<string, unknown> {
       const self = this as unknown as AdminSettingsComponent;
       switch (self.updateStep) {
         case 'upload': return 'Bitte das Browserfenster nicht schließen.';
-        case 'extract': return 'Dateien werden geprüft.';
+        case 'extract': return 'Dateien werden im Staging-Bereich entpackt und geprüft.';
         case 'restarting': return 'Der Serverprozess wird neu gestartet (ca. 5-10 Sek.).';
         case 'reconnecting': return 'Verbindung wird wiederhergestellt...';
-        case 'ready': return 'Das System wurde erfolgreich aktualisiert.';
-        case 'failed': return self.updateErrorMessage || 'Ein Fehler ist aufgetreten.';
+        case 'ready': return 'Das System wurde erfolgreich gestartet. Es sind keine Kompilierungsfehler aufgetreten.';
+        case 'failed': return self.updateErrorMessage || 'Ein unerwarteter Fehler ist aufgetreten.';
         default: return '';
       }
     },
@@ -507,40 +519,6 @@ window.adminPanel = function (): Record<string, unknown> {
         alert('Netzwerk-Fehler beim Generieren der Repomix-Datei.');
       } finally {
         self.isGeneratingRepomix = false;
-      }
-    },
-
-    /**
-     * Lädt das Server-, Kompilierungs- und Service-Worker-Protokoll in einer kombinierten Ansicht.
-     */
-    async fetchServerLog(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      try {
-        const response = await fetch('/api/admin/system/logs', {
-          method: 'GET',
-          headers: { Authorization: self.password },
-        });
-        if (response.ok) {
-          const data = (await response.json()) as {
-            hasBuildError: boolean;
-            buildErrorLog: string;
-            uptimeSeconds: number;
-            serverTime: string;
-          };
-          self.hasBuildError = data.hasBuildError;
-          if (data.hasBuildError && data.buildErrorLog) {
-            self.serverLogText = `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
-          } else {
-            const mins = Math.floor(data.uptimeSeconds / 60);
-            self.serverLogText = `🟢 SYSTEM NORMAL & STABIL\n\nServer-Uptime: ${mins} Minuten\nServer-Zeit: ${data.serverTime}\n\nKeine Kompilierungsfehler aufgetreten. Das System arbeitet ordnungsgemäß.`;
-          }
-          self.showServerLogModal = true;
-        } else {
-          alert('Protokoll konnte nicht geladen werden.');
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Abrufen des Protokolls.');
       }
     },
   };
