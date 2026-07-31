@@ -465,7 +465,7 @@ socketsModule.init(
   getAdminStationsState
 );
 allocatorModule.init({ writeSystemLog });
-allocatorModule.startAutoUnpauseDaemon(systemState, dbScheduleSave, ioBroadcast);
+allocatorModule.startAutoUnpauseDaemon(systemState, getUniqueTimestamp, dbScheduleSave, ioBroadcast);
 
 fileProcessor.init({ systemState, dbDir: DB_DIR, backupDir: BACKUP_DIR, appDir: __dirname, shutdown });
 
