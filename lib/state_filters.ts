@@ -1,5 +1,3 @@
-// Version Tracker: lib/state_filters.ts (GAP-Flow v1.1.7)
-
 import { SystemState, Station, SubStation, LogEntry } from './types';
 
 /**
@@ -106,6 +104,23 @@ export function isLogForStation(log: LogEntry, station: Station): boolean {
  * @param {SystemState} systemState - Der aktuelle Systemzustand im RAM.
  * @returns {Record<string, unknown>} Minimierter Systemzustand für den Beamer-Client.
  */
+/**
+ * Entfernt inaktive Gruppen und leert die Mitgliedernamen zur Einhaltung der DSGVO-Richtlinien.
+ * @param {Record<string, any>} [groups] - Das Gruppen-Objekt des Systemzustands.
+ * @returns {void}
+ */
+function stripInactiveGroupsAndMembers(groups?: Record<string, any>): void {
+  if (!groups) return;
+  const gIds = Object.keys(groups);
+  gIds.forEach((gId) => {
+    if (groups[gId].active === false) {
+      delete groups[gId];
+    } else {
+      groups[gId].members = [];
+    }
+  });
+}
+
 export function getBeamerState(systemState: SystemState): Record<string, unknown> {
   const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.logs;
@@ -115,16 +130,7 @@ export function getBeamerState(systemState: SystemState): Record<string, unknown
   delete cleanState.isCleared;
   delete cleanState.pendingLogCancellations;
 
-  if (cleanState.groups) {
-    const gIds = Object.keys(cleanState.groups);
-    gIds.forEach((gId) => {
-      if (cleanState.groups[gId].active === false) {
-        delete cleanState.groups[gId];
-      } else {
-        cleanState.groups[gId].members = [];
-      }
-    });
-  }
+  stripInactiveGroupsAndMembers(cleanState.groups);
 
   if (cleanState.stations) {
     const mIds = Object.keys(cleanState.stations);
@@ -263,16 +269,7 @@ export function getFlatExaminerState(
 export function getAdminDashboardState(systemState: SystemState): Record<string, unknown> {
   const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.anwaerter;
-  if (cleanState.groups) {
-    const gIds = Object.keys(cleanState.groups);
-    gIds.forEach((gId) => {
-      if (cleanState.groups[gId].active === false) {
-        delete cleanState.groups[gId];
-      } else {
-        cleanState.groups[gId].members = [];
-      }
-    });
-  }
+  stripInactiveGroupsAndMembers(cleanState.groups);
   if (cleanState.stations) {
     Object.keys(cleanState.stations).forEach((mId) => {
       const master = cleanState.stations[mId];
@@ -313,16 +310,7 @@ export function getAdminStationsState(systemState: SystemState): Record<string, 
   const cleanState = structuredClone(systemState) as unknown as Record<string, any>;
   delete cleanState.anwaerter;
   delete cleanState.logs;
-  if (cleanState.groups) {
-    const gIds = Object.keys(cleanState.groups);
-    gIds.forEach((gId) => {
-      if (cleanState.groups[gId].active === false) {
-        delete cleanState.groups[gId];
-      } else {
-        cleanState.groups[gId].members = [];
-      }
-    });
-  }
+  stripInactiveGroupsAndMembers(cleanState.groups);
   if (cleanState.stations) {
     const mIds = Object.keys(cleanState.stations);
     mIds.forEach((mId) => {
