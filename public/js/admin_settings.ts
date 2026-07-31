@@ -11,6 +11,13 @@ interface CallbackItem {
   timestamp: number;
 }
 
+interface PushStationItem {
+  id: string;
+  label: string;
+  examiner: string;
+  hasPushSub: boolean;
+}
+
 interface AdminSettingsComponent {
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
@@ -28,7 +35,19 @@ interface AdminSettingsComponent {
   hasBuildError: boolean;
   isGeneratingRepomix: boolean;
 
+  showCallbackModal: boolean;
+  callbackType: 'leitstelle' | 'pruefungsleitung';
+  selectedStationId: string;
+  registeredStations: PushStationItem[];
+  isSendingCallback: boolean;
+  callbackAckReceived: boolean;
+  callbackAckTimeout: ReturnType<typeof setTimeout> | null;
+  callbackError: string;
+
   initSocket(): void;
+  openCallbackModal(type: 'leitstelle' | 'pruefungsleitung'): Promise<void>;
+  closeCallbackModal(): void;
+  sendCallbackPush(): Promise<void>;
   saveSettings(): Promise<void>;
   sendLeitstelleCallback(): Promise<void>;
   sendPruefungsleitungCallback(): Promise<void>;
@@ -62,6 +81,15 @@ window.adminPanel = function (): Record<string, unknown> {
     hasBuildError: false,
     isGeneratingRepomix: false,
 
+    showCallbackModal: false,
+    callbackType: 'leitstelle' as 'leitstelle' | 'pruefungsleitung',
+    selectedStationId: 'all',
+    registeredStations: [] as PushStationItem[],
+    isSendingCallback: false,
+    callbackAckReceived: false,
+    callbackAckTimeout: null as ReturnType<typeof setTimeout> | null,
+    callbackError: '',
+
     initSocket(): void {
       const self = this as unknown as AdminSettingsComponent;
       self.connectSocket((state: Record<string, unknown>) => {
@@ -77,40 +105,150 @@ window.adminPanel = function (): Record<string, unknown> {
           const item = data as CallbackItem;
           self.incomingCallbacks.unshift(item);
         });
+
+        window.adminSocket.on('pushAckReceived', (data: unknown) => {
+          const ack = data as { tag: string; subId: string; os: string; timestamp: number };
+          if (self.isSendingCallback || self.showCallbackModal) {
+            if (self.selectedStationId === 'all' || ack.subId === self.selectedStationId || !self.selectedStationId) {
+              self.callbackAckReceived = true;
+              self.isSendingCallback = false;
+              if (self.callbackAckTimeout) {
+                clearTimeout(self.callbackAckTimeout);
+                self.callbackAckTimeout = null;
+              }
+            }
+          }
+        });
       }
     },
 
     /**
-     * Sendet den Aufruf "Rückruf Leitstelle" an alle Prüfer-Smartphones im Gelände.
+     * Öffnet das Modalfenster zur gezielten Auswahl einer Station für Rückrufanforderungen.
+     * @param {'leitstelle' | 'pruefungsleitung'} type - Die anfordernde Stelle.
+     * @returns {Promise<void>}
      */
-    async sendLeitstelleCallback(): Promise<void> {
+    async openCallbackModal(type: 'leitstelle' | 'pruefungsleitung'): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
-      if (!confirm('Soll ein dringender Rückrufwunsch der LEITSTELLE an alle Prüfer gesendet werden?')) return;
-      
-      self.isSubmitting = true;
+      self.callbackType = type;
+      self.showCallbackModal = true;
+      self.selectedStationId = 'all';
+      self.isSendingCallback = false;
+      self.callbackAckReceived = false;
+      self.callbackError = '';
+      if (self.callbackAckTimeout) {
+        clearTimeout(self.callbackAckTimeout);
+        self.callbackAckTimeout = null;
+      }
+
+      try {
+        const response = await fetch('/api/admin/push-stations', {
+          headers: { Authorization: self.password },
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { stations: PushStationItem[] };
+          self.registeredStations = data.stations || [];
+
+          const activeStation = self.registeredStations.find((s) => s.hasPushSub);
+          if (activeStation) {
+            self.selectedStationId = activeStation.id;
+          } else if (self.registeredStations.length > 0) {
+            self.selectedStationId = self.registeredStations[0].id;
+          }
+        }
+      } catch (e) {
+        console.error('Fehler beim Laden der registrierten Stationen:', e);
+      }
+    },
+
+    /**
+     * Schließt das Rückruf-Modalfenster und setzt den Zustand zurück.
+     * @returns {void}
+     */
+    closeCallbackModal(): void {
+      const self = this as unknown as AdminSettingsComponent;
+      self.showCallbackModal = false;
+      self.isSendingCallback = false;
+      self.callbackAckReceived = false;
+      self.callbackError = '';
+      if (self.callbackAckTimeout) {
+        clearTimeout(self.callbackAckTimeout);
+        self.callbackAckTimeout = null;
+      }
+    },
+
+    /**
+     * Sendet die gezielte Rückruf-Anforderung an die gewählte Station.
+     * @returns {Promise<void>}
+     */
+    async sendCallbackPush(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (self.isSendingCallback) return;
+
+      self.isSendingCallback = true;
+      self.callbackAckReceived = false;
+      self.callbackError = '';
+
+      const isLeitstelle = self.callbackType === 'leitstelle';
+      const title = isLeitstelle ? '🚨 LEITSTELLE BITTET UM RÜCKRUF!' : '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF!';
+      const body = isLeitstelle
+        ? 'Bitte wähle die Leitstelle über den Menü-Button.'
+        : 'Bitte wähle die Prüfungsleitung über den Menü-Button.';
+      const type = isLeitstelle ? 'callback_leitstelle' : 'callback_pruefungsleitung';
+
       try {
         const response = await fetch('/api/admin/notify', {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'callback_leitstelle',
-            title: '🚨 LEITSTELLE BITTET UM RÜCKRUF!',
-            body: 'Bitte wähle die Leitstelle über den Menü-Button.',
+            type,
+            title,
+            body,
+            targetSubId: self.selectedStationId,
             vibrate: [500, 150, 500, 150, 500, 300, 1000],
           }),
         });
-        if (response.ok) {
-          alert('Rückrufwunsch wurde erfolgreich gesendet.');
-        } else {
+
+        if (!response.ok) {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+          self.callbackError = errData.error || `Fehler beim Senden (Status ${response.status})`;
+          self.isSendingCallback = false;
+          return;
         }
+
+        self.callbackAckTimeout = setTimeout(() => {
+          if (self.isSendingCallback && !self.callbackAckReceived) {
+            self.isSendingCallback = false;
+            if (self.selectedStationId === 'all') {
+              self.callbackAckReceived = true;
+            } else {
+              self.callbackError = 'Anforderung an Server gesendet. Noch keine Empfangsbestätigung vom Gerät erhalten (evtl. offline oder im Standby).';
+            }
+          }
+        }, 8000);
       } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Senden des Rückrufwunsches.');
-      } finally {
-        self.isSubmitting = false;
+        const error = e as Error;
+        console.error(error);
+        self.callbackError = `Netzwerk-Fehler: ${error.message}`;
+        self.isSendingCallback = false;
       }
+    },
+
+    /**
+     * Sendet den Aufruf "Rückruf Leitstelle" (öffnet Modalfenster).
+     * @returns {Promise<void>}
+     */
+    async sendLeitstelleCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      await self.openCallbackModal('leitstelle');
+    },
+
+    /**
+     * Sendet den Aufruf "Rückruf Prüfungsleitung" (öffnet Modalfenster).
+     * @returns {Promise<void>}
+     */
+    async sendPruefungsleitungCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      await self.openCallbackModal('pruefungsleitung');
     },
 
     /**
