@@ -326,6 +326,7 @@ export function releaseGroupFromStation(
  */
 export function startAutoUnpauseDaemon(
   systemState: SystemState,
+  getUniqueTimestamp: () => number,
   scheduleStateSave: () => void,
   broadcastState: () => void
 ): void {
@@ -356,7 +357,7 @@ export function startAutoUnpauseDaemon(
       if (stateChanged) {
         scheduleStateSave();
         broadcastState();
-        checkAndAssignIdleStations(systemState, Date.now, scheduleStateSave, broadcastState);
+        checkAndAssignIdleStations(systemState, getUniqueTimestamp, scheduleStateSave, broadcastState);
       }
     } catch (error) {
       console.error('[Auto-Unpause Daemon] Fehler bei automatischer Freigabe-Prüfung:', error);
