@@ -216,7 +216,7 @@ export function subConfig(req: Request, res: Response): void {
           allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
         }
       }
-      writeSystemLog('System', subId, -13, cleanExaminer ? cleanExaminer : 'Prüfer entfernt');
+      writeSystemLog('System', subId, -13, cleanExaminer || 'Prüfer entfernt');
     }
   }
 
@@ -495,12 +495,7 @@ export function subAssign(req: Request, res: Response): void {
   }
 
   allocatorModule.fixGroupMembersIfNeeded(group, systemState);
-
-  Object.keys(station.subStations).forEach((sId) => {
-    if (station.subStations[sId].reservedGroupId === group.id) {
-      station.subStations[sId].reservedGroupId = null;
-    }
-  });
+  allocatorModule.clearGroupReservation(station, group.id);
 
   const nowTs = getUniqueTimestamp();
 
