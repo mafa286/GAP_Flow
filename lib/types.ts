@@ -105,6 +105,27 @@ export interface SystemState {
 }
 
 /**
+ * Setzt den In-Memory-Systemzustand vollständig auf die Standardwerte zurück.
+ * @param {SystemState} state - Der zurückzusetzende Systemzustand.
+ * @returns {void}
+ */
+export function resetSystemState(state: SystemState): void {
+  state.logs = [];
+  state.firstAssignmentTime = null;
+  state.pendingLogCancellations = [];
+  state.isCleared = true;
+  state.autoAllocationActive = false;
+  state.anwaerter = {};
+  state.groups = {};
+  state.settings = {
+    phoneLeitstelleName: '',
+    phoneLeitstelleNumber: '',
+    phonePruefungsleitungName: '',
+    phonePruefungsleitungNumber: '',
+  };
+}
+
+/**
  * Push-Subscription Schlüssel für die W3C Web Push API.
  */
 export interface PushSubscriptionKeys {
