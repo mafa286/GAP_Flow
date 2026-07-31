@@ -933,12 +933,12 @@ app.get('/api/admin/push-stations', adminAuth, async (_req: Request, res: Respon
 });
 
 app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
-  const { type, title, body, vibrate, targetSubId } = req.body || {};
+  const { type, tag, title, body, vibrate, targetSubId } = req.body || {};
   const cleanTargetSubId = targetSubId && targetSubId !== 'all' ? String(targetSubId).trim() : undefined;
 
   const notificationPayload = {
     type: type || 'broadcast',
-    tag: type || 'broadcast',
+    tag: tag || type || 'broadcast',
     subId: cleanTargetSubId || '',
     title: String(title || 'Mitteilung der Prüfungsleitung').trim().substring(0, 100),
     body: String(body || '').trim().substring(0, 500),
