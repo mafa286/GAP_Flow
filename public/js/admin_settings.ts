@@ -252,9 +252,9 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Sendet den Aufruf "Rückruf Prüfungsleitung" an alle Prüfer-Smartphones im Gelände.
+     * Sendet einen individuellen Rundruf-Text an alle Prüfer.
      */
-    async sendPruefungsleitungCallback(): Promise<void> {
+    async sendBroadcastMessage(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
       if (!confirm('Soll ein dringender Rückrufwunsch der PRÜFUNGSLEITUNG an alle Prüfer gesendet werden?')) return;
 
