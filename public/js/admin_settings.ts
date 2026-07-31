@@ -412,15 +412,12 @@ window.adminPanel = function (): Record<string, unknown> {
     async fetchServerLog(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
       try {
-        const [logRes, swRes] = await Promise.all([
-          fetch('/api/admin/system/logs', { headers: { Authorization: self.password } }),
-          fetch('/api/admin/system/sw-debug-logs', { headers: { Authorization: self.password } }),
-        ]);
-
-        let logText = '';
-
-        if (logRes.ok) {
-          const data = (await logRes.json()) as {
+        const response = await fetch('/api/admin/system/logs', {
+          method: 'GET',
+          headers: { Authorization: self.password },
+        });
+        if (response.ok) {
+          const data = (await response.json()) as {
             hasBuildError: boolean;
             buildErrorLog: string;
             uptimeSeconds: number;
@@ -428,30 +425,21 @@ window.adminPanel = function (): Record<string, unknown> {
           };
           self.hasBuildError = data.hasBuildError;
           if (data.hasBuildError && data.buildErrorLog) {
-            logText += `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.\n\n`;
+            self.serverLogText = `⚠️ FEHLER BEIM LETZTEN GIT-UPDATE KOMPILIEREN:\n\n${data.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
           } else {
             const mins = Math.floor(data.uptimeSeconds / 60);
-            logText += `🟢 SYSTEM NORMAL & STABIL\n• Server-Uptime: ${mins} Minuten\n• Server-Zeit: ${data.serverTime}\n• Status: Keine Kompilierungsfehler aufgetreten.\n\n`;
+            self.serverLogText = `🟢 SYSTEM NORMAL & STABIL\n\nServer-Uptime: ${mins} Minuten\nServer-Zeit: ${data.serverTime}\n\nKeine Kompilierungsfehler aufgetreten. Das System arbeitet ordnungsgemäß.`;
           }
+          self.showServerLogModal = true;
+        } else {
+          alert('Protokoll konnte nicht geladen werden.');
         }
-
-        if (swRes.ok) {
-          const swData = (await swRes.json()) as { logs: Array<Record<string, unknown>> };
-          logText += `==================================================\n📱 SERVICE WORKER REMOTE-PUSH-LOGS (${swData.logs ? swData.logs.length : 0} Einträge):\n==================================================\n`;
-          if (swData.logs && swData.logs.length > 0) {
-            logText += JSON.stringify(swData.logs, null, 2);
-          } else {
-            logText += 'Noch keine Service Worker Remote-Logs empfangen.\n(Sobald ein Push-Event auf einem Smartphone empfangen wird, erscheinen hier alle empfangenen Parameter, JSON-Daten und Ausführungsfehler).';
-          }
-        }
-
-        self.serverLogText = logText;
-        self.showServerLogModal = true;
       } catch (e) {
         console.error(e);
-        alert('Netzwerk-Fehler beim Abrufen der System-Protokolle.');
+        alert('Netzwerk-Fehler beim Abrufen des Protokolls.');
       }
     },
+  };
 
   if (typeof window.createAdminPanel === 'function') {
     return window.createAdminPanel(coreConfig);
