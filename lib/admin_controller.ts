@@ -202,22 +202,25 @@ export async function revertLog(req: Request, res: Response): Promise<void> {
       res.status(404).json({ error: 'Nicht gefunden' });
       return;
     }
-    if (targetLog.cancelled) {
+
+    const logToRevert = targetLog;
+
+    if (logToRevert.cancelled) {
       res.status(400).json({ error: 'Bereits storniert' });
       return;
     }
-    if (targetLog.durationMinutes < 0) {
+    if (logToRevert.durationMinutes < 0) {
       res.status(400).json({ error: 'Nur Abschlüsse stornierbar' });
       return;
     }
 
-    const station = Object.values(systemState.stations).find((s) => isLogForStation(targetLog!, s));
+    const station = Object.values(systemState.stations).find((s) => isLogForStation(logToRevert, s));
     if (!station) {
       res.status(404).json({ error: 'Station fehlt' });
       return;
     }
 
-    const group = Object.values(systemState.groups).find((g) => g.name === targetLog!.groupName);
+    const group = Object.values(systemState.groups).find((g) => g.name === logToRevert.groupName);
     if (!group) {
       res.status(404).json({ error: 'Gruppe fehlt' });
       return;
