@@ -537,11 +537,20 @@ function examiner(): ExaminerComponent {
             .register('/sw.js')
             .then((reg) => {
               console.log('[PWA] Service Worker erfolgreich registriert:', reg.scope);
+              reg.update();
               requestSwVersion();
             })
             .catch((err) => {
               console.error('[PWA] Service Worker Registrierung fehlgeschlagen:', err);
             });
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.update();
+            });
+          }
         });
 
         let refreshing = false;
