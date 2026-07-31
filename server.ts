@@ -581,6 +581,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
     res.removeHeader('Content-Security-Policy-Report-Only');
     res.removeHeader('X-Frame-Options');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; connect-src 'self' ws: wss: http: https: https://*.googleapis.com https://fcm.googleapis.com; img-src 'self' data: blob:;"
+    );
 
     const lowerPath = filePath.toLowerCase();
     if (lowerPath.endsWith('.html') || lowerPath.endsWith('.js')) {
@@ -588,7 +592,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
     } else {
       // 1 Jahr Caching & immutable für rein statische Bilder & Schriftarten
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      res.removeHeader('Content-Security-Policy');
     }
   },
 }));
