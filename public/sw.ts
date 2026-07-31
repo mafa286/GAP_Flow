@@ -148,61 +148,39 @@ async function reportSwDebugLog(logData: Record<string, unknown>): Promise<void>
 }
 
 /**
- * Push-Event: Empfängt eingehende Web-Push-Benachrichtigungen vom Server/Push-Dienst
- * und protokolliert jeden einzelnen Ausführungsschritt für die Fern-Diagnose.
+ * Push-Event: Empfängt eingehende Web-Push-Benachrichtigungen vom Server/Push-Dienst.
  * @param {any} event - Das native PushEvent der Service Worker API.
  * @returns {void}
  */
 sw.addEventListener('push', (event: any) => {
-  const startTime = Date.now();
-  const debugInfo: Record<string, unknown> = {
-    hasData: !!(event && event.data),
-    rawText: null,
-    parsedJson: null,
-    parseError: null,
-    optionsUsed: null,
-    steps: [],
-    showNotificationError: null,
-    fallbackTriggered: false,
-  };
-
-  (debugInfo.steps as string[]).push('1. Push Event empfangen');
-
   let payload: any = {};
+
   if (event && event.data) {
     try {
-      debugInfo.rawText = event.data.text();
-      (debugInfo.steps as string[]).push('2. Raw-Text gelesen');
-    } catch (e: any) {
-      debugInfo.rawTextError = e.message;
-    }
-
-    try {
       payload = event.data.json();
-      debugInfo.parsedJson = payload;
-      (debugInfo.steps as string[]).push('3. JSON erfolgreich geparst');
-    } catch (e: any) {
-      debugInfo.parseError = e.message;
-      (debugInfo.steps as string[]).push(`3. JSON-Parse-Fehler: ${e.message}`);
+    } catch (_) {
       try {
         payload = { title: 'GAP-Flow Benachrichtigung', body: event.data.text() };
       } catch (_) {
         payload = { title: 'GAP-Flow Benachrichtigung', body: 'Neue Benachrichtigung aus dem Prüfungsleitstand.' };
       }
     }
-  } else {
-    (debugInfo.steps as string[]).push('2. Keine event.data vorhanden!');
   }
 
   const origin = self.location ? self.location.origin : '';
   const title = (payload && payload.title) ? String(payload.title) : 'GAP-Flow Benachrichtigung';
   const body = (payload && payload.body) ? String(payload.body) : 'Neue Benachrichtigung aus dem Prüfungsleitstand.';
 
+  // Stelle sicher, dass tag NIEMALS leer ist (renotify: true erfordert zwingend einen nicht-leeren String!)
+  const safeTag = (payload && (payload.tag || payload.type) && String(payload.tag || payload.type).trim())
+    ? String(payload.tag || payload.type).trim()
+    : 'gap-flow-notification';
+
   const options: any = {
     body,
     icon: `${origin}/icon-192.png`,
     badge: `${origin}/icon-192.png`,
-    tag: (payload && (payload.tag || payload.type)) ? String(payload.tag || payload.type) : 'gap-flow-notification',
+    tag: safeTag,
     renotify: true,
     data: {
       url: (payload && (payload.url || payload.data?.url)) ? String(payload.url || payload.data?.url) : '/pruefer.html',
@@ -222,60 +200,67 @@ sw.addEventListener('push', (event: any) => {
       }));
   }
 
-  debugInfo.titleUsed = title;
-  debugInfo.optionsUsed = options;
-  (debugInfo.steps as string[]).push('4. Notification-Options vorbereitet');
-
   const pushExecution = (async () => {
-    // 1. In-App-Signal an alle geöffneten PWA-Fenster senden
+    // 1. Sofortiges ACK-Signal an den Server senden (Ganz am Anfang)
+    try {
+      if (typeof fetch === 'function') {
+        await fetch('/api/examiner/push-ack', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag: safeTag,
+            subId: payload?.subId || payload?.data?.subId || '',
+            os: payload?.data?.os || 'android',
+          }),
+        });
+      }
+    } catch (ackErr) {
+      console.warn('[SW Push ACK Fehler]', ackErr);
+    }
+
+    // 2. In-App-Signal an alle geöffneten PWA-Fenster senden
     try {
       const clientList = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of clientList) {
         if ('postMessage' in client) {
-          client.postMessage({ type: 'PUSH_RECEIVED', payload, debugInfo });
+          client.postMessage({ type: 'PUSH_RECEIVED', payload });
         }
       }
-      (debugInfo.steps as string[]).push(`5. Client-PostMessage gesendet an ${clientList.length} Fenster`);
-    } catch (e: any) {
-      (debugInfo.steps as string[]).push(`5. Client-PostMessage Fehler: ${e.message}`);
-    }
+    } catch (_) {}
 
-    // 2. Betriebssystem-Benachrichtigung rendern und Fehler exakt aufzeichnen
+    // 3. Ausfallfreies Anzeigen der echten Benachrichtigung (3-Stufen-Sicherheit)
     try {
+      // Stufe 1: Volles Rendering mit Vibrate & Actions
       await sw.registration.showNotification(title, options);
-      (debugInfo.steps as string[]).push('6. showNotification ERFOLGREICH ausgeführt!');
-    } catch (err1: any) {
-      debugInfo.showNotificationError = {
-        name: err1 ? err1.name : 'UnknownError',
-        message: err1 ? err1.message : String(err1),
-        stack: err1 ? err1.stack : null,
-      };
-      (debugInfo.steps as string[]).push(`6. showNotification FEHLER: ${err1 ? err1.name : 'Err'} - ${err1 ? err1.message : String(err1)}`);
-
+    } catch (err1) {
+      console.warn('[SW showNotification Stufe 1 fehlgeschlagen, versuche Stufe 2]', err1);
       try {
-        debugInfo.fallbackTriggered = true;
-        const safeOptions: any = {
-          body: options.body || '',
-          icon: `${origin}/icon-192.png`,
-          badge: `${origin}/icon-192.png`,
-          data: options.data || { url: '/pruefer.html' },
+        // Stufe 2: Ohne Actions & Vibrate (falls Android Chrome Option-Felder verweigert)
+        const cleanOptions: any = {
+          body: options.body,
+          icon: options.icon,
+          badge: options.badge,
+          tag: safeTag,
+          renotify: true,
+          data: options.data,
         };
-        await sw.registration.showNotification(title, safeOptions);
-        (debugInfo.steps as string[]).push('7. Fallback-Notification ERFOLGREICH!');
-      } catch (err2: any) {
-        debugInfo.fallbackError = {
-          name: err2 ? err2.name : 'UnknownError',
-          message: err2 ? err2.message : String(err2),
-          stack: err2 ? err2.stack : null,
-        };
-        (debugInfo.steps as string[]).push(`7. Fallback-Notification FEHLER: ${err2 ? err2.name : 'Err'} - ${err2 ? err2.message : String(err2)}`);
+        await sw.registration.showNotification(title, cleanOptions);
+      } catch (err2) {
+        console.warn('[SW showNotification Stufe 2 fehlgeschlagen, versuche Stufe 3 Minimal]', err2);
+        try {
+          // Stufe 3: Minimal-Optionen
+          const minimalOptions: any = {
+            body: options.body,
+            icon: options.icon,
+            badge: options.badge,
+            data: options.data,
+          };
+          await sw.registration.showNotification(title, minimalOptions);
+        } catch (err3) {
+          console.error('[SW showNotification Stufe 3 gescheitert]', err3);
+        }
       }
     }
-
-    debugInfo.durationMs = Date.now() - startTime;
-
-    // Remote-Log an den Server senden
-    await reportSwDebugLog(debugInfo);
   })();
 
   event.waitUntil(pushExecution);
