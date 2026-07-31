@@ -1,5 +1,3 @@
-// Version Tracker: server.ts (GAP-Flow v1.2.10)
-
 import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import path from 'path';
