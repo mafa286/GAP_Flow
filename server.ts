@@ -775,6 +775,22 @@ app.post('/api/examiner/test-push', authenticateExaminer, async (req: Authentica
 app.post('/api/examiner/push-ack', (req: Request, res: Response) => {
   const { tag, subId, os } = req.body || {};
   console.log(`[WebPush ACK Empfangen] Service Worker auf dem Smartphone (${os || 'Gerät'}) hat Push-Tag "${tag || 'unbekannt'}" an Station ${subId || 'alle'} erfolgreich empfangen!`);
+
+  const ackData = {
+    tag: String(tag || ''),
+    subId: String(subId || ''),
+    os: String(os || 'android'),
+    timestamp: Date.now(),
+  };
+
+  const ioInstance = socketsModule.getIo();
+  if (ioInstance) {
+    ioInstance.to('room_admin_dashboard').emit('pushAckReceived', ackData);
+    ioInstance.to('room_admin_stations').emit('pushAckReceived', ackData);
+    ioInstance.to('room_admin_groups').emit('pushAckReceived', ackData);
+    ioInstance.to('room_admin_settings').emit('pushAckReceived', ackData);
+  }
+
   res.json({ success: true });
 });
 
@@ -866,11 +882,65 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/admin/push-stations', adminAuth, async (_req: Request, res: Response) => {
+  const db = dbModule.getDb();
+  const registeredStationIds = new Set<string>();
+
+  if (db && !dbModule.getUseJsonFallback()) {
+    try {
+      const rows = await new Promise<Array<{ targetId: string }>>((resolve) => {
+        db.all("SELECT DISTINCT targetId FROM push_subscriptions WHERE targetId IS NOT NULL AND targetId != ''", [], (err, resultRows) => {
+          if (err || !resultRows) resolve([]);
+          else resolve(resultRows as Array<{ targetId: string }>);
+        });
+      });
+      rows.forEach((r) => {
+        if (r.targetId) registeredStationIds.add(r.targetId);
+      });
+    } catch (_) {}
+  }
+
+  const stationList: Array<{ id: string; label: string; examiner: string; hasPushSub: boolean }> = [];
+
+  Object.values(systemState.stations || {}).forEach((master) => {
+    if (master && master.subStations) {
+      Object.values(master.subStations).forEach((sub) => {
+        const hasPush = registeredStationIds.has(sub.id);
+        const examinerName = sub.examiner || '';
+        let label = `Station ${sub.id}`;
+        if (master.name && master.name !== `Station ${sub.parentId}`) {
+          label += ` (${master.name})`;
+        }
+        if (examinerName) {
+          label += ` – Prüfer: ${examinerName}`;
+        }
+        if (hasPush) {
+          label += ' [🔔 Push-Aktiv]';
+        }
+
+        stationList.push({
+          id: sub.id,
+          label,
+          examiner: examinerName,
+          hasPushSub: hasPush,
+        });
+      });
+    }
+  });
+
+  stationList.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+
+  res.json({ success: true, stations: stationList });
+});
+
 app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
-  const { type, title, body, vibrate } = req.body || {};
+  const { type, title, body, vibrate, targetSubId } = req.body || {};
+  const cleanTargetSubId = targetSubId && targetSubId !== 'all' ? String(targetSubId).trim() : undefined;
+
   const notificationPayload = {
     type: type || 'broadcast',
     tag: type || 'broadcast',
+    subId: cleanTargetSubId || '',
     title: String(title || 'Mitteilung der Prüfungsleitung').trim().substring(0, 100),
     body: String(body || '').trim().substring(0, 500),
     icon: '/icon-192.png',
@@ -878,9 +948,12 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
     url: '/pruefer.html',
     vibrate: Array.isArray(vibrate) ? vibrate : [300, 100, 300],
     timestamp: getUniqueTimestamp(),
+    data: {
+      subId: cleanTargetSubId || '',
+    },
   };
 
-  sendWebPushNotification('all', notificationPayload);
+  sendWebPushNotification('all', notificationPayload, cleanTargetSubId);
   res.json({ success: true });
 });
 
