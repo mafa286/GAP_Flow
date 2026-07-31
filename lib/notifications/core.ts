@@ -150,8 +150,17 @@ export async function sendNotification(
 
       const payloadStr = JSON.stringify(finalPayload);
 
+      const vapidOptions: webpush.RequestOptions = {
+        ...pushOptions,
+        vapidDetails: {
+          subject: 'mailto:leitstand@gap-flow.de',
+          publicKey: vapidPublicKey,
+          privateKey: vapidPrivateKey,
+        },
+      };
+
       webpush
-        .sendNotification(sub, payloadStr, pushOptions)
+        .sendNotification(sub, payloadStr, vapidOptions)
         .then((res) => {
           console.log(
             `[WebPush Erfolgreich] ID: ${r.id} | OS: ${os.toUpperCase()} | Station: ${r.targetId || 'alle'} | Rolle: ${r.role} | Host: ${endpointDomain} | Status: ${res.statusCode} | Titel: "${pushTitle}"`
