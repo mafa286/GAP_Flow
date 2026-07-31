@@ -1,5 +1,3 @@
-// Version Tracker: lib/allocator.ts (GAP-Flow v1.1.68)
-
 import { SystemState, Group, Station, SubStation, LogEntry } from './types';
 
 /**
@@ -21,6 +19,21 @@ export interface AllocatorOptions {
 }
 
 let writeSystemLog: WriteSystemLogFn = () => null;
+
+/**
+ * Löscht die Vormerkung einer Gruppe an allen Unterstationen einer Hauptstation.
+ * @param {Station} station - Die betroffene Hauptstation.
+ * @param {string} groupId - Die Gruppen-ID deren Vormerkung aufgehoben werden soll.
+ * @returns {void}
+ */
+export function clearGroupReservation(station: Station, groupId: string): void {
+  if (!station || !station.subStations || !groupId) return;
+  Object.keys(station.subStations).forEach((sId) => {
+    if (station.subStations[sId].reservedGroupId === groupId) {
+      station.subStations[sId].reservedGroupId = null;
+    }
+  });
+}
 
 /**
  * Initialisiert den Allocator mit den benötigten Logging-Abhängigkeiten.
@@ -150,12 +163,7 @@ export function executeAllocation(
   targetSub.currentGroupId = selectedGroup.id;
   targetSub.startTime = nowTs;
 
-  const subIds = Object.keys(targetMaster.subStations);
-  subIds.forEach((sId) => {
-    if (targetMaster.subStations[sId].reservedGroupId === selectedGroup.id) {
-      targetMaster.subStations[sId].reservedGroupId = null;
-    }
-  });
+  clearGroupReservation(targetMaster, selectedGroup.id);
 
   writeSystemLog(selectedGroup.name, subStationId, -10, targetSub.examiner || 'Prüfer');
 
