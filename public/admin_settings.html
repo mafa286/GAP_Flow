@@ -254,14 +254,14 @@
           <!-- Kachel 3: Server- & Build-Log -->
           <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
             <div>
-              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">📄 Server- &amp; Push-Log</h3>
+              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">📄 Server- &amp; Build-Log</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Zeigt Uptime, System- &amp; Kompilierungsstatus sowie alle eingehenden Service Worker Remote-Push-Protokolle des Smartphones an.
+                Zeigt Uptime, Systemstatus sowie eventuelle Kompilierungsfehler an, falls ein GitHub-Update wegen Syntax- oder Typfehlern abgelehnt wurde.
               </p>
             </div>
             <button @click="fetchServerLog()" 
                     class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow flex items-center justify-center gap-2">
-              <span>📄 Protokolle &amp; SW-Logs anzeigen</span>
+              <span>📄 Server- &amp; Build-Log anzeigen</span>
             </button>
           </div>
         </div>
