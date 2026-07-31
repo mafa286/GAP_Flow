@@ -128,26 +128,6 @@ sw.addEventListener('fetch', (event: any) => {
 });
 
 /**
- * Sendet Fern-Diagnosedaten des Service Workers an das Server-Protokoll.
- */
-async function reportSwDebugLog(logData: Record<string, unknown>): Promise<void> {
-  try {
-    await fetch('/api/sw-debug-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        swVersion: SW_VERSION,
-        userAgent: self.navigator ? self.navigator.userAgent : 'unbekannt',
-        ...logData,
-      }),
-    });
-  } catch (e) {
-    console.warn('[SW Remote Debug Report Fehler]', e);
-  }
-}
-
-/**
  * Push-Event: Empfängt eingehende Web-Push-Benachrichtigungen vom Server/Push-Dienst.
  * @param {any} event - Das native PushEvent der Service Worker API.
  * @returns {void}
