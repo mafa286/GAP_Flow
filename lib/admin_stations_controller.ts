@@ -502,12 +502,14 @@ export function subAssign(req: Request, res: Response): void {
     }
   });
 
+  const nowTs = getUniqueTimestamp();
+
   group.status = 'assigned';
   group.currentStation = subId;
-  group.lastStatusChange = getUniqueTimestamp();
+  group.lastStatusChange = nowTs;
 
   sub.currentGroupId = groupId;
-  sub.startTime = Date.now();
+  sub.startTime = nowTs;
 
   writeSystemLog(group.name, subId, -8, sub.examiner || 'Prüfer');
 
