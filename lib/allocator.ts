@@ -141,12 +141,14 @@ export function executeAllocation(
   const selectedGroup = candidates[0];
   fixGroupMembersIfNeeded(selectedGroup, systemState);
 
+  const nowTs = getUniqueTimestamp();
+
   selectedGroup.status = 'assigned';
   selectedGroup.currentStation = subStationId;
-  selectedGroup.lastStatusChange = getUniqueTimestamp();
+  selectedGroup.lastStatusChange = nowTs;
 
   targetSub.currentGroupId = selectedGroup.id;
-  targetSub.startTime = Date.now();
+  targetSub.startTime = nowTs;
 
   const subIds = Object.keys(targetMaster.subStations);
   subIds.forEach((sId) => {
