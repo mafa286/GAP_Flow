@@ -26,6 +26,43 @@ let appDir = '';
 let shutdown: () => void = () => {};
 
 /**
+ * Erstellt einen formatierten Zeitstempel-String für Backup-Dateinamen.
+ * @param {boolean} [includeSeconds=false] - Gibt an, ob Sekunden enthalten sein sollen.
+ * @returns {string} Formatierter Zeitstempel.
+ */
+function getZipTimestampStr(includeSeconds = false): string {
+  const dObj = new Date();
+  const dPad = (n: number) => n.toString().padStart(2, '0');
+  let str = `${dObj.getFullYear()}${dPad(dObj.getMonth() + 1)}${dPad(dObj.getDate())}_${dPad(dObj.getHours())}${dPad(dObj.getMinutes())}`;
+  if (includeSeconds) {
+    str += dPad(dObj.getSeconds());
+  }
+  return str;
+}
+
+/**
+ * Fügt alle relevanten Projektdateien (ohne data, node_modules & .git) zum ZIP-Archiv hinzu.
+ * @param {AdmZip} zip - Die AdmZip-Instanz.
+ * @param {string} targetAppDir - Das Anwendungsverzeichnis.
+ * @returns {void}
+ */
+function addAppFolderToZip(zip: AdmZip, targetAppDir: string): void {
+  const files = fs.readdirSync(targetAppDir);
+  files.forEach((file) => {
+    if (file === 'data' || file === 'node_modules' || file === '.git') return;
+
+    const fullPath = path.join(targetAppDir, file);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      zip.addLocalFolder(fullPath, file);
+    } else {
+      zip.addLocalFile(fullPath);
+    }
+  });
+}
+
+/**
  * Initialisiert das Dateiverarbeitungs-Modul mit den benötigten globalen Abhängigkeiten.
  * @param {FileProcessorOptions} options - Konfigurationsobjekt.
  * @returns {void}
@@ -61,24 +98,9 @@ export function formatDateTime(timestamp: number): { dateStr: string; timeStr: s
 export function downloadCode(req: Request, res: Response): void {
   try {
     const zip = new AdmZip();
+    addAppFolderToZip(zip, appDir);
 
-    const files = fs.readdirSync(appDir);
-    files.forEach((file) => {
-      if (file === 'data' || file === 'node_modules' || file === '.git') return;
-
-      const fullPath = path.join(appDir, file);
-      const stat = fs.statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        zip.addLocalFolder(fullPath, file);
-      } else {
-        zip.addLocalFile(fullPath);
-      }
-    });
-
-    const dObj = new Date();
-    const dPad = (n: number) => n.toString().padStart(2, '0');
-    const timestampStr = `${dObj.getFullYear()}${dPad(dObj.getMonth() + 1)}${dPad(dObj.getDate())}_${dPad(dObj.getHours())}${dPad(dObj.getMinutes())}`;
+    const timestampStr = getZipTimestampStr();
     const downloadBackupName = `${timestampStr}_download_GAP-Flow.zip`;
 
     zip.writeZip(path.join(backupDir, downloadBackupName));
@@ -140,21 +162,9 @@ export function uploadCode(req: Request, res: Response): void {
     }
 
     const backupZip = new AdmZip();
-    const files = fs.readdirSync(appDir);
-    files.forEach((file) => {
-      if (file === 'data' || file === 'node_modules' || file === '.git') return;
-      const fullPath = path.join(appDir, file);
-      const stat = fs.statSync(fullPath);
-      if (stat.isDirectory()) {
-        backupZip.addLocalFolder(fullPath, file);
-      } else {
-        backupZip.addLocalFile(fullPath);
-      }
-    });
+    addAppFolderToZip(backupZip, appDir);
 
-    const dObj = new Date();
-    const dPad = (n: number) => n.toString().padStart(2, '0');
-    const timestampStr = `${dObj.getFullYear()}${dPad(dObj.getMonth() + 1)}${dPad(dObj.getDate())}_${dPad(dObj.getHours())}${dPad(dObj.getMinutes())}`;
+    const timestampStr = getZipTimestampStr();
     const backupFileName = `${timestampStr}_backup_GAP-Flow.zip`;
     const uploadFileName = `${timestampStr}_upload_GAP-Flow.zip`;
 
@@ -252,28 +262,14 @@ export function createAutoBackupZip(): string | null {
     const zip = new AdmZip();
 
     // 1. Quellcode und Konfigurationsdateien hinzufügen (ohne node_modules & .git)
-    const files = fs.readdirSync(appDir);
-    files.forEach((file) => {
-      if (file === 'node_modules' || file === '.git' || file === 'data') return;
-
-      const fullPath = path.join(appDir, file);
-      const stat = fs.statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        zip.addLocalFolder(fullPath, file);
-      } else {
-        zip.addLocalFile(fullPath);
-      }
-    });
+    addAppFolderToZip(zip, appDir);
 
     // 2. Datenbank-Verzeichnis (data/) explizit mit sichern
     if (dbDir && fs.existsSync(dbDir)) {
       zip.addLocalFolder(dbDir, 'data');
     }
 
-    const dObj = new Date();
-    const dPad = (n: number) => n.toString().padStart(2, '0');
-    const timestampStr = `${dObj.getFullYear()}${dPad(dObj.getMonth() + 1)}${dPad(dObj.getDate())}_${dPad(dObj.getHours())}${dPad(dObj.getMinutes())}${dPad(dObj.getSeconds())}`;
+    const timestampStr = getZipTimestampStr(true);
     const backupFileName = `GAP-Flow_AutoBackup_${timestampStr}.zip`;
     const targetPath = path.join(backupDir, backupFileName);
 
