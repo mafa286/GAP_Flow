@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<!-- Version Tracker: public/admin_settings.html (GAP-Flow v1.1.1) -->
   <meta charset="UTF-8">
   <title>Admin-Leitstand - Einstellungen &amp; System</title>
   <script src="/js/theme_config.js?v=1.1.68"></script>
@@ -210,22 +209,22 @@
         </div>
       </div>
 
-      <!-- SEKTION 3: SYSTEM-WERKZEUGE, NEUSTART, REPOMIX & LOGS -->
+      <!-- SEKTION 3: SYSTEM-WERKZEUGE, NEUSTART & REPOMIX -->
       <div class="app-card p-6 space-y-6">
         <div>
           <h2 class="text-xl font-bold text-main">3. System-Werkzeuge &amp; Verwaltung</h2>
           <p class="text-xs text-muted leading-relaxed">
-            Verwaltung von Serverprozess, Quellcode-Export (Repomix) und Anzeige von System- &amp; Kompilierungsprotokollen.
+            Verwaltung von Serverprozess und Quellcode-Export (Repomix).
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Kachel 1: Server Neustart -->
           <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
             <div>
               <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">🔄 Server neustarten</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Beendet den Serverprozess kontrolliert. Docker startet den Container neu. Vor dem Laden wird der neue Stand im Staging-Modus kompiliert; bei Fehlern wird der letzte stabile Stand geladen.
+                Beendet den Serverprozess kontrolliert. Docker startet den Container neu. Der neue Stand wird automatisch auf Kompilierungsfehler geprüft und das Ergebnis direkt im Anschluss angezeigt.
               </p>
             </div>
             <button @click="triggerSystemRestart()" 
@@ -250,20 +249,6 @@
               <span x-show="isGeneratingRepomix" class="animate-pulse">⏳ Generiere XML...</span>
             </button>
           </div>
-
-          <!-- Kachel 3: Server- & Build-Log -->
-          <div class="p-4 app-card-accent space-y-3 flex flex-col justify-between rounded-lg border border-main">
-            <div>
-              <h3 class="text-sm font-bold text-brand uppercase flex items-center gap-1.5">📄 Server- &amp; Build-Log</h3>
-              <p class="text-[10px] text-muted leading-normal mt-1">
-                Zeigt Uptime, Systemstatus sowie eventuelle Kompilierungsfehler an, falls ein GitHub-Update wegen Syntax- oder Typfehlern abgelehnt wurde.
-              </p>
-            </div>
-            <button @click="fetchServerLog()" 
-                    class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow flex items-center justify-center gap-2">
-              <span>📄 Server- &amp; Build-Log anzeigen</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -271,8 +256,10 @@
     <!-- MODAL: UPDATE STATUS MONITOR -->
     <div x-show="showUpdateStatusModal" 
          class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
-      <div class="app-card p-6 max-w-sm w-full space-y-5 text-center border-main">
+      <div class="app-card p-6 w-full space-y-5 text-center border-main transition-all"
+           :class="updateStep === 'failed' ? 'max-w-2xl' : 'max-w-sm'">
         
+        <!-- Icons je nach Status-Schritt -->
         <template x-if="updateStep === 'upload' || updateStep === 'extract'">
           <div class="text-4xl animate-bounce">📦</div>
         </template>
@@ -286,16 +273,31 @@
           <div class="text-4xl">🎉</div>
         </template>
         <template x-if="updateStep === 'failed'">
-          <div class="text-4xl">❌</div>
+          <div class="text-4xl">⚠️</div>
         </template>
 
+        <!-- Titel -->
         <h3 class="text-base font-black text-main uppercase tracking-wide" x-text="getUpdateTitle()"></h3>
-        <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+        
+        <!-- Beschreibung für normale Schritte -->
+        <template x-if="updateStep !== 'failed'">
+          <p class="text-muted text-xs leading-normal" x-text="getUpdateDescription()"></p>
+        </template>
 
+        <!-- Detailliertes Fehlerprotokoll bei Kompilierungsfehlern -->
+        <template x-if="updateStep === 'failed'">
+          <div class="space-y-3 text-left">
+            <div class="p-3 app-card-accent rounded-lg border border-main font-mono text-xs max-h-[50vh] overflow-y-auto whitespace-pre-wrap leading-relaxed"
+                 style="color: var(--sig-danger-text) !important;"
+                 x-text="updateErrorMessage"></div>
+          </div>
+        </template>
+
+        <!-- Aktionstasten -->
         <template x-if="updateStep === 'ready'">
           <button @click="reloadAfterUpdate()" 
                   class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow-lg">
-            Update abschließen
+            Update &amp; Neustart abschließen
           </button>
         </template>
         <template x-if="updateStep === 'failed'">
@@ -304,134 +306,6 @@
             Schließen
           </button>
         </template>
-      </div>
-    </div>
-
-    <!-- MODAL: RÜCKRUF-ANFORDERUNG GEZIELT AN EINE STATION -->
-    <div x-show="showCallbackModal" 
-         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
-      <div class="app-card p-6 max-w-md w-full space-y-5 text-center border-main">
-        <div class="flex justify-between items-center border-b border-main pb-3">
-          <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
-            <span x-text="callbackType === 'leitstelle' ? '🚨 Rückruf Leitstelle' : '🚨 Rückruf Prüfungsleitung'"></span>
-          </h3>
-          <button @click="closeCallbackModal()" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
-        </div>
-
-        <!-- STATUS 1: Station auswählen & senden -->
-        <template x-if="!isSendingCallback && !callbackAckReceived && !callbackError">
-          <div class="space-y-4 text-left">
-            <template x-if="registeredStations.length > 0">
-              <div class="space-y-4">
-                <p class="text-muted text-xs leading-relaxed">
-                  Wählen Sie die Zielstation aus, an die die Rückruf-Anforderung übermittelt werden soll:
-                </p>
-
-                <div>
-                  <label for="callback-station-select" class="block text-[11px] font-bold text-muted uppercase mb-1">Ziel-Station</label>
-                  <select id="callback-station-select" 
-                          name="selectedStationId" 
-                          x-model="selectedStationId" 
-                          class="w-full px-3 py-2.5 input-select text-xs font-semibold cursor-pointer">
-                    <template x-for="st in registeredStations" :key="st.id">
-                      <option :value="st.id" x-text="st.label"></option>
-                    </template>
-                  </select>
-                </div>
-
-                <div class="flex gap-3 pt-2">
-                  <button @click="closeCallbackModal()" class="flex-1 py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
-                    Abbrechen
-                  </button>
-                  <button @click="sendCallbackPush()" :disabled="!selectedStationId" class="flex-1 py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow disabled:opacity-50">
-                    🚀 Anforderung Senden
-                  </button>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="registeredStations.length === 0">
-              <div class="space-y-4 text-center py-2">
-                <div class="text-4xl">⚠️</div>
-                <p class="text-muted text-xs leading-relaxed">
-                  Keine Stationen mit aktiver Push-Benachrichtigung registriert.
-                </p>
-                <button @click="closeCallbackModal()" class="w-full py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider">
-                  Schließen
-                </button>
-              </div>
-            </template>
-          </div>
-        </template>
-
-        <!-- STATUS 2: Anfrage wird gesendet (Animation) -->
-        <template x-if="isSendingCallback && !callbackAckReceived">
-          <div class="space-y-4 py-4">
-            <div class="text-5xl animate-bounce">📡</div>
-            <h4 class="text-sm font-black text-brand uppercase tracking-wide">Anforderung wird gesendet...</h4>
-            <p class="text-muted text-xs leading-normal">
-              Benachrichtigung wird an Station <strong class="text-main" x-text="selectedStationId"></strong> übermittelt. Warte auf Empfangsbestätigung vom Gerät...
-            </p>
-            <div class="w-full h-2 progress-track rounded-full overflow-hidden">
-              <div class="h-full progress-fill animate-pulse w-full"></div>
-            </div>
-          </div>
-        </template>
-
-        <!-- STATUS 3: Bestätigt (ACK erhalten) -->
-        <template x-if="callbackAckReceived">
-          <div class="space-y-4 py-4 animate-fade-in">
-            <div class="text-5xl">✅</div>
-            <h4 class="text-base font-black uppercase tracking-wide" style="color: var(--sig-success-text) !important;">Empfang Bestätigt!</h4>
-            <p class="text-muted text-xs leading-normal">
-              Die Rückruf-Anforderung wurde auf dem Zielgerät erfolgreich zugestellt und quittiert.
-            </p>
-            <button @click="closeCallbackModal()" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider shadow">
-              Schließen
-            </button>
-          </div>
-        </template>
-
-        <!-- STATUS 4: Fehler oder Timeout -->
-        <template x-if="callbackError && !callbackAckReceived">
-          <div class="space-y-4 py-2 animate-fade-in">
-            <div class="text-4xl">⚠️</div>
-            <h4 class="text-sm font-black text-sig-danger uppercase tracking-wide">Hinweis zum Sendevorgang</h4>
-            <p class="text-muted text-xs leading-relaxed" x-text="callbackError"></p>
-            <div class="flex gap-3 pt-2">
-              <button @click="closeCallbackModal()" class="flex-1 py-2.5 app-card-accent text-main font-bold text-xs uppercase tracking-wider">
-                Schließen
-              </button>
-              <button @click="sendCallbackPush()" class="flex-1 py-2.5 btn-sig-orange text-xs font-bold uppercase tracking-wider shadow">
-                Erneut versuchen
-              </button>
-            </div>
-          </div>
-        </template>
-
-      </div>
-    </div>
-
-    <!-- MODAL: SERVER- & BUILD-LOG MONITOR -->
-    <div x-show="showServerLogModal" 
-         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
-      <div class="app-card p-6 max-w-2xl w-full space-y-4 border-main">
-        <div class="flex justify-between items-center border-b border-main pb-3">
-          <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
-            <span>📄</span> System- &amp; Kompilierungs-Protokoll
-          </h3>
-          <button @click="showServerLogModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
-        </div>
-
-        <div class="p-3 app-card-accent rounded-lg border border-main font-mono text-xs max-h-[60vh] overflow-y-auto whitespace-pre-wrap leading-relaxed text-main"
-             :style="hasBuildError ? 'color: var(--sig-danger-text) !important;' : ''"
-             x-text="serverLogText"></div>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button @click="showServerLogModal = false" class="px-6 py-2 btn-brand text-xs font-bold uppercase tracking-wider shadow">
-            Schließen
-          </button>
-        </div>
       </div>
     </div>
   </div>
