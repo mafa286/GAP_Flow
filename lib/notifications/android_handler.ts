@@ -7,6 +7,7 @@ import { NotificationPayload } from '../types';
  */
 export interface AndroidPushOptions extends webpush.RequestOptions {
   TTL: number;
+  urgency: 'high' | 'normal' | 'low' | 'very-low';
   headers: {
     Urgency: 'high' | 'normal' | 'low' | 'very-low';
   };
@@ -19,6 +20,7 @@ export interface AndroidPushOptions extends webpush.RequestOptions {
 export function getAndroidPushOptions(): AndroidPushOptions {
   return {
     TTL: 86400,
+    urgency: 'high',
     headers: {
       Urgency: 'high',
     },
