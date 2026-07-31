@@ -256,39 +256,6 @@ window.adminPanel = function (): Record<string, unknown> {
      */
     async sendBroadcastMessage(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
-      if (!confirm('Soll ein dringender Rückrufwunsch der PRÜFUNGSLEITUNG an alle Prüfer gesendet werden?')) return;
-
-      self.isSubmitting = true;
-      try {
-        const response = await fetch('/api/admin/notify', {
-          method: 'POST',
-          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'callback_pruefungsleitung',
-            title: '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF!',
-            body: 'Bitte wähle die Prüfungsleitung über den Menü-Button.',
-            vibrate: [500, 150, 500, 150, 500, 300, 1000],
-          }),
-        });
-        if (response.ok) {
-          alert('Rückrufwunsch wurde erfolgreich gesendet.');
-        } else {
-          const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Senden des Rückrufwunsches.');
-      } finally {
-        self.isSubmitting = false;
-      }
-    },
-
-    /**
-     * Sendet einen individuellen Rundruf-Text an alle Prüfer.
-     */
-    async sendBroadcastMessage(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
       const text = self.broadcastText.trim();
       if (!text) return;
 
