@@ -321,31 +321,46 @@
         <!-- STATUS 1: Station auswählen & senden -->
         <template x-if="!isSendingCallback && !callbackAckReceived && !callbackError">
           <div class="space-y-4 text-left">
-            <p class="text-muted text-xs leading-relaxed">
-              Wählen Sie die Zielstation aus, an die die Rückruf-Anforderung übermittelt werden soll:
-            </p>
+            <template x-if="registeredStations.length > 0">
+              <div class="space-y-4">
+                <p class="text-muted text-xs leading-relaxed">
+                  Wählen Sie die Zielstation aus, an die die Rückruf-Anforderung übermittelt werden soll:
+                </p>
 
-            <div>
-              <label for="callback-station-select" class="block text-[11px] font-bold text-muted uppercase mb-1">Ziel-Station</label>
-              <select id="callback-station-select" 
-                      name="selectedStationId" 
-                      x-model="selectedStationId" 
-                      class="w-full px-3 py-2.5 input-select text-xs font-semibold cursor-pointer">
-                <option value="all">📢 Alle Stationen (Rundruf an alle Geräte)</option>
-                <template x-for="st in registeredStations" :key="st.id">
-                  <option :value="st.id" x-text="st.label"></option>
-                </template>
-              </select>
-            </div>
+                <div>
+                  <label for="callback-station-select" class="block text-[11px] font-bold text-muted uppercase mb-1">Ziel-Station</label>
+                  <select id="callback-station-select" 
+                          name="selectedStationId" 
+                          x-model="selectedStationId" 
+                          class="w-full px-3 py-2.5 input-select text-xs font-semibold cursor-pointer">
+                    <template x-for="st in registeredStations" :key="st.id">
+                      <option :value="st.id" x-text="st.label"></option>
+                    </template>
+                  </select>
+                </div>
 
-            <div class="flex gap-3 pt-2">
-              <button @click="closeCallbackModal()" class="flex-1 py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
-                Abbrechen
-              </button>
-              <button @click="sendCallbackPush()" class="flex-1 py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
-                🚀 Anforderung Senden
-              </button>
-            </div>
+                <div class="flex gap-3 pt-2">
+                  <button @click="closeCallbackModal()" class="flex-1 py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider transition">
+                    Abbrechen
+                  </button>
+                  <button @click="sendCallbackPush()" :disabled="!selectedStationId" class="flex-1 py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow disabled:opacity-50">
+                    🚀 Anforderung Senden
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="registeredStations.length === 0">
+              <div class="space-y-4 text-center py-2">
+                <div class="text-4xl">⚠️</div>
+                <p class="text-muted text-xs leading-relaxed">
+                  Keine Stationen mit aktiver Push-Benachrichtigung registriert.
+                </p>
+                <button @click="closeCallbackModal()" class="w-full py-2.5 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider">
+                  Schließen
+                </button>
+              </div>
+            </template>
           </div>
         </template>
 
@@ -355,7 +370,7 @@
             <div class="text-5xl animate-bounce">📡</div>
             <h4 class="text-sm font-black text-brand uppercase tracking-wide">Anforderung wird gesendet...</h4>
             <p class="text-muted text-xs leading-normal">
-              Benachrichtigung wird an <strong class="text-main" x-text="selectedStationId === 'all' ? 'alle Stationen' : 'Station ' + selectedStationId"></strong> übermittelt. Warte auf Empfangsbestätigung vom Gerät...
+              Benachrichtigung wird an Station <strong class="text-main" x-text="selectedStationId"></strong> übermittelt. Warte auf Empfangsbestätigung vom Gerät...
             </p>
             <div class="w-full h-2 progress-track rounded-full overflow-hidden">
               <div class="h-full progress-fill animate-pulse w-full"></div>
