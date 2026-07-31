@@ -5,6 +5,7 @@ import * as androidHandler from './android_handler';
 import * as iosHandler from './ios_handler';
 import * as windowsHandler from './windows_handler';
 
+const VAPID_SUBJECT = 'mailto:leitstand@gap-flow.de';
 let vapidPublicKey = '';
 let vapidPrivateKey = '';
 
@@ -21,7 +22,7 @@ function generateAndSaveVapidKeys(db: any, resolve: () => void): void {
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
     db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
   }
-  webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+  webpush.setVapidDetails(VAPID_SUBJECT, vapidPublicKey, vapidPrivateKey);
   console.log('[WebPush Core] Neues VAPID Schlüsselpaar generiert und aktiviert.');
   resolve();
 }
@@ -40,7 +41,7 @@ export function initVapidKeys(): Promise<void> {
           db.get("SELECT value FROM meta WHERE key = 'vapid_private_key'", [], (err2, rowPrivate: any) => {
             if (!err2 && rowPrivate && rowPrivate.value) {
               vapidPrivateKey = rowPrivate.value;
-              webpush.setVapidDetails('mailto:leitstand@gap-flow.de', vapidPublicKey, vapidPrivateKey);
+              webpush.setVapidDetails(VAPID_SUBJECT, vapidPublicKey, vapidPrivateKey);
               console.log('[WebPush Core] VAPID Schlüsselpaar aus Datenbank geladen.');
               resolve();
             } else {
@@ -153,7 +154,7 @@ export async function sendNotification(
       const vapidOptions: webpush.RequestOptions = {
         ...pushOptions,
         vapidDetails: {
-          subject: 'mailto:leitstand@gap-flow.de',
+          subject: VAPID_SUBJECT,
           publicKey: vapidPublicKey,
           privateKey: vapidPrivateKey,
         },
