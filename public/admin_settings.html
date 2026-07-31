@@ -393,7 +393,7 @@
         </template>
 
         <!-- STATUS 4: Fehler oder Timeout -->
-        <template x-if="callbackError">
+        <template x-if="callbackError && !callbackAckReceived">
           <div class="space-y-4 py-2 animate-fade-in">
             <div class="text-4xl">⚠️</div>
             <h4 class="text-sm font-black text-sig-danger uppercase tracking-wide">Hinweis zum Sendevorgang</h4>
