@@ -1,7 +1,5 @@
-// Version Tracker: lib/admin_stations_controller.ts (GAP-Flow v1.1.12)
-
 import { Request, Response } from 'express';
-import { SystemState, Station, SubStation, LogEntry } from './types';
+import { SystemState, Station, SubStation, LogEntry, resetSystemState } from './types';
 import * as allocatorModule from './allocator';
 
 /**
@@ -106,18 +104,8 @@ export function init(options: AdminStationsControllerOptions): void {
  */
 export async function clearStations(req: Request, res: Response): Promise<void> {
   try {
-    systemState.logs = [];
-    systemState.firstAssignmentTime = null;
-    systemState.pendingLogCancellations = [];
-    systemState.isCleared = true;
-    systemState.autoAllocationActive = false;
+    resetSystemState(systemState);
     systemState.stations = {};
-    systemState.settings = {
-      phoneLeitstelleName: '',
-      phoneLeitstelleNumber: '',
-      phonePruefungsleitungName: '',
-      phonePruefungsleitungNumber: '',
-    };
 
     Object.values(systemState.groups || {}).forEach((group) => {
       group.completedStations = [];
@@ -333,18 +321,8 @@ export async function batchStations(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  systemState.logs = [];
-  systemState.firstAssignmentTime = null;
-  systemState.pendingLogCancellations = [];
-  systemState.isCleared = true;
-  systemState.autoAllocationActive = false;
+  resetSystemState(systemState);
   systemState.stations = {};
-  systemState.settings = {
-    phoneLeitstelleName: '',
-    phoneLeitstelleNumber: '',
-    phonePruefungsleitungName: '',
-    phonePruefungsleitungNumber: '',
-  };
 
   Object.values(systemState.groups || {}).forEach((group) => {
     group.completedStations = [];
