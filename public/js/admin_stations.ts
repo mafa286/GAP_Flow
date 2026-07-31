@@ -1,5 +1,3 @@
-// Version Tracker: public/js/admin_stations.ts (GAP-Flow v1.1.14)
-
 interface ClientSubStation {
   id: string;
   parentId: string;
@@ -534,7 +532,7 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Pollt die `/api/ping`-Schnittstelle nach einem Server-Neustart.
+     * Pollt die `/api/ping`-Schnittstelle nach einem Server-Neustart und prüft anschließend Kompilierungsfehler.
      * @returns {Promise<void>}
      */
     async pollServerPing(): Promise<void> {
@@ -549,6 +547,22 @@ window.adminPanel = function (): Record<string, unknown> {
           const res = await fetch('/api/ping', { cache: 'no-store' });
           if (res.ok) {
             clearInterval(interval);
+            try {
+              const logRes = await fetch('/api/admin/system/logs', {
+                headers: { Authorization: self.password },
+              });
+              if (logRes.ok) {
+                const logData = (await logRes.json()) as {
+                  hasBuildError: boolean;
+                  buildErrorLog: string;
+                };
+                if (logData.hasBuildError && logData.buildErrorLog) {
+                  self.updateStep = 'failed';
+                  self.updateErrorMessage = `⚠️ FEHLER BEIM LETZTEN KOMPILIEREN:\n\n${logData.buildErrorLog}\n\nServer läuft im sicheren Standby mit dem letzten funktionierenden Code.`;
+                  return;
+                }
+              }
+            } catch (_) {}
             self.updateStep = 'ready';
           }
         } catch (e) {
