@@ -19,7 +19,7 @@ export interface AndroidPushOptions extends webpush.RequestOptions {
  */
 export function getAndroidPushOptions(): AndroidPushOptions {
   return {
-    TTL: 86400,
+    TTL: 5400,
     urgency: 'high',
     headers: {
       Urgency: 'high',
