@@ -27,6 +27,14 @@ export type GetAdminStateFn = () => Record<string, unknown>;
 let io: Server | null = null;
 
 /**
+ * Liefert die aktive Socket.io-Serverinstanz.
+ * @returns {Server | null} Die Socket.io-Instanz.
+ */
+export function getIo(): Server | null {
+  return io;
+}
+
+/**
  * Initialisiert den Socket.io-Server, konfiguriert die Handshake-Sicherheitsmiddleware
  * und verwaltet die Client-Verbindungen basierend auf rollenabhängigen WebSocket-Räumen.
  * @param {HttpServer} server - Der laufende Express HTTP-Server.
