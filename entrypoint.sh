@@ -20,33 +20,27 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     NEW_COMMIT=$(git rev-parse origin/main || echo "")
     
     if [ "$OLD_COMMIT" != "$NEW_COMMIT" ] && [ -n "$NEW_COMMIT" ]; then
-      echo "[GAP-Flow] Neues Update gefunden! Teste Kompilierung..."
-      
-      git merge origin/main --no-edit >/dev/null 2>&1 || true
+      echo "[GAP-Flow] Neues Update gefunden! Teste Kompilierung ($OLD_COMMIT -> $NEW_COMMIT)..."
       
       mkdir -p data
       rm -f data/build_error.log
-      
-      if npm run build:frontend > data/build_error.log 2>&1; then
-        echo "[GAP-Flow] ✅ Staging-Build ERFOLGREICH! Update übernommen."
-        rm -f data/build_error.log
 
-        # Automatische Erhöhung der Dev-Zahl (+1) in package.json bei GitHub-Updates
-        node -e "
-          const fs = require('fs');
-          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const parts = (pkg.version || '0.0').split('.');
-          const release = parts[0] || '1';
-          const dev = parseInt(parts[1] || '0', 10) + 1;
-          pkg.version = \`\${release}.\${dev}\`;
-          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          console.log('[Version] Auto-incremented dev version to v' + pkg.version);
-        "
-        npm run build:frontend >/dev/null 2>&1 || true
+      # Sauberen Git-Arbeitsbereich vor Merge sicherstellen
+      git reset --hard HEAD >/dev/null 2>&1 || true
+      
+      if git merge origin/main --no-edit >/dev/null 2>&1; then
+        if npm run build:frontend > data/build_error.log 2>&1; then
+          echo "[GAP-Flow] ✅ Staging-Build ERFOLGREICH! Update übernommen."
+          rm -f data/build_error.log
+        else
+          echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
+          git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
+          echo "[GAP-Flow] Alter stabiler Stand wiederhergestellt. Fehlerprotokoll in data/build_error.log gespeichert."
+        fi
       else
-        echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
+        echo "[GAP-Flow] ❌ Git-Merge fehlgeschlagen! Setze zurück auf $OLD_COMMIT..."
+        git merge --abort >/dev/null 2>&1 || true
         git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
-        echo "[GAP-Flow] Alter stabiler Stand wiederhergestellt. Fehlerprotokoll in data/build_error.log gespeichert."
       fi
     fi
   fi
