@@ -39,6 +39,7 @@ interface AdminStationsPopupsComponent {
   password: string;
   groups: Record<string, StationGroup>;
   stations: Record<string, PopupMasterStation>;
+  [key: string]: any;
 
   setPopupSubStation(masterId: string, subId: string): void;
   openManualAssignPopup(masterId: string, subId: string): void;
@@ -190,7 +191,7 @@ window.adminStationsPopups = {
         throw new Error(errData.error || `HTTP Status ${response.status}`);
       }
       if (modalPropToHide && modalPropToHide in self) {
-        (self as Record<string, unknown>)[modalPropToHide] = false;
+        (self as unknown as Record<string, unknown>)[modalPropToHide] = false;
       }
     } catch (e) {
       const error = e as Error;
@@ -286,7 +287,7 @@ window.adminStationsPopups = {
         const errData = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(errData.error || `HTTP Status ${response.status}`);
       }
-      (self as Record<string, unknown>)[modalPropToHide] = false;
+      (self as unknown as Record<string, unknown>)[modalPropToHide] = false;
     } catch (e) {
       const error = e as Error;
       console.error(error);
