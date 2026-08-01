@@ -3,10 +3,20 @@ interface WakeLockContext {
 }
 
 window.gapFlowUtils = {
+  /**
+   * Formatiert einen Zeitstempel in eine deutsche Uhrzeit im Format HH:MM.
+   * @param {number} timestamp - Millisekunden-Zeitstempel.
+   * @returns {string} Formatierte Uhrzeit.
+   */
   formatTime(timestamp: number): string {
     return new Date(timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   },
 
+  /**
+   * Fordert den Screen Wake Lock an, um das Abdunkeln des Bildschirms zu verhindern.
+   * @param {WakeLockContext} ctx - Kontext mit WakeLockSentinel Referenz.
+   * @returns {Promise<void>}
+   */
   async requestWakeLock(ctx: WakeLockContext): Promise<void> {
     if (!ctx || !('wakeLock' in navigator)) return;
     if (ctx.wakeLock) return;
@@ -25,6 +35,11 @@ window.gapFlowUtils = {
     }
   },
 
+  /**
+   * Koppelt die automatische Erneuerung des Wake Locks an die Sichtbarkeit des Browser-Tabs.
+   * @param {WakeLockContext} ctx - Kontext mit WakeLockSentinel Referenz.
+   * @returns {void}
+   */
   bindAutoWakeLock(ctx: WakeLockContext): void {
     this.requestWakeLock(ctx);
     document.addEventListener('visibilitychange', async () => {
