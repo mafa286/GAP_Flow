@@ -254,6 +254,12 @@ export function pauseStation(req: AuthenticatedExaminerRequest, res: Response): 
   const { paused } = req.body || {};
   const sub = req.subStation!;
   sub.paused = !!paused;
+  if (sub.paused) {
+    sub.pausedAt = Date.now();
+  } else {
+    sub.pausedAt = undefined;
+    sub.pauseDurationMinutes = undefined;
+  }
   if (!sub.currentGroupId) {
     writeSystemLog('System', sub.id, paused ? -3 : -4, sub.examiner || 'Prüfer');
   }
