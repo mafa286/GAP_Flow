@@ -643,12 +643,21 @@ function examiner(): ExaminerComponent {
       }
     },
 
+    /**
+     * Berechnet die bisher verstrichene Prüfungsdauer der aktiven Gruppe in Minuten.
+     * @returns {number} Vergangene Zeit in Minuten.
+     */
     getElapsedMinutes(): number {
       if (!this.startTime) return 0;
       const diffMs = this.now - this.startTime;
       return Math.max(0, Math.floor(diffMs / 60000));
     },
 
+    /**
+     * Übernimmt das vom Server empfangene flache Zustandsobjekt in die lokale Alpine-Komponente.
+     * @param {FlatExaminerPayload} data - Das Zustandsobjekt der Unterstation.
+     * @returns {void}
+     */
     applyFlatState(data: FlatExaminerPayload): void {
       this.tokenError = false;
 
@@ -708,6 +717,11 @@ function examiner(): ExaminerComponent {
       this.hasInitialized = true;
     },
 
+    /**
+     * Verarbeitet Echtzeit-Statusupdates unter Berücksichtigung aktiver Eingabe-Countdowns.
+     * @param {FlatExaminerPayload} state - Das empfangene Zustandsobjekt.
+     * @returns {void}
+     */
     updateFromState(state: FlatExaminerPayload): void {
       if (this.freezeUI) {
         const serverGroupId = state.subStation ? state.subStation.currentGroupId : null;
@@ -722,6 +736,10 @@ function examiner(): ExaminerComponent {
       this.applyFlatState(state);
     },
 
+    /**
+     * Startet den 7-Sekunden-Countdown vor der endgültigen Übermittlung des Prüfungsabschlusses.
+     * @returns {void}
+     */
     startGracePeriod(): void {
       this.showConfirmComplete = false;
       this.freezeUI = true;
@@ -744,6 +762,10 @@ function examiner(): ExaminerComponent {
       }, 100);
     },
 
+    /**
+     * Bricht den laufenden Abschluss-Countdown ab und setzt das Interface zurück.
+     * @returns {void}
+     */
     abortGracePeriod(): void {
       if (this.graceTimer) {
         clearInterval(this.graceTimer);
@@ -754,6 +776,10 @@ function examiner(): ExaminerComponent {
       this.freezeUI = false;
     },
 
+    /**
+     * Führt den Prüfungsabschluss und eine eventuell vorgemerkte Stationenpause aus.
+     * @returns {Promise<void>}
+     */
     async executeCompleteWithPause(): Promise<void> {
       this.freezeUI = false;
       this.isSubmitting = true;
