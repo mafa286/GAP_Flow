@@ -83,20 +83,6 @@ function cacheResponse(request: any, response: any): void {
 }
 
 /**
- * Speichert eine geklonte Netzwerk-Antwort im lokalen Service-Worker-Cache.
- * @param {any} request - Die HTTP-Anfrage.
- * @param {any} response - Die empfangene HTTP-Antwort.
- */
-function cacheResponse(request: any, response: any): void {
-  if (response && response.status === 200) {
-    const responseToCache = response.clone();
-    caches.open(CACHE_NAME).then((cache) => {
-      cache.put(request, responseToCache);
-    });
-  }
-}
-
-/**
  * Fetch-Event: Network-First für HTML-Seiten (sofortige Updates), Cache-First für Offline-Assets.
  * @param {any} event - Das abgefangene HTTP-Anfrage-Event.
  * @returns {void}
