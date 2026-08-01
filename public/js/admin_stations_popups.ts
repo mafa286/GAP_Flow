@@ -47,6 +47,7 @@ interface AdminStationsPopupsComponent {
   getAvailableGroupsForSubStation(masterId: string, sub: PopupSubStation): StationGroup[];
   saveManualAssignPopup(): Promise<void>;
   releaseSub(id: string, subId: string): Promise<void>;
+  _updateSubConfig(masterId: string, subId: string, payload: Record<string, unknown>, errorLabel: string, modalPropToHide?: string): Promise<void>;
   removeExaminer(masterId: string, subId: string): Promise<void>;
   openExaminerPopup(masterId: string, subId: string, currentExaminer: string): void;
   saveExaminerPopup(): Promise<void>;
@@ -56,6 +57,7 @@ interface AdminStationsPopupsComponent {
   removeReservation(masterId: string, subId: string): Promise<void>;
   openAddLogPopup(masterId: string, subId: string): void;
   getAddLogGroups(): StationGroup[];
+  _saveCorrectionsPopup(endpoint: 'complete' | 'revert', groupId: string, modalPropToHide: string, errorLabel: string): Promise<void>;
   saveAddLogPopup(): Promise<void>;
   openRevertLogPopup(masterId: string, subId: string): void;
   getRevertLogGroups(): StationGroup[];
@@ -168,32 +170,40 @@ window.adminStationsPopups = {
     }
   },
 
-  async removeExaminer(masterId: string, subId: string): Promise<void> {
+  async _updateSubConfig(
+    masterId: string,
+    subId: string,
+    payload: Record<string, unknown>,
+    errorLabel: string,
+    modalPropToHide?: string
+  ): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
-    if (
-      !confirm(
-        'Möchten Sie den Prüfer dieser Unterstation wirklich entfernen? Das verbundene Gerät wird sofort abgemeldet.'
-      )
-    ) {
-      return;
-    }
     self.isSubmitting = true;
     try {
       const response = await fetch(`/api/admin/stations/${masterId}/sub_config`, {
         method: 'PUT',
         headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subId, examiner: '', deviceToken: null }),
+        body: JSON.stringify({ subId, ...payload }),
       });
       if (!response.ok) {
-        throw new Error(`HTTP Status ${response.status}`);
+        const errData = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errData.error || `HTTP Status ${response.status}`);
+      }
+      if (modalPropToHide && modalPropToHide in self) {
+        (self as Record<string, unknown>)[modalPropToHide] = false;
       }
     } catch (e) {
       const error = e as Error;
       console.error(error);
-      alert(`Fehler beim Entfernen des Prüfers: ${error.message}`);
+      alert(`Fehler bei ${errorLabel}: ${error.message}`);
     } finally {
       self.isSubmitting = false;
     }
+  },
+
+  async removeExaminer(masterId: string, subId: string): Promise<void> {
+    if (!confirm('Möchten Sie den Prüfer dieser Unterstation wirklich entfernen? Das verbundene Gerät wird sofort abgemeldet.')) return;
+    return this._updateSubConfig(masterId, subId, { examiner: '', deviceToken: null }, 'Entfernen des Prüfers');
   },
 
   openExaminerPopup(masterId: string, subId: string, currentExaminer: string): void {
@@ -205,24 +215,7 @@ window.adminStationsPopups = {
 
   async saveExaminerPopup(): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
-    self.isSubmitting = true;
-    try {
-      const response = await fetch(`/api/admin/stations/${self.popupMasterId}/sub_config`, {
-        method: 'PUT',
-        headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subId: self.popupSubId, examiner: self.popupExaminerName }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP Status ${response.status}`);
-      }
-      self.showExaminerPopup = false;
-    } catch (e) {
-      const error = e as Error;
-      console.error(error);
-      alert(`Fehler beim Speichern des Prüfers: ${error.message}`);
-    } finally {
-      self.isSubmitting = false;
-    }
+    return this._updateSubConfig(self.popupMasterId, self.popupSubId, { examiner: self.popupExaminerName }, 'Speichern des Prüfers', 'showExaminerPopup');
   },
 
   openReservationPopup(masterId: string, subId: string): void {
@@ -247,46 +240,12 @@ window.adminStationsPopups = {
   async saveReservationPopup(): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
     if (!self.popupReservationGroupId) return;
-    self.isSubmitting = true;
-    try {
-      const response = await fetch(`/api/admin/stations/${self.popupMasterId}/sub_config`, {
-        method: 'PUT',
-        headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subId: self.popupSubId, reservedGroupId: self.popupReservationGroupId }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP Status ${response.status}`);
-      }
-      self.showReservationPopup = false;
-    } catch (e) {
-      const error = e as Error;
-      console.error(error);
-      alert(`Fehler bei Folgegruppen-Zuweisung: ${error.message}`);
-    } finally {
-      self.isSubmitting = false;
-    }
+    return this._updateSubConfig(self.popupMasterId, self.popupSubId, { reservedGroupId: self.popupReservationGroupId }, 'Folgegruppen-Zuweisung', 'showReservationPopup');
   },
 
   async removeReservation(masterId: string, subId: string): Promise<void> {
-    const self = this as unknown as AdminStationsPopupsComponent;
     if (!confirm('Möchten Sie die Folgegruppen-Vormerkung für diese Station wirklich aufheben?')) return;
-    self.isSubmitting = true;
-    try {
-      const response = await fetch(`/api/admin/stations/${masterId}/sub_config`, {
-        method: 'PUT',
-        headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subId, reservedGroupId: null }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP Status ${response.status}`);
-      }
-    } catch (e) {
-      const error = e as Error;
-      console.error(error);
-      alert(`Fehler beim Aufheben der Folgegruppe: ${error.message}`);
-    } finally {
-      self.isSubmitting = false;
-    }
+    return this._updateSubConfig(masterId, subId, { reservedGroupId: null }, 'Aufheben der Folgegruppe');
   },
 
   openAddLogPopup(masterId: string, subId: string): void {
@@ -308,28 +267,38 @@ window.adminStationsPopups = {
     });
   },
 
-  async saveAddLogPopup(): Promise<void> {
+  async _saveCorrectionsPopup(
+    endpoint: 'complete' | 'revert',
+    groupId: string,
+    modalPropToHide: string,
+    errorLabel: string
+  ): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
-    if (!self.popupAddLogGroupId) return;
+    if (!groupId) return;
     self.isSubmitting = true;
     try {
-      const response = await fetch('/api/admin/corrections/complete', {
+      const response = await fetch(`/api/admin/corrections/${endpoint}`, {
         method: 'POST',
         headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: self.popupAddLogGroupId, stationId: self.popupMasterId }),
+        body: JSON.stringify({ groupId, stationId: self.popupMasterId }),
       });
       if (!response.ok) {
         const errData = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(errData.error || `HTTP Status ${response.status}`);
       }
-      self.showAddLogPopup = false;
+      (self as Record<string, unknown>)[modalPropToHide] = false;
     } catch (e) {
       const error = e as Error;
       console.error(error);
-      alert(`Fehler bei Rückmeldung hinzufügen: ${error.message}`);
+      alert(`Fehler bei ${errorLabel}: ${error.message}`);
     } finally {
       self.isSubmitting = false;
     }
+  },
+
+  async saveAddLogPopup(): Promise<void> {
+    const self = this as unknown as AdminStationsPopupsComponent;
+    return this._saveCorrectionsPopup('complete', self.popupAddLogGroupId, 'showAddLogPopup', 'Rückmeldung hinzufügen');
   },
 
   openRevertLogPopup(masterId: string, subId: string): void {
@@ -349,26 +318,7 @@ window.adminStationsPopups = {
 
   async saveRevertLogPopup(): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
-    if (!self.popupRevertLogGroupId) return;
-    self.isSubmitting = true;
-    try {
-      const response = await fetch('/api/admin/corrections/revert', {
-        method: 'POST',
-        headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: self.popupRevertLogGroupId, stationId: self.popupMasterId }),
-      });
-      if (!response.ok) {
-        const errData = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errData.error || `HTTP Status ${response.status}`);
-      }
-      self.showRevertLogPopup = false;
-    } catch (e) {
-      const error = e as Error;
-      console.error(error);
-      alert(`Fehler bei Rückmeldung stornieren: ${error.message}`);
-    } finally {
-      self.isSubmitting = false;
-    }
+    return this._saveCorrectionsPopup('revert', self.popupRevertLogGroupId, 'showRevertLogPopup', 'Rückmeldung stornieren');
   },
 
   async completeSub(id: string, subId: string): Promise<void> {
