@@ -1,5 +1,3 @@
-// Version Tracker: public/js/gap_flow_utils.ts (GAP-Flow v1.1.64)
-
 interface WakeLockContext {
   wakeLock?: WakeLockSentinel | null;
 }
