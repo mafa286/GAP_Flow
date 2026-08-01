@@ -244,6 +244,12 @@ export function subConfig(req: Request, res: Response): void {
 
   if (paused !== undefined) {
     sub.paused = !!paused;
+    if (sub.paused) {
+      sub.pausedAt = Date.now();
+    } else {
+      sub.pausedAt = undefined;
+      sub.pauseDurationMinutes = undefined;
+    }
   }
 
   if (reservedGroupId !== undefined) {
