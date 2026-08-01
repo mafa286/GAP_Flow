@@ -1,5 +1,3 @@
-// Version Tracker: lib/admin_groups_controller.ts (GAP-Flow v1.1.7)
-
 import { Request, Response } from 'express';
 import { SystemState, Anwaerter, Group, LogEntry, resetSystemState } from './types';
 import * as allocatorModule from './allocator';
