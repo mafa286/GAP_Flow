@@ -1,5 +1,3 @@
-// Version Tracker: public/js/admin_settings.ts (GAP-Flow v1.0.6)
-
 /**
  * Schnittstelle für die Admin-Settings-Alpine-Komponente.
  */
