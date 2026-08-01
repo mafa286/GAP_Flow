@@ -83,6 +83,20 @@ function cacheResponse(request: any, response: any): void {
 }
 
 /**
+ * Speichert eine geklonte Netzwerk-Antwort im lokalen Service-Worker-Cache.
+ * @param {any} request - Die HTTP-Anfrage.
+ * @param {any} response - Die empfangene HTTP-Antwort.
+ */
+function cacheResponse(request: any, response: any): void {
+  if (response && response.status === 200) {
+    const responseToCache = response.clone();
+    caches.open(CACHE_NAME).then((cache) => {
+      cache.put(request, responseToCache);
+    });
+  }
+}
+
+/**
  * Fetch-Event: Network-First für HTML-Seiten (sofortige Updates), Cache-First für Offline-Assets.
  * @param {any} event - Das abgefangene HTTP-Anfrage-Event.
  * @returns {void}
@@ -100,26 +114,24 @@ sw.addEventListener('fetch', (event: any) => {
   const isJsRequest = event.request.url.includes('/js/') || event.request.url.endsWith('.js');
 
   if (isHtmlRequest || isJsRequest) {
-
-if (isHtmlRequest || isJsRequest) {
-  // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        cacheResponse(event.request, networkResponse);
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return caches.match('/pruefer.html');
-        });
-      })
-  );
-} else {
-  // Cache-First Strategie für statische Assets (Bilder, Icons)
+    // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          cacheResponse(event.request, networkResponse);
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            return caches.match('/pruefer.html');
+          });
+        })
+    );
+  } else {
+    // Cache-First Strategie für statische Assets (Bilder, Icons)
     event.respondWith(
       caches.match(event.request, { ignoreSearch: true }).then((response) => {
         if (response) {
@@ -133,7 +145,7 @@ if (isHtmlRequest || isJsRequest) {
         });
       })
     );
-}
+  }
 });
 
 /**
