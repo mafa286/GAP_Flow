@@ -1,4 +1,3 @@
-<!-- Version Tracker: README.md (GAP-Flow v1.0.1) -->
 # 🌊 GAP-Flow (PMS)
 
 > **Echtzeit Prüfungs-Management-System mit automatisierter Gruppenzuteilung**  
