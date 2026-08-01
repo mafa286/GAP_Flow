@@ -69,6 +69,20 @@ sw.addEventListener('message', (event: any) => {
 });
 
 /**
+ * Speichert eine geklonte Netzwerk-Antwort im lokalen Service-Worker-Cache.
+ * @param {any} request - Die HTTP-Anfrage.
+ * @param {any} response - Die empfangene HTTP-Antwort.
+ */
+function cacheResponse(request: any, response: any): void {
+  if (response && response.status === 200) {
+    const responseToCache = response.clone();
+    caches.open(CACHE_NAME).then((cache) => {
+      cache.put(request, responseToCache);
+    });
+  }
+}
+
+/**
  * Fetch-Event: Network-First für HTML-Seiten (sofortige Updates), Cache-First für Offline-Assets.
  * @param {any} event - Das abgefangene HTTP-Anfrage-Event.
  * @returns {void}
@@ -85,17 +99,7 @@ sw.addEventListener('fetch', (event: any) => {
 
   const isJsRequest = event.request.url.includes('/js/') || event.request.url.endsWith('.js');
 
-  /**
- * Speichert eine geklonte Netzwerk-Antwort im lokalen Service-Worker-Cache.
- */
-function cacheResponse(request: any, response: any): void {
-  if (response && response.status === 200) {
-    const responseToCache = response.clone();
-    caches.open(CACHE_NAME).then((cache) => {
-      cache.put(request, responseToCache);
-    });
-  }
-}
+  if (isHtmlRequest || isJsRequest) {
 
 if (isHtmlRequest || isJsRequest) {
   // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
