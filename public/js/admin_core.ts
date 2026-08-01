@@ -104,7 +104,9 @@ interface AdminPanelBase {
     startInactivityTimer(): void {
       this.stopInactivityTimer();
       const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-      this._inactivityHandler = () => this.resetInactivityTimer();
+      if (!this._inactivityHandler) {
+        this._inactivityHandler = () => this.resetInactivityTimer();
+      }
       events.forEach((evt) => document.addEventListener(evt, this._inactivityHandler!, { passive: true }));
       this.resetInactivityTimer();
 
