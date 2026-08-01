@@ -103,7 +103,6 @@ interface ExaminerComponent {
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
   appVersion: string;
-  coreVersion: string;
   swVersion: string;
   swCacheName: string;
   
@@ -207,9 +206,6 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
     get appVersion(): string {
-      return (window as any).GAP_FLOW_VERSION ? `v${(window as any).GAP_FLOW_VERSION}` : 'v0.0';
-    },
-    get coreVersion(): string {
       return (window as any).GAP_FLOW_VERSION ? `v${(window as any).GAP_FLOW_VERSION}` : 'v0.0';
     },
     swVersion: '',
