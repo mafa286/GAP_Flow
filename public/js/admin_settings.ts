@@ -242,7 +242,8 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Sendet einen individuellen Rundruf-Text an alle Prüfer.
+     * Sendet einen manuellen Rundruf-Text per Web-Push an alle registrierten Geräte.
+     * @returns {Promise<void>}
      */
     async sendBroadcastMessage(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
@@ -277,7 +278,8 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Sendet die Benachrichtigung zur Ergebnisbekanntgabe.
+     * Sendet den Sammelaufruf zur offiziellen Ergebnisbekanntgabe an alle Mobilgeräte.
+     * @returns {Promise<void>}
      */
     async sendErgebnisbekanntgabe(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
@@ -310,8 +312,9 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Quittiert einen eingehenden Rückrufwunsch im Leitstand.
+     * Quittiert und entfernt eine eingegangene Rückrufanforderung im Leitstand-Dashboard.
      * @param {number} index - Index des Listenelements.
+     * @returns {void}
      */
     dismissCallback(index: number): void {
       const self = this as unknown as AdminSettingsComponent;
