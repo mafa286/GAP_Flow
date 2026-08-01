@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { NotificationPayload } from '../types';
+import { formatNotificationActions } from './android_handler';
 
 /**
  * iOS / Apple Safari PWA-spezifischer Push-Notification Handler.
@@ -44,11 +45,9 @@ export function formatIosPayload(basePayload: NotificationPayload): Record<strin
     },
   };
 
-  if (Array.isArray(basePayload.actions) && basePayload.actions.length > 0) {
-    cleanPayload.actions = basePayload.actions.map((act) => ({
-      action: act.action,
-      title: act.title,
-    }));
+  const actions = formatNotificationActions(basePayload);
+  if (actions) {
+    cleanPayload.actions = actions;
   }
 
   return cleanPayload;
