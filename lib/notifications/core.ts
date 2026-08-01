@@ -119,6 +119,12 @@ export async function sendNotification(
     const pushType = String(basePayload.tag || basePayload.type || 'standard');
     console.log(`[WebPush Core Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${deduplicatedRows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
 
+    const sharedVapidDetails = {
+      subject: VAPID_SUBJECT,
+      publicKey: vapidPublicKey,
+      privateKey: vapidPrivateKey,
+    };
+
     deduplicatedRows.forEach((r) => {
       const sub = {
         endpoint: r.endpoint,
@@ -155,11 +161,7 @@ export async function sendNotification(
 
       const vapidOptions: webpush.RequestOptions = {
         ...pushOptions,
-        vapidDetails: {
-          subject: VAPID_SUBJECT,
-          publicKey: vapidPublicKey,
-          privateKey: vapidPrivateKey,
-        },
+        vapidDetails: sharedVapidDetails,
       };
 
       webpush
