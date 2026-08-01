@@ -1,5 +1,3 @@
-// Version Tracker: public/js/pruefer_pwa_helper.ts (GAP-Flow v1.1.2)
-
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
