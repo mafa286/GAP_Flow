@@ -121,6 +121,19 @@ export function getSystemStats(): SystemStats {
 }
 
 /**
+ * Hilfsfunktion zum Senden der standardisierten Erfolgsantwort nach Admin-Authentifizierung.
+ * @param {Response} res - Express Response.
+ * @returns {void}
+ */
+function sendAdminAuthSuccess(res: Response): void {
+  res.json({
+    success: true,
+    token: getAdminSessionToken(),
+    counts: getSystemStats(),
+  });
+}
+
+/**
  * Validiert die Eingabe des Administrator-Passworts und liefert das Sitzungstoken zurück.
  * @param {Request} req - Express Request.
  * @param {Response} res - Express Response.
@@ -129,11 +142,7 @@ export function getSystemStats(): SystemStats {
 export function verify(req: Request, res: Response): void {
   const { password } = req.body || {};
   if (password && password.trim() === adminPasswordInternal) {
-    res.json({
-      success: true,
-      token: getAdminSessionToken(),
-      counts: getSystemStats(),
-    });
+    sendAdminAuthSuccess(res);
   } else {
     res.status(401).json({ error: 'Falsch' });
   }
@@ -148,11 +157,7 @@ export function verify(req: Request, res: Response): void {
 export function verifyToken(req: Request, res: Response): void {
   const { token } = req.body || {};
   if (token && token.trim() === getAdminSessionToken()) {
-    res.json({
-      success: true,
-      token: getAdminSessionToken(),
-      counts: getSystemStats(),
-    });
+    sendAdminAuthSuccess(res);
   } else {
     res.status(401).json({ error: 'Ungültig' });
   }
