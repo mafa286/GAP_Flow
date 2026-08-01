@@ -141,7 +141,7 @@ function sendAdminAuthSuccess(res: Response): void {
  */
 export function verify(req: Request, res: Response): void {
   const { password } = req.body || {};
-  if (password && password.trim() === adminPasswordInternal) {
+  if (typeof password === 'string' && password.trim() === adminPasswordInternal) {
     sendAdminAuthSuccess(res);
   } else {
     res.status(401).json({ error: 'Falsch' });
@@ -156,7 +156,7 @@ export function verify(req: Request, res: Response): void {
  */
 export function verifyToken(req: Request, res: Response): void {
   const { token } = req.body || {};
-  if (token && token.trim() === getAdminSessionToken()) {
+  if (typeof token === 'string' && token.trim() === getAdminSessionToken()) {
     sendAdminAuthSuccess(res);
   } else {
     res.status(401).json({ error: 'Ungültig' });
