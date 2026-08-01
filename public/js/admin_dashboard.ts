@@ -102,36 +102,41 @@ window.adminPanel = function (): Record<string, unknown> {
     selectedStations: [],
 
     get filteredLogs(): ClientLogEntry[] {
-      const self = this as unknown as AdminDashboardComponent;
-      if (self.renderLock && self._cachedFilteredLogs) {
-        return self._cachedFilteredLogs;
-      }
-      let list = [...self.logs];
+          const self = this as unknown as AdminDashboardComponent;
+          if (self.renderLock && self._cachedFilteredLogs) {
+            return self._cachedFilteredLogs;
+          }
+          let list = [...self.logs];
 
-      if (self.selectedGroups.length > 0) {
-        list = list.filter((log) => self.selectedGroups.includes(log.groupName));
-      }
+          if (self.selectedGroups.length > 0) {
+            list = list.filter((log) => self.selectedGroups.includes(log.groupName));
+          }
 
-      if (self.selectedStations.length > 0) {
-        list = list.filter((log) => self.selectedStations.some((stationName) => self.matchesStationFilter(log, stationName)));
-      }
+          if (self.selectedStations.length > 0) {
+            list = list.filter((log) => self.selectedStations.some((stationName) => self.matchesStationFilter(log, stationName)));
+          }
 
-      const res = list.sort((a, b) => b.timestamp - a.timestamp);
-      self._cachedFilteredLogs = res;
-      return res;
-    },
+          const res = list.sort((a, b) => b.timestamp - a.timestamp);
+          self._cachedFilteredLogs = res;
+          return res;
+        },
 
-    escapeHtml(str: string): string {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    },
+        /**
+         * Maskiert Sonderzeichen in Zeichenketten zur sicheren HTML-Ausgabe.
+         * @param {string} str - Der zu maskierende Text.
+         * @returns {string} Maskierte Zeichenkette.
+         */
+        escapeHtml(str: string): string {
+          if (!str) return '';
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        },
 
-    pageInit(): void {
+        pageInit(): void {
       const self = this as unknown as AdminDashboardComponent;
       const storedLimit = localStorage.getItem('target_end_time');
       if (storedLimit) {
