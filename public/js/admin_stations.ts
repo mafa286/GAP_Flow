@@ -157,6 +157,10 @@ window.adminPanel = function (): Record<string, unknown> {
       });
     },
 
+    /**
+     * Löscht alle registrierten Stationen nach Bestätigung über das API-Back-End.
+     * @returns {Promise<void>}
+     */
     async clearAllStations(): Promise<void> {
       const self = this as unknown as AdminStationsComponent;
       if (
@@ -183,6 +187,10 @@ window.adminPanel = function (): Record<string, unknown> {
       }
     },
 
+    /**
+     * Erstellt eine neue Hauptstation über die REST-API.
+     * @returns {Promise<void>}
+     */
     async addStation(): Promise<void> {
       const self = this as unknown as AdminStationsComponent;
       if (self.isSubmitting) return;
