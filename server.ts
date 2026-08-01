@@ -616,7 +616,7 @@ app.post('/api/examiner/complete', authenticateExaminer, examinerController.comp
 app.post('/api/examiner/pause', authenticateExaminer, examinerController.pauseStation);
 
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
-app.post('/api/admin/verify_token', adminController.verifyToken);
+app.post('/api/admin/verify_token', loginLimiter, adminController.verifyToken);
 
 app.get('/api/admin/dashboard/status', adminAuth, (_req: Request, res: Response) => {
   res.json(getAdminDashboardState());
