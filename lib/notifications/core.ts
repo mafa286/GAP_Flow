@@ -94,7 +94,7 @@ export async function sendNotification(
     params.push(targetSubId);
   }
 
-  db.all(query, params, (err, rows: any[]) => {
+  db.all(query, params, (err, rows: Array<Record<string, any>>) => {
     if (err) {
       console.error('[WebPush SQL Fehler]', err.message);
       return;
