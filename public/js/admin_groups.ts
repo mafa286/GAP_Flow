@@ -41,6 +41,7 @@ interface AdminGroupsComponent {
   clearAllAnwaerter(): Promise<void>;
   addAnwaerter(): Promise<void>;
   handleCSVImport(event: Event): void;
+  _toggleEntityActive(entityType: 'anwaerter' | 'groups', id: string, state: boolean, label: string): Promise<void>;
   toggleAnwaerterActive(id: string, state: boolean): Promise<void>;
   createGroup(): Promise<void>;
   toggleGroupPause(id: string): Promise<void>;
@@ -358,11 +359,11 @@ window.adminPanel = function (): Record<string, unknown> {
       targetInput.value = '';
     },
 
-    async toggleAnwaerterActive(id: string, state: boolean): Promise<void> {
+    async _toggleEntityActive(entityType: 'anwaerter' | 'groups', id: string, state: boolean, label: string): Promise<void> {
       const self = this as unknown as AdminGroupsComponent;
       self.isSubmitting = true;
       try {
-        const response = await fetch(`/api/admin/anwaerter/${id}/toggle_active`, {
+        const response = await fetch(`/api/admin/${entityType}/${id}/toggle_active`, {
           method: 'PUT',
           headers: {
             Authorization: self.password,
@@ -377,10 +378,15 @@ window.adminPanel = function (): Record<string, unknown> {
       } catch (e) {
         const error = e as Error;
         console.error(error);
-        alert(`Fehler bei Anwärter-Aktivierung: ${error.message}`);
+        alert(`Fehler bei ${label}-Aktivierung: ${error.message}`);
       } finally {
         self.isSubmitting = false;
       }
+    },
+
+    async toggleAnwaerterActive(id: string, state: boolean): Promise<void> {
+      const self = this as unknown as AdminGroupsComponent;
+      return self._toggleEntityActive('anwaerter', id, state, 'Anwärter');
     },
 
     async createGroup(): Promise<void> {
@@ -443,27 +449,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
     async toggleGroupActive(id: string, state: boolean): Promise<void> {
       const self = this as unknown as AdminGroupsComponent;
-      self.isSubmitting = true;
-      try {
-        const response = await fetch(`/api/admin/groups/${id}/toggle_active`, {
-          method: 'PUT',
-          headers: {
-            Authorization: self.password,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ active: state }),
-        });
-        if (!response.ok) {
-          const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          throw new Error(errData.error || `HTTP Status ${response.status}`);
-        }
-      } catch (e) {
-        const error = e as Error;
-        console.error(error);
-        alert(`Fehler bei Gruppen-Aktivierung: ${error.message}`);
-      } finally {
-        self.isSubmitting = false;
-      }
+      return self._toggleEntityActive('groups', id, state, 'Gruppen');
     },
 
     async dissolveGroup(id: string): Promise<void> {
