@@ -879,56 +879,6 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/admin/push-stations', adminAuth, async (_req: Request, res: Response) => {
-  const db = dbModule.getDb();
-  const registeredStationIds = new Set<string>();
-
-  if (db && !dbModule.getUseJsonFallback()) {
-    try {
-      const rows = await new Promise<Array<{ targetId: string }>>((resolve) => {
-        db.all("SELECT DISTINCT targetId FROM push_subscriptions WHERE targetId IS NOT NULL AND targetId != ''", [], (err, resultRows) => {
-          if (err || !resultRows) resolve([]);
-          else resolve(resultRows as Array<{ targetId: string }>);
-        });
-      });
-      rows.forEach((r) => {
-        if (r.targetId) registeredStationIds.add(r.targetId);
-      });
-    } catch (_) {}
-  }
-
-  const stationList: Array<{ id: string; label: string; examiner: string; hasPushSub: boolean }> = [];
-
-  Object.values(systemState.stations || {}).forEach((master) => {
-    if (master && master.subStations) {
-      Object.values(master.subStations).forEach((sub) => {
-        const hasPush = registeredStationIds.has(sub.id);
-        if (!hasPush) return;
-
-        const examinerName = sub.examiner || '';
-        let label = `Station ${sub.id}`;
-        if (master.name && master.name !== `Station ${sub.parentId}`) {
-          label += ` (${master.name})`;
-        }
-        if (examinerName) {
-          label += ` – Prüfer: ${examinerName}`;
-        }
-
-        stationList.push({
-          id: sub.id,
-          label,
-          examiner: examinerName,
-          hasPushSub: true,
-        });
-      });
-    }
-  });
-
-  stationList.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
-
-  res.json({ success: true, stations: stationList });
-});
-
 app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
   const { type, tag, title, body, vibrate, targetSubId } = req.body || {};
   const cleanTargetSubId = targetSubId && targetSubId !== 'all' ? String(targetSubId).trim() : undefined;
