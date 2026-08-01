@@ -45,8 +45,6 @@ interface AdminSettingsComponent {
   closeCallbackModal(): void;
   sendCallbackPush(): Promise<void>;
   saveSettings(): Promise<void>;
-  sendLeitstelleCallback(): Promise<void>;
-  sendPruefungsleitungCallback(): Promise<void>;
   sendBroadcastMessage(): Promise<void>;
   sendErgebnisbekanntgabe(): Promise<void>;
   dismissCallback(index: number): void;
@@ -221,24 +219,6 @@ window.adminPanel = function (): Record<string, unknown> {
         self.callbackError = `Netzwerk-Fehler: ${error.message}`;
         self.isSendingCallback = false;
       }
-    },
-
-    /**
-     * Sendet den Aufruf "Rückruf Leitstelle" (öffnet Modalfenster).
-     * @returns {Promise<void>}
-     */
-    async sendLeitstelleCallback(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      await self.openCallbackModal('leitstelle');
-    },
-
-    /**
-     * Sendet den Aufruf "Rückruf Prüfungsleitung" (öffnet Modalfenster).
-     * @returns {Promise<void>}
-     */
-    async sendPruefungsleitungCallback(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      await self.openCallbackModal('pruefungsleitung');
     },
 
     /**
