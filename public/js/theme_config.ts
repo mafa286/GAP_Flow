@@ -1,5 +1,3 @@
-// Version Tracker: public/js/theme_config.ts (GAP-Flow v1.1.68)
-
 // Stummschaltung der Tailwind-CDN-Produktionswarnung in der Browserkonsole
 const originalConsoleWarn = console.warn;
 console.warn = function (...args: unknown[]) {
