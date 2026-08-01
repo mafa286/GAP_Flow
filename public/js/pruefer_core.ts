@@ -261,13 +261,7 @@ function examiner(): ExaminerComponent {
         // Erzwinge eine frische Subscription bei Google FCM, um veraltete Endpunkte auszuschließen
         await this.subscribeToWebPush(true);
 
-        const response = await fetch('/api/examiner/test-push', {
-          method: 'POST',
-          headers: {
-            Authorization: this.token,
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await this._postApi('test-push');
 
         if (response.ok) {
           alert('Befehl ausgeführt: Subscription wurde frisch bei Google FCM registriert und Test-Push wurde gesendet! Prüfe jetzt das Server-Log.');
@@ -936,14 +930,7 @@ function examiner(): ExaminerComponent {
       this.isSubmitting = true;
 
       try {
-        const response = await fetch('/api/examiner/register', {
-          method: 'POST',
-          headers: {
-            Authorization: this.token,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ firstName: cleanFirst, lastName: cleanLast }),
-        });
+        const response = await this._postApi('register', { firstName: cleanFirst, lastName: cleanLast });
 
         if (response.ok) {
           const data = (await response.json()) as { deviceToken: string };
@@ -966,12 +953,8 @@ function examiner(): ExaminerComponent {
       if (!confirm('Möchten Sie sich wirklich abmelden? Die Station wird augenblicklich für andere Geräte freigegeben.')) return;
       this.isSubmitting = true;
       try {
-        const response = await fetch('/api/examiner/deregister', {
-          method: 'POST',
-          headers: {
-            Authorization: this.token,
-            'X-Device-Token': localStorage.getItem('device_token') || '',
-          },
+        const response = await this._postApi('deregister', undefined, {
+          'X-Device-Token': localStorage.getItem('device_token') || '',
         });
 
         if (response.ok) {
