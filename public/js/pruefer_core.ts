@@ -236,42 +236,8 @@ function examiner(): ExaminerComponent {
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
     async sendServerTestNotification(): Promise<void> {
-      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-        alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
-        return;
-      }
-
-      if (Notification.permission !== 'granted') {
-        alert(`Hinweis: Benachrichtigungserlaubnis steht auf "${Notification.permission}". Bitte tippe zuerst auf "🔔 Benachrichtigungen anfragen"!`);
-        return;
-      }
-
-      if (!this.token) {
-        alert('Kein Token vorhanden. Bitte scanne zuerst den QR-Code deiner Station.');
-        return;
-      }
-
-      try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (!reg || !reg.active) {
-          alert('Kein aktiver Service Worker geladen. Bitte lade die Seite einmal neu.');
-          return;
-        }
-
-        // Erzwinge eine frische Subscription bei Google FCM, um veraltete Endpunkte auszuschließen
-        await this.subscribeToWebPush(true);
-
-        const response = await this._postApi('test-push');
-
-        if (response.ok) {
-          alert('Befehl ausgeführt: Subscription wurde frisch bei Google FCM registriert und Test-Push wurde gesendet! Prüfe jetzt das Server-Log.');
-        } else {
-          const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          alert(`Server-Rückmeldung: ${errData.error || response.statusText}`);
-        }
-      } catch (e) {
-        const error = e as Error;
-        alert(`Fehler beim Senden des Server Web Push Tests: ${error.message}`);
+      if (window.prueferPush) {
+        await window.prueferPush.sendServerTestNotification(this);
       }
     },
 
@@ -303,10 +269,8 @@ function examiner(): ExaminerComponent {
      * @returns {void}
      */
     checkPermissions(): void {
-      if ('Notification' in window) {
-        this.notificationPermissionStatus = Notification.permission;
-      } else {
-        this.notificationPermissionStatus = 'unsupported';
+      if (window.prueferPush) {
+        this.notificationPermissionStatus = window.prueferPush.checkPermissions();
       }
     },
 
@@ -315,16 +279,8 @@ function examiner(): ExaminerComponent {
      * @returns {Promise<void>}
      */
     async requestNotificationPermission(): Promise<void> {
-      if ('Notification' in window) {
-        try {
-          const res = await Notification.requestPermission();
-          this.notificationPermissionStatus = res;
-          if (res === 'granted') {
-            await this.subscribeToWebPush();
-          }
-        } catch (e) {
-          console.error('Fehler beim Anfragen der Benachrichtigungsberechtigung:', e);
-        }
+      if (window.prueferPush) {
+        this.notificationPermissionStatus = await window.prueferPush.requestNotificationPermission(this);
       }
     },
 
@@ -332,88 +288,8 @@ function examiner(): ExaminerComponent {
      * Registriert das Smartphone beim W3C Web Push Service für Push-Benachrichtigungen im Standby.
      */
     async subscribeToWebPush(forceFresh = false): Promise<void> {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !this.token) return;
-
-      try {
-        const keyRes = await fetch('/api/push/vapid-public-key');
-        if (!keyRes.ok) return;
-        const { publicKey } = await keyRes.json();
-        if (!publicKey) return;
-
-        const reg = await navigator.serviceWorker.ready;
-        let sub = await reg.pushManager.getSubscription();
-
-        const urlBase64ToUint8Array = (base64String: string) => {
-          const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-          const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-          const rawData = window.atob(base64);
-          const outputArray = new Uint8Array(rawData.length);
-          for (let i = 0; i < rawData.length; i += 1) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
-          return outputArray;
-        };
-
-        const newKeyBytes = urlBase64ToUint8Array(publicKey);
-
-        if (sub && forceFresh) {
-          console.log('[PWA Web Push] Erneuere Subscription erzwungen...');
-          await sub.unsubscribe().catch(() => {});
-          sub = null;
-        } else if (sub) {
-          const existingKey = sub.options.applicationServerKey;
-          if (existingKey) {
-            const existingKeyArray = new Uint8Array(existingKey);
-            let match = existingKeyArray.length === newKeyBytes.length;
-            if (match) {
-              for (let i = 0; i < newKeyBytes.length; i += 1) {
-                if (existingKeyArray[i] !== newKeyBytes[i]) {
-                  match = false;
-                  break;
-                }
-              }
-            }
-            if (!match) {
-              console.log('[PWA Web Push] VAPID Key aktualisiert. Erneuere Push-Subscription...');
-              await sub.unsubscribe().catch(() => {});
-              sub = null;
-            }
-          }
-        }
-
-        if (!sub) {
-          sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: newKeyBytes,
-          });
-        }
-
-        const detectOs = (): string => {
-          if (this.isIOS()) return 'ios';
-          if (/Win/i.test(navigator.platform || '')) return 'windows';
-          return 'android';
-        };
-
-        const subRes = await fetch('/api/examiner/push-subscription', {
-          method: 'POST',
-          headers: {
-            Authorization: this.token,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            subscription: sub,
-            role: 'examiner',
-            targetId: this.subId,
-            os: detectOs(),
-          }),
-        });
-        if (subRes.ok) {
-          console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert:', sub.endpoint);
-        } else {
-          console.warn('[PWA Web Push] Server-Registrierung fehlgeschlagen, Status:', subRes.status);
-        }
-      } catch (e) {
-        console.error('[PWA Web Push] Registrierungsfehler:', e);
+      if (window.prueferPush) {
+        await window.prueferPush.subscribeToWebPush(this, forceFresh);
       }
     },
 
