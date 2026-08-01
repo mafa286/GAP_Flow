@@ -1,5 +1,3 @@
-// Version Tracker: public/js/audio_engine.ts (GAP-Flow v1.1.63)
-
 window.gapFlowAudio = {
   _playTone(ctx: AudioContext, freq: number, duration: number, delay: number): void {
     const osc = ctx.createOscillator();
