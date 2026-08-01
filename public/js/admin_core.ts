@@ -1,3 +1,5 @@
+const INACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+
 interface AdminSocketIoClient {
   disconnect: () => void;
   on: (event: string, callback: (...args: unknown[]) => void) => void;
@@ -88,8 +90,7 @@ interface AdminPanelBase {
       this.stopInactivityTimer();
 
       if (this._inactivityHandler) {
-        const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-        events.forEach((evt) => document.removeEventListener(evt, this._inactivityHandler!));
+        INACTIVITY_EVENTS.forEach((evt) => document.removeEventListener(evt, this._inactivityHandler!));
         this._inactivityHandler = null;
       }
 
@@ -101,11 +102,10 @@ interface AdminPanelBase {
 
     startInactivityTimer(): void {
       this.stopInactivityTimer();
-      const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
       if (!this._inactivityHandler) {
         this._inactivityHandler = () => this.resetInactivityTimer();
       }
-      events.forEach((evt) => document.addEventListener(evt, this._inactivityHandler!, { passive: true }));
+      INACTIVITY_EVENTS.forEach((evt) => document.addEventListener(evt, this._inactivityHandler!, { passive: true }));
       this.resetInactivityTimer();
 
       if (!this._tabSyncInterval) {
@@ -194,8 +194,7 @@ interface AdminPanelBase {
       }
       this.showInactivityWarning = false;
       if (this._inactivityHandler) {
-        const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-        events.forEach((evt) => document.removeEventListener(evt, this._inactivityHandler!));
+        INACTIVITY_EVENTS.forEach((evt) => document.removeEventListener(evt, this._inactivityHandler!));
         this._inactivityHandler = null;
       }
     },
