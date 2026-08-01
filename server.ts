@@ -13,6 +13,7 @@ import * as fileProcessor from './lib/file_processor';
 import * as adminController from './lib/admin_controller';
 import * as adminGroupsController from './lib/admin_groups_controller';
 import * as adminStationsController from './lib/admin_stations_controller';
+import * as examinerController from './lib/examiner_controller';
 import * as stateFilters from './lib/state_filters';
 import * as notificationCore from './lib/notifications/core';
 
@@ -441,6 +442,16 @@ adminStationsController.init({
   writeSystemLog,
 });
 
+examinerController.init({
+  systemState,
+  getUniqueTimestamp,
+  sanitizeName,
+  executeSubStationCompletion,
+  commitAndRespond,
+  writeSystemLog,
+  sendWebPushNotification,
+});
+
 // Dynamisches Auslesen der zentralen Version aus package.json
 let appVersion = '1.0';
 try {
@@ -595,180 +606,14 @@ app.get('/api/push/vapid-public-key', (_req: Request, res: Response) => {
   res.json({ publicKey: notificationCore.getVapidPublicKey() });
 });
 
-app.post('/api/examiner/push-subscription', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { subscription, role, targetId, os } = req.body || {};
-  if (!subscription || !subscription.endpoint || !subscription.keys) {
-    res.status(400).json({ error: 'Ungültige Subscription' });
-    return;
-  }
-
-  const db = dbModule.getDb();
-  if (db && !dbModule.getUseJsonFallback()) {
-    const id = crypto.createHash('sha256').update(subscription.endpoint).digest('hex').substring(0, 16);
-    const subTargetId = targetId || req.subStation?.id || '';
-
-    // Altdaten-Bereinigung: Veraltete Subscriptions der gleichen Unterstation löschen,
-    // um Doppel-Push Kollisionen auf dem Smartphone zu verhindern
-    if (subTargetId) {
-      db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subTargetId]);
-    }
-
-    db.run(
-      'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, os, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [
-        id,
-        subscription.endpoint,
-        subscription.keys.p256dh,
-        subscription.keys.auth,
-        role || 'examiner',
-        subTargetId,
-        os || 'android',
-        Date.now(),
-      ],
-      (err) => {
-        if (err) {
-          res.status(500).json({ error: 'Speicherfehler' });
-        } else {
-          res.json({ success: true });
-        }
-      }
-    );
-  } else {
-    res.json({ success: true });
-  }
-});
-
-/**
- * Registriert einen neuen Prüfer an einer Unterstation und verknüpft ein fälschungssicheres Geräte-Token.
- */
-app.post('/api/examiner/register', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { firstName, lastName } = req.body || {};
-  const sub = req.subStation!;
-
-  if (sub.deviceToken) {
-    res.status(400).json({ error: 'Station bereits belegt' });
-    return;
-  }
-
-  const cleanFirst = sanitizeName(firstName, 16);
-  const cleanLast = sanitizeName(lastName, 16);
-  if (!cleanFirst || !cleanLast) {
-    res.status(400).json({ error: 'Name ungültig' });
-    return;
-  }
-
-  const examinerName = `${cleanLast}, ${cleanFirst}`;
-  const deviceToken = crypto.randomBytes(16).toString('hex');
-
-  sub.examiner = examinerName;
-  sub.deviceToken = deviceToken;
-
-  writeSystemLog('System', sub.id, -13, examinerName);
-
-  commitAndRespond(res, { success: true, deviceToken, examiner: examinerName });
-});
-
-/**
- * Meldet den aktuellen Prüfer von der Unterstation ab und gibt die Station frei.
- */
-app.post('/api/examiner/deregister', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const clientDeviceToken = req.headers['x-device-token'];
-  const sub = req.subStation!;
-
-  if (!sub.examiner || sub.deviceToken !== clientDeviceToken) {
-    res.status(403).json({ error: 'Nicht autorisiert' });
-    return;
-  }
-
-  sub.examiner = '';
-  sub.deviceToken = null;
-  sub.paused = true;
-
-  writeSystemLog('System', sub.id, -13, 'Abgemeldet');
-
-  commitAndRespond(res);
-});
-
-/**
- * Abfrage des aktuellen Stationsstatus für das Prüfer-Panel.
- */
-app.get('/api/examiner/status', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const clientDeviceToken = req.headers['x-device-token'] as string | undefined;
-
-  const flatState = getFlatExaminerState((req.headers.authorization as string) || '', clientDeviceToken);
-  if (!flatState) {
-    res.status(500).json({ error: 'Zustands-Fehler' });
-    return;
-  }
-
-  res.json(flatState);
-});
-
-/**
- * Sendet eine Test-Benachrichtigung per Web Push an das Gerät des Prüfers.
- */
-app.post('/api/examiner/test-push', authenticateExaminer, async (req: AuthenticatedExaminerRequest, res: Response) => {
-  const sub = req.subStation!;
-  const payload = {
-    type: `test-push-${sub.id}`,
-    tag: `test-push-${sub.id}`,
-    title: '🧪 Server Web Push Test',
-    body: `Echter Server Web Push an Station ${sub.id} (${sub.examiner || 'Prüfer'}) via Google API zugestellt!`,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    url: '/pruefer.html',
-    vibrate: [300, 100, 300, 100, 300],
-    timestamp: Date.now(),
-  };
-
-  await sendWebPushNotification('examiner', payload, sub.id);
-  res.json({ success: true });
-});
-
-/**
- * Empfängt die Empfangsbestätigung (ACK) des Service Workers und benachrichtigt den Leitstand.
- */
-app.post('/api/examiner/push-ack', (req: Request, res: Response) => {
-  const { tag, subId, os } = req.body || {};
-  console.log(`[WebPush ACK Empfangen] Service Worker auf dem Smartphone (${os || 'Gerät'}) hat Push-Tag "${tag || 'unbekannt'}" an Station ${subId || 'alle'} erfolgreich empfangen!`);
-
-  const ackData = {
-    tag: String(tag || ''),
-    subId: String(subId || ''),
-    os: String(os || 'android'),
-    timestamp: Date.now(),
-  };
-
-  const ioInstance = socketsModule.getIo();
-  if (ioInstance) {
-    ioInstance.to('room_admin_dashboard').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_stations').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_groups').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_settings').emit('pushAckReceived', ackData);
-  }
-
-  res.json({ success: true });
-});
-
-app.post('/api/examiner/complete', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const sub = req.subStation!;
-  if (!sub.currentGroupId) {
-    res.status(400).json({ error: 'Keine Gruppe aktiv' });
-    return;
-  }
-  executeSubStationCompletion(req.masterStation!, sub);
-  commitAndRespond(res);
-});
-
-app.post('/api/examiner/pause', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const { paused } = req.body || {};
-  const sub = req.subStation!;
-  sub.paused = !!paused;
-  if (!sub.currentGroupId) {
-    writeSystemLog('System', sub.id, paused ? -3 : -4, sub.examiner || 'Prüfer');
-  }
-  commitAndRespond(res);
-});
+app.post('/api/examiner/push-subscription', authenticateExaminer, examinerController.pushSubscription);
+app.post('/api/examiner/register', authenticateExaminer, examinerController.registerExaminer);
+app.post('/api/examiner/deregister', authenticateExaminer, examinerController.deregisterExaminer);
+app.get('/api/examiner/status', authenticateExaminer, examinerController.getStatus);
+app.post('/api/examiner/test-push', authenticateExaminer, examinerController.testPush);
+app.post('/api/examiner/push-ack', examinerController.pushAck);
+app.post('/api/examiner/complete', authenticateExaminer, examinerController.completeExam);
+app.post('/api/examiner/pause', authenticateExaminer, examinerController.pauseStation);
 
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
 app.post('/api/admin/verify_token', adminController.verifyToken);
