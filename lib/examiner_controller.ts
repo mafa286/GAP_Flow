@@ -220,10 +220,9 @@ export function pushAck(req: AuthenticatedExaminerRequest, res: Response): void 
 
   const ioInstance = socketsModule.getIo();
   if (ioInstance) {
-    ioInstance.to('room_admin_dashboard').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_stations').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_groups').emit('pushAckReceived', ackData);
-    ioInstance.to('room_admin_settings').emit('pushAckReceived', ackData);
+    ioInstance
+      .to(['room_admin_dashboard', 'room_admin_stations', 'room_admin_groups', 'room_admin_settings'])
+      .emit('pushAckReceived', ackData);
   }
 
   res.json({ success: true });
