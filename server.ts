@@ -822,17 +822,6 @@ app.post('/api/examiner/pause', authenticateExaminer, (req: AuthenticatedExamine
   commitAndRespond(res);
 });
 
-app.post('/api/examiner/pause_immediate', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
-  const sub = req.subStation!;
-  sub.paused = true;
-  if (sub.currentGroupId) {
-    allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
-  } else {
-    writeSystemLog('System', sub.id, -3, sub.examiner || 'Prüfer');
-  }
-  commitAndRespond(res);
-});
-
 app.post('/api/admin/verify', loginLimiter, adminController.verify);
 app.post('/api/admin/verify_token', adminController.verifyToken);
 
@@ -973,8 +962,6 @@ app.post('/api/admin/stations/batch', adminAuth, adminStationsController.batchSt
 app.get('/api/admin/system/repomix', adminAuth, fileProcessor.generateAndDownloadRepomix);
 app.get('/api/admin/system/logs', adminAuth, adminController.getSystemLogs);
 
-app.get('/api/admin/update/download', adminAuth, fileProcessor.downloadCode);
-app.post('/api/admin/update/upload', adminAuth, express.raw({ type: 'application/zip', limit: '50mb' }), fileProcessor.uploadCode);
 app.post('/api/admin/restart', adminAuth, (_req: Request, res: Response) => { res.json({ success: true }); setTimeout(() => { shutdown(); }, 1000); });
 app.get('/api/admin/export', adminAuth, fileProcessor.exportCsv);
 
