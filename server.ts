@@ -653,7 +653,7 @@ app.put('/api/admin/stations/:id/sub_assign', adminAuth, adminStationsController
 
 app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
   const { settings } = req.body || {};
-  if (settings && typeof settings === 'object') {
+  if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
     if (!systemState.settings) {
       systemState.settings = {
         phoneLeitstelleName: '',
