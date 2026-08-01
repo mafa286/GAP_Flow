@@ -26,10 +26,13 @@ export function getWindowsPushOptions(): WindowsPushOptions {
 export function formatWindowsPayload(basePayload: NotificationPayload): Record<string, unknown> {
   return {
     ...basePayload,
+    title: String(basePayload.title || 'GAP-Flow Benachrichtigung'),
+    body: String(basePayload.body || ''),
     icon: '/icon-192.png',
     badge: '/icon-192.png',
+    tag: String(basePayload.tag || basePayload.type || 'gap-flow-windows'),
     data: {
-      url: '/pruefer.html',
+      url: String(basePayload.url || '/pruefer.html'),
       os: 'windows',
       ...(basePayload.data || {}),
     },
