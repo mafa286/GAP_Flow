@@ -318,9 +318,7 @@ export function correctionsComplete(req: Request, res: Response): void {
 
     allocatorModule.fixGroupMembersIfNeeded(group, systemState);
 
-    if (!group.completedStations.includes(stationId)) {
-      group.completedStations.push(stationId);
-    }
+    group.completedStations.push(stationId);
     group.lastStatusChange = getUniqueTimestamp();
 
     allocatorModule.clearGroupReservation(station, group.id);
