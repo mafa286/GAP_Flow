@@ -1,4 +1,12 @@
 window.gapFlowAudio = {
+  /**
+   * Erzeugt und spielt einen synthetischen Sinuston über die Web Audio API.
+   * @param {AudioContext} ctx - Der aktive Audio-Kontext.
+   * @param {number} freq - Frequenz in Hertz.
+   * @param {number} duration - Spieldauer in Sekunden.
+   * @param {number} delay - Verzögerung vor dem Start in Sekunden.
+   * @returns {void}
+   */
   _playTone(ctx: AudioContext, freq: number, duration: number, delay: number): void {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -13,6 +21,11 @@ window.gapFlowAudio = {
     osc.stop(ctx.currentTime + delay + duration);
   },
 
+  /**
+   * Spielt den standardisierten Doppelton-Informationssound.
+   * @param {AudioContext | null} ctx - Der aktive Audio-Kontext.
+   * @returns {void}
+   */
   playInfoSound(ctx: AudioContext | null): void {
     if (!ctx) return;
     try {
