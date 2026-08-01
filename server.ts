@@ -741,6 +741,9 @@ app.post('/api/examiner/deregister', authenticateExaminer, (req: AuthenticatedEx
   commitAndRespond(res);
 });
 
+/**
+ * Abfrage des aktuellen Stationsstatus für das Prüfer-Panel.
+ */
 app.get('/api/examiner/status', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
   const clientDeviceToken = req.headers['x-device-token'] as string | undefined;
 
@@ -753,6 +756,9 @@ app.get('/api/examiner/status', authenticateExaminer, (req: AuthenticatedExamine
   res.json(flatState);
 });
 
+/**
+ * Sendet eine Test-Benachrichtigung per Web Push an das Gerät des Prüfers.
+ */
 app.post('/api/examiner/test-push', authenticateExaminer, async (req: AuthenticatedExaminerRequest, res: Response) => {
   const sub = req.subStation!;
   const payload = {
@@ -771,6 +777,9 @@ app.post('/api/examiner/test-push', authenticateExaminer, async (req: Authentica
   res.json({ success: true });
 });
 
+/**
+ * Empfängt die Empfangsbestätigung (ACK) des Service Workers und benachrichtigt den Leitstand.
+ */
 app.post('/api/examiner/push-ack', (req: Request, res: Response) => {
   const { tag, subId, os } = req.body || {};
   console.log(`[WebPush ACK Empfangen] Service Worker auf dem Smartphone (${os || 'Gerät'}) hat Push-Tag "${tag || 'unbekannt'}" an Station ${subId || 'alle'} erfolgreich empfangen!`);
