@@ -242,6 +242,28 @@ export function createGroup(req: Request, res: Response): void {
 }
 
 /**
+ * Hilfsfunktion zur Durchführung des Pausen-Statusübergangs für eine Gruppe.
+ * @param {Group} group - Die betroffene Gruppe.
+ * @param {boolean} paused - Zielzustand für die Pause.
+ * @param {string} sourceLabel - Urheber der Aktion für das Systemprotokoll.
+ * @returns {void}
+ */
+function applyGroupPauseState(group: Group, paused: boolean, sourceLabel = 'Leitstand'): void {
+  group.paused = paused;
+  if (paused) {
+    if (group.status === 'waiting') {
+      group.status = 'paused';
+      group.lastStatusChange = getUniqueTimestamp();
+      writeSystemLog(group.name, '', -1, sourceLabel);
+    }
+  } else if (group.status === 'paused') {
+    group.status = 'waiting';
+    group.lastStatusChange = getUniqueTimestamp();
+    writeSystemLog(group.name, '', -2, sourceLabel);
+  }
+}
+
+/**
  * Pausiert oder entpausiert alle aktiven Gruppen und Unterstationen global.
  * @param {Request} req - Express Request.
  * @param {Response} res - Express Response.
@@ -251,20 +273,14 @@ export function pauseAllGroups(req: Request, res: Response): void {
   const { paused } = req.body || {};
   const targetState = !!paused;
 
-  if (targetState) {
-    Object.keys(systemState.groups || {}).forEach((id) => {
-      const group = systemState.groups[id];
-      if (!group) return;
-      if (group.active !== false) {
-        group.paused = targetState;
-        if (group.status === 'waiting') {
-          group.status = 'paused';
-          group.lastStatusChange = getUniqueTimestamp();
-          writeSystemLog(group.name, '', -1, 'Leitstand (Zentrale Pause)');
-        }
-      }
-    });
+  Object.keys(systemState.groups || {}).forEach((id) => {
+    const group = systemState.groups[id];
+    if (group && group.active !== false) {
+      applyGroupPauseState(group, targetState, 'Leitstand (Zentrale Pause)');
+    }
+  });
 
+  if (targetState) {
     Object.keys(systemState.stations || {}).forEach((mId) => {
       const master = systemState.stations[mId];
       if (master && master.subStations) {
@@ -277,19 +293,6 @@ export function pauseAllGroups(req: Request, res: Response): void {
             }
           }
         });
-      }
-    });
-  } else {
-    Object.keys(systemState.groups || {}).forEach((id) => {
-      const group = systemState.groups[id];
-      if (!group) return;
-      if (group.active !== false) {
-        group.paused = targetState;
-        if (group.status === 'paused') {
-          group.status = 'waiting';
-          group.lastStatusChange = getUniqueTimestamp();
-          writeSystemLog(group.name, '', -2, 'Leitstand (Zentrale Pause)');
-        }
       }
     });
   }
@@ -313,20 +316,7 @@ export function pauseGroup(req: Request, res: Response): void {
     return;
   }
 
-  group.paused = !!paused;
-
-  if (paused) {
-    if (group.status === 'waiting') {
-      group.status = 'paused';
-      group.lastStatusChange = getUniqueTimestamp();
-      writeSystemLog(group.name, '', -1, 'Leitstand');
-    }
-  } else if (group.status === 'paused') {
-    group.status = 'waiting';
-    group.lastStatusChange = getUniqueTimestamp();
-    writeSystemLog(group.name, '', -2, 'Leitstand');
-  }
-
+  applyGroupPauseState(group, !!paused, 'Leitstand');
   commitAndRespond(res, { success: true, group });
 }
 
