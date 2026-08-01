@@ -9,12 +9,14 @@ const VAPID_SUBJECT = 'mailto:leitstand@gap-flow.de';
 let vapidPublicKey = '';
 let vapidPrivateKey = '';
 
+import sqlite3 from 'sqlite3';
+
 /**
  * Generiert und speichert ein neues VAPID-Schlüsselpaar.
- * @param {any} db - SQLite Instanz oder null.
+ * @param {sqlite3.Database | null} db - SQLite Instanz oder null.
  * @param {() => void} resolve - Promise Resolver.
  */
-function generateAndSaveVapidKeys(db: any, resolve: () => void): void {
+function generateAndSaveVapidKeys(db: sqlite3.Database | null, resolve: () => void): void {
   const keys = webpush.generateVAPIDKeys();
   vapidPublicKey = keys.publicKey;
   vapidPrivateKey = keys.privateKey;
