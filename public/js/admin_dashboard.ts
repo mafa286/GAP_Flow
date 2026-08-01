@@ -1,5 +1,3 @@
-// Version Tracker: public/js/admin_dashboard.ts (GAP-Flow v1.1.18)
-
 interface CalcRowData {
   id: string;
   name: string;
