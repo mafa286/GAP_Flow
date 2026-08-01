@@ -1,5 +1,3 @@
-// Version Tracker: lib/db.ts (GAP-Flow v1.1.68)
-
 import sqlite3 from 'sqlite3';
 import { SystemState, Anwaerter, Group, Station, SubStation, LogEntry } from './types';
 import * as dbFallback from './db_fallback';
