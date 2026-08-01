@@ -1,5 +1,3 @@
-// Version Tracker: public/js/admin_stations_popups.ts (GAP-Flow v1.1.6)
-
 interface StationGroup {
   id: string;
   name: string;
