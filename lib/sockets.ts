@@ -144,8 +144,6 @@ export function init(
       io?.to('room_admin_dashboard').emit('callbackRequested', notificationData);
       io?.to('room_admin_stations').emit('callbackRequested', notificationData);
       io?.to('room_admin_groups').emit('callbackRequested', notificationData);
-      io?.to('room_pruefungsleitung').emit('callbackRequested', notificationData);
-      io?.to('room_leitstelle').emit('callbackRequested', notificationData);
     });
   });
 
