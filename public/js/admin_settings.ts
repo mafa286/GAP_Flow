@@ -17,6 +17,7 @@ interface AdminSettingsComponent {
   broadcastText: string;
   incomingCallbacks: CallbackItem[];
   isSubmitting: boolean;
+  password: string;
   showUpdateStatusModal: boolean;
   updateStep: string;
   updateErrorMessage: string;
