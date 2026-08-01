@@ -84,47 +84,51 @@ sw.addEventListener('fetch', (event: any) => {
 
   const isJsRequest = event.request.url.includes('/js/') || event.request.url.endsWith('.js');
 
-  if (isHtmlRequest || isJsRequest) {
-    // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
+  /**
+ * Speichert eine geklonte Netzwerk-Antwort im lokalen Service-Worker-Cache.
+ */
+function cacheResponse(request: any, response: any): void {
+  if (response && response.status === 200) {
+    const responseToCache = response.clone();
+    caches.open(CACHE_NAME).then((cache) => {
+      cache.put(request, responseToCache);
+    });
+  }
+}
+
+if (isHtmlRequest || isJsRequest) {
+  // Network-First Strategie für HTML & JS: Holt online immer die neuste Datei direkt vom Server
+  event.respondWith(
+    fetch(event.request)
+      .then((networkResponse) => {
+        cacheResponse(event.request, networkResponse);
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return caches.match('/pruefer.html');
+        });
+      })
+  );
+} else {
+  // Cache-First Strategie für statische Assets (Bilder, Icons)
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+      caches.match(event.request, { ignoreSearch: true }).then((response) => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          if (event.request.method === 'GET') {
+            cacheResponse(event.request, networkResponse);
           }
           return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            return caches.match('/pruefer.html');
-          });
-        })
+        });
+      })
     );
-  } else {
-    // Cache-First Strategie für statische Assets (Bilder, Icons)
-      event.respondWith(
-        caches.match(event.request, { ignoreSearch: true }).then((response) => {
-          if (response) {
-            return response;
-          }
-          return fetch(event.request).then((networkResponse) => {
-            if (event.request.method === 'GET' && networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-            }
-            return networkResponse;
-          });
-        })
-      );
-  }
+}
 });
 
 /**
