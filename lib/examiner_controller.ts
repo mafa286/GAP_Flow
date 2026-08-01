@@ -73,30 +73,39 @@ export function pushSubscription(req: AuthenticatedExaminerRequest, res: Respons
     const id = crypto.createHash('sha256').update(subscription.endpoint).digest('hex').substring(0, 16);
     const subTargetId = targetId || req.subStation?.id || '';
 
-    if (subTargetId) {
-      db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subTargetId]);
-    }
-
-    db.run(
-      'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, os, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [
-        id,
-        subscription.endpoint,
-        subscription.keys.p256dh,
-        subscription.keys.auth,
-        role || 'examiner',
-        subTargetId,
-        os || 'android',
-        Date.now(),
-      ],
-      (err) => {
-        if (err) {
-          res.status(500).json({ error: 'Speicherfehler' });
-        } else {
-          res.json({ success: true });
+    const doInsert = () => {
+      db.run(
+        'INSERT OR REPLACE INTO push_subscriptions (id, endpoint, keys_p256dh, keys_auth, role, targetId, os, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          id,
+          subscription.endpoint,
+          subscription.keys.p256dh,
+          subscription.keys.auth,
+          role || 'examiner',
+          subTargetId,
+          os || 'android',
+          Date.now(),
+        ],
+        (err) => {
+          if (err) {
+            res.status(500).json({ error: 'Speicherfehler' });
+          } else {
+            res.json({ success: true });
+          }
         }
-      }
-    );
+      );
+    };
+
+    if (subTargetId) {
+      db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subTargetId], (err) => {
+        if (err) {
+          console.error('[Push DB Fehler beim Löschen alter Subscriptions]', err.message);
+        }
+        doInsert();
+      });
+    } else {
+      doInsert();
+    }
   } else {
     res.json({ success: true });
   }
