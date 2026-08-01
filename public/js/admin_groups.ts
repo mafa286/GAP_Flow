@@ -138,13 +138,22 @@ window.adminPanel = function (): Record<string, unknown> {
       });
     },
 
+    /**
+     * Prüft, ob ein bestimmtes Gruppenmitglied im System als aktiv markiert ist.
+     * @param {string} memberName - Der Name des zu prüfenden Anwärters.
+     * @returns {boolean} True, wenn das Mitglied aktiv ist.
+     */
     isMemberActive(memberName: string): boolean {
       const self = this as unknown as AdminGroupsComponent;
       if (!self.anwaerter) return true;
       const candidate = Object.values(self.anwaerter).find((a) => a.name === memberName);
       return candidate ? candidate.active !== false : true;
     },
-
+    
+    /**
+     * Prüft, ob mindestens eine aktive Gruppe existiert, die sich nicht im Pausenmodus befindet.
+     * @returns {boolean} True, wenn mindestens eine Gruppe aktiv und ungepaust ist.
+     */
     isAnyGroupActiveAndNotPaused(): boolean {
       const self = this as unknown as AdminGroupsComponent;
       return Object.values(self.groups || {}).some((g) => g.active !== false && !g.paused);
@@ -176,6 +185,10 @@ window.adminPanel = function (): Record<string, unknown> {
       }
     },
 
+    /**
+     * Generiert fortlaufend den nächsten Standard-Gruppennamen im Format "Heros XX".
+     * @returns {string} Der generierte Gruppenname.
+     */
     getNextGroupDefaultName(): string {
       const self = this as unknown as AdminGroupsComponent;
       let maxNum = 0;
@@ -196,6 +209,10 @@ window.adminPanel = function (): Record<string, unknown> {
       return `Heros ${paddedNum}`;
     },
 
+    /**
+     * Aktualisiert das Eingabefeld für den neuen Gruppennamen automatisch mit der nächsten freien Standardbezeichnung.
+     * @returns {void}
+     */
     updateDefaultGroupName(): void {
       const self = this as unknown as AdminGroupsComponent;
       const activeEl = document.activeElement;
