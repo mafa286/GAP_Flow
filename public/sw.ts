@@ -15,6 +15,7 @@ const ASSETS_TO_CACHE: string[] = [
   '/js/audio_engine.js',
   '/js/gap_flow_utils.js',
   '/js/pruefer_pwa_helper.js',
+  '/js/pruefer_push.js',
   '/js/pruefer_core.js',
 ];
 
