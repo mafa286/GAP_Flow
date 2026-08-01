@@ -630,12 +630,18 @@ export async function sendWebPushNotification(
   return notificationCore.sendNotification(roleTarget, payload, targetSubId);
 }
 
+/**
+ * Ping-Endpoint zur Überprüfung der Server-Verfügbarkeit.
+ */
 app.get('/api/ping', (_req: Request, res: Response) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'no-cache');
   res.json({ status: 'ok' });
 });
 
+/**
+ * Liefert den öffentlichen VAPID-Schlüssel für die Web-Push-Registrierung im PWA-Client.
+ */
 app.get('/api/push/vapid-public-key', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.json({ publicKey: notificationCore.getVapidPublicKey() });
