@@ -119,6 +119,7 @@ interface ExaminerComponent {
   getElapsedMinutes(): number;
   applyFlatState(data: FlatExaminerPayload): void;
   updateFromState(state: FlatExaminerPayload): void;
+  _resetGracePeriod(): void;
   startGracePeriod(): void;
   abortGracePeriod(): void;
   executeCompleteWithPause(): Promise<void>;
