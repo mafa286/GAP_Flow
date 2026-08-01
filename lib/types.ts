@@ -1,5 +1,3 @@
-// Version Tracker: lib/types.ts (GAP-Flow v1.0.5)
-
 /**
  * Repräsentiert einen registrierten Anwärter.
  */
