@@ -1,5 +1,3 @@
-// Version Tracker: public/js/admin_core.ts (GAP-Flow v1.1.69)
-
 interface AdminSocketIoClient {
   disconnect: () => void;
   on: (event: string, callback: (...args: unknown[]) => void) => void;
