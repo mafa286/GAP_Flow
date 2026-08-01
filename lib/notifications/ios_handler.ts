@@ -33,13 +33,13 @@ export function getIosPushOptions(): IosPushOptions {
  */
 export function formatIosPayload(basePayload: NotificationPayload): Record<string, unknown> {
   const cleanPayload: Record<string, unknown> = {
-    title: basePayload.title,
-    body: basePayload.body,
+    title: String(basePayload.title || 'GAP-Flow Benachrichtigung'),
+    body: String(basePayload.body || ''),
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    tag: basePayload.tag || 'gap-flow-ios',
+    tag: String(basePayload.tag || basePayload.type || 'gap-flow-ios'),
     data: {
-      url: '/pruefer.html',
+      url: String(basePayload.url || '/pruefer.html'),
       os: 'ios',
       ...(basePayload.data || {}),
     },
