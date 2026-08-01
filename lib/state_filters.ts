@@ -129,6 +129,7 @@ export function getBeamerState(systemState: SystemState): Record<string, unknown
   delete cleanState.firstAssignmentTime;
   delete cleanState.isCleared;
   delete cleanState.pendingLogCancellations;
+  delete cleanState.settings;
 
   stripInactiveGroupsAndMembers(cleanState.groups);
 
