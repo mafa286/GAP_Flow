@@ -509,10 +509,10 @@ export function saveStateToStoragePromise(
           } else {
             db?.run('COMMIT', (commitErr) => {
               if (commitErr) {
-              db?.run('ROLLBACK', () => {
-                reject(commitErr);
-              });
-            } else {
+                db?.run('ROLLBACK', () => {
+                  reject(commitErr);
+                });
+              } else {
               if (clonedState.logs.length > 0) {
                 lastSavedLogTimestamp = clonedState.logs.reduce((max, l) => (l.timestamp > max ? l.timestamp : max), 0);
               }
