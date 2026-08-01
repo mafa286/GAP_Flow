@@ -20,7 +20,6 @@ export interface SystemStats {
  */
 export interface AdminControllerOptions {
   systemState: SystemState;
-  getUniqueTimestamp: () => number;
   checkAndLogGroupCompletion: (group: Group) => void;
   executeRevertCompletion: (
     group: Group,
@@ -42,7 +41,6 @@ export interface AdminControllerOptions {
 }
 
 let systemState: SystemState;
-let getUniqueTimestamp: () => number = () => Date.now();
 let checkAndLogGroupCompletion: (group: Group) => void = () => {};
 let executeRevertCompletion: (
   group: Group,
@@ -72,7 +70,6 @@ let writeSystemLog: (
  */
 export function init(options: AdminControllerOptions): void {
   systemState = options.systemState;
-  getUniqueTimestamp = options.getUniqueTimestamp;
   checkAndLogGroupCompletion = options.checkAndLogGroupCompletion;
   executeRevertCompletion = options.executeRevertCompletion;
   isLogForStation = options.isLogForStation;
