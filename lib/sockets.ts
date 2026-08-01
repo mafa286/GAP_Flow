@@ -1,5 +1,3 @@
-// Version Tracker: lib/sockets.ts (GAP-Flow v1.1.66)
-
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { SystemState } from './types';
