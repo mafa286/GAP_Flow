@@ -458,7 +458,6 @@ fileProcessor.init({ systemState, dbDir: DB_DIR, backupDir: BACKUP_DIR, appDir: 
 
 adminController.init({
   systemState,
-  getUniqueTimestamp,
   checkAndLogGroupCompletion,
   executeRevertCompletion,
   isLogForStation: stateFilters.isLogForStation,
