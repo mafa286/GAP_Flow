@@ -613,26 +613,30 @@ function examiner(): ExaminerComponent {
     },
 
     /**
+     * Stoppt den aktiven Grace-Period-Timer.
+     */
+    _resetGracePeriod(): void {
+      if (this.graceTimer) {
+        clearInterval(this.graceTimer);
+        this.graceTimer = null;
+      }
+      this.graceTicks = 70;
+      this.pauseOnComplete = false;
+    },
+
+    /**
      * Startet den 7-Sekunden-Countdown vor der endgültigen Übermittlung des Prüfungsabschlusses.
      * @returns {void}
      */
     startGracePeriod(): void {
       this.showConfirmComplete = false;
       this.freezeUI = true;
-      this.graceTicks = 70;
-      this.pauseOnComplete = false;
-
-      if (this.graceTimer) {
-        clearInterval(this.graceTimer);
-      }
+      this._resetGracePeriod();
 
       this.graceTimer = setInterval(() => {
         this.graceTicks -= 1;
         if (this.graceTicks <= 0) {
-          if (this.graceTimer) {
-            clearInterval(this.graceTimer);
-            this.graceTimer = null;
-          }
+          this._resetGracePeriod();
           this.executeCompleteWithPause();
         }
       }, 100);
@@ -643,12 +647,7 @@ function examiner(): ExaminerComponent {
      * @returns {void}
      */
     abortGracePeriod(): void {
-      if (this.graceTimer) {
-        clearInterval(this.graceTimer);
-        this.graceTimer = null;
-      }
-      this.graceTicks = 70;
-      this.pauseOnComplete = false;
+      this._resetGracePeriod();
       this.freezeUI = false;
     },
 
