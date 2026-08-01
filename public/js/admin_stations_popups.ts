@@ -64,12 +64,24 @@ interface AdminStationsPopupsComponent {
 }
 
 window.adminStationsPopups = {
+  /**
+   * Setzt die aktuelle Master- und Unterstations-ID für Popups.
+   * @param {string} masterId - ID der Hauptstation.
+   * @param {string} subId - ID der Unterstation.
+   * @returns {void}
+   */
   setPopupSubStation(masterId: string, subId: string): void {
     const self = this as unknown as AdminStationsPopupsComponent;
     self.popupMasterId = masterId;
     self.popupSubId = subId;
   },
 
+  /**
+   * Öffnet das Popup zur manuellen Gruppenzuweisung.
+   * @param {string} masterId - ID der Hauptstation.
+   * @param {string} subId - ID der Unterstation.
+   * @returns {void}
+   */
   openManualAssignPopup(masterId: string, subId: string): void {
     const self = this as unknown as AdminStationsPopupsComponent;
     self.setPopupSubStation(masterId, subId);
@@ -77,6 +89,11 @@ window.adminStationsPopups = {
     self.showManualAssignPopup = true;
   },
 
+  /**
+   * Ermittelt den Namen einer Gruppe anhand ihrer ID.
+   * @param {string} groupId - Gruppen-ID.
+   * @returns {string} Gruppenname oder leere Zeichenkette.
+   */
   getGroupName(groupId: string): string {
     const self = this as unknown as AdminStationsPopupsComponent;
     if (!groupId || !self.groups || !self.groups[groupId]) return '';
