@@ -164,14 +164,3 @@ export interface NotificationPayload {
   data?: Record<string, unknown>;
   actions?: NotificationAction[];
 }
-
-/**
- * Sprechwunsch-Anforderung von einer Prüfstation an die Leitung.
- */
-export interface CallbackRequest {
-  target: 'leitstelle' | 'pruefungsleitung';
-  subId: string;
-  examinerName: string;
-  phoneNumber: string;
-  timestamp: number;
-}
