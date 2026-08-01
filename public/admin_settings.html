@@ -162,10 +162,10 @@
             <div>
               <h3 class="text-sm font-bold text-brand uppercase">🚨 Rückruf Leitstelle</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Sendet eine Rückrufanforderung der Leitstelle an eine gezielte Station oder alle Prüfer im Gelände.
+                Sendet eine allgemeine Rückrufanforderung der Leitstelle an alle Prüfer im Gelände.
               </p>
             </div>
-            <button @click="openCallbackModal('leitstelle')" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
+            <button @click="broadcastText = '🚨 LEITSTELLE BITTET UM RÜCKRUF! Bitte Leitstelle kontaktieren.'; sendBroadcastMessage()" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
               🚨 Leitstellen-Rückruf senden
             </button>
           </div>
@@ -175,10 +175,10 @@
             <div>
               <h3 class="text-sm font-bold text-brand uppercase">🚨 Rückruf Prüfungsleitung</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Sendet eine Rückrufanforderung der Prüfungsleitung an eine gezielte Station oder alle Prüfer im Gelände.
+                Sendet eine allgemeine Rückrufanforderung der Prüfungsleitung an alle Prüfer im Gelände.
               </p>
             </div>
-            <button @click="openCallbackModal('pruefungsleitung')" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
+            <button @click="broadcastText = '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF! Bitte Prüfungsleitung kontaktieren.'; sendBroadcastMessage()" :disabled="isSubmitting" class="w-full py-2.5 btn-sig-orange text-xs font-black uppercase tracking-wider shadow">
               🚨 Prüfungsleitungs-Rückruf senden
             </button>
           </div>
