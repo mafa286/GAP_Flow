@@ -219,7 +219,7 @@ export function scanReminderEvents(systemState: SystemState): {
       // 2. Richtzeit-Überschreitung (Aktiv mit Gruppe)
       if (sub.currentGroupId && sub.startTime && !sub.paused) {
         const elapsedMinutes = Math.floor((now - sub.startTime) / 60000);
-        const overtime = elapsedMinutes - avgDuration;
+        const overtime = Math.floor(elapsedMinutes - avgDuration);
         if (overtime >= 10 && (overtime - 10) % 10 === 0) {
           const group = systemState.groups[sub.currentGroupId];
           overtimes.push({
