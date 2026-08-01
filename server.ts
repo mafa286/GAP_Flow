@@ -74,69 +74,21 @@ if (!parsedPassword || parsedPassword === '""' || parsedPassword === "''" || par
 }
 const ADMIN_PASSWORD = parsedPassword;
 
-/**
- * Generiert einen formatierten Datums-String des lokalen Server-Tages (YYYY-MM-DD).
- * @returns {string} Lokales Datum.
- */
-export function getLocalDateString(): string {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+import {
+  getLocalDateString,
+  getAdminSessionToken as getAdminSessionTokenUtil,
+  getUniqueTimestamp,
+  sanitizeName,
+  sanitizePhoneNumber,
+} from './lib/server_utils';
+
+export { getLocalDateString, getUniqueTimestamp, sanitizeName, sanitizePhoneNumber };
 
 /**
- * Generiert ein stabiles, eintägig gültiges SHA-256-Sitzungstoken.
- * @returns {string} Aktuelles Sitzungstoken.
+ * Generiert das Sitzungstoken mit dem gebundenen Admin-Passwort.
  */
 export function getAdminSessionToken(): string {
-  return crypto.createHash('sha256')
-    .update(`${ADMIN_PASSWORD}GAP_FLOW_SALT_${getLocalDateString()}`)
-    .digest('hex');
-}
-
-let lastGlobalTimestamp = 0;
-
-/**
- * Generiert einen eindeutigen, aufsteigenden Zeitstempel.
- * @returns {number} Eindeutiger Millisekunden-Zeitstempel.
- */
-export function getUniqueTimestamp(): number {
-  let now = Date.now();
-  if (now <= lastGlobalTimestamp) {
-    now = lastGlobalTimestamp + 1;
-  }
-  lastGlobalTimestamp = now;
-  return now;
-}
-
-/**
- * Bereinigt und beschränkt Zeichenketten zum Schutz vor Injektionen.
- * @param {string} str - Die zu bereinigende Zeichenkette.
- * @param {number} maxLength - Die maximale zulässige Länge.
- * @returns {string} Bereinigte Zeichenkette.
- */
-export function sanitizeName(str: string, maxLength: number): string {
-  if (typeof str !== 'string') return '';
-  let cleaned = str.trim().substring(0, maxLength);
-  cleaned = cleaned.replace(/[^a-zA-Z0-9\s\-.,äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ/()]/g, '');
-  return cleaned.trim();
-}
-
-/**
- * Bereinigt und validiert Telefonnummern nach striktem Schema (optionales '+' am Anfang, gefolgt von Ziffern).
- * Entfernt alle Leerzeichen, Buchstaben und Sonderzeichen.
- * @param {string} str - Die zu bereinigende Telefonnummer.
- * @param {number} maxLength - Die maximale zulässige Länge.
- * @returns {string} Bereinigte Telefonnummer (z. B. +491701234567 oder 01701234567).
- */
-export function sanitizePhoneNumber(str: string, maxLength: number): string {
-  if (typeof str !== 'string') return '';
-  let cleaned = str.trim().substring(0, maxLength);
-  const startsWithPlus = cleaned.startsWith('+');
-  cleaned = cleaned.replace(/[^0-9]/g, '');
-  return startsWithPlus ? `+${cleaned}` : cleaned;
+  return getAdminSessionTokenUtil(ADMIN_PASSWORD);
 }
 
 /**
