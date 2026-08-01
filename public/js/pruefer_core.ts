@@ -104,6 +104,7 @@ interface ExaminerComponent {
   notificationPermissionStatus: string;
   appVersion: string;
 
+  _postApi(endpoint: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<Response>;
   forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
@@ -707,6 +708,22 @@ function examiner(): ExaminerComponent {
     },
 
     /**
+     * Hilfsmethode zum Senden von POST-Anfragen an die Prüfer-API.
+     */
+    async _postApi(endpoint: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<Response> {
+      const headers: Record<string, string> = {
+        Authorization: this.token,
+        ...extraHeaders,
+      };
+      const options: RequestInit = { method: 'POST', headers };
+      if (body !== undefined) {
+        headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+      }
+      return fetch(`/api/examiner/${endpoint}`, options);
+    },
+
+    /**
      * Verarbeitet Echtzeit-Statusupdates unter Berücksichtigung aktiver Eingabe-Countdowns.
      * @param {FlatExaminerPayload} state - Das empfangene Zustandsobjekt.
      * @returns {void}
@@ -777,24 +794,14 @@ function examiner(): ExaminerComponent {
 
       try {
         if (needPause) {
-          const pauseRes = await fetch('/api/examiner/pause', {
-            method: 'POST',
-            headers: {
-              Authorization: this.token,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ paused: true }),
-          });
+          const pauseRes = await this._postApi('pause', { paused: true });
           if (!pauseRes.ok) {
             const errData = (await pauseRes.json().catch(() => ({}))) as { error?: string };
             throw new Error(errData.error || `HTTP Status ${pauseRes.status}`);
           }
         }
 
-        const completeRes = await fetch('/api/examiner/complete', {
-          method: 'POST',
-          headers: { Authorization: this.token },
-        });
+        const completeRes = await this._postApi('complete');
 
         if (!completeRes.ok) {
           const errData = (await completeRes.json().catch(() => ({}))) as { error?: string };
@@ -986,14 +993,7 @@ function examiner(): ExaminerComponent {
     async executeTogglePause(state: boolean): Promise<void> {
       this.isSubmitting = true;
       try {
-        const res = await fetch('/api/examiner/pause', {
-          method: 'POST',
-          headers: {
-            Authorization: this.token,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ paused: state }),
-        });
+        const res = await this._postApi('pause', { paused: state });
         if (!res.ok) {
           const errData = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(errData.error || `HTTP Status ${res.status}`);
