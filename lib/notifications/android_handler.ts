@@ -28,6 +28,21 @@ export function getAndroidPushOptions(): AndroidPushOptions {
 }
 
 /**
+ * Extrahiert und formatiert Push-Aktionsbuttons einheitlich für Betriebssystem-Handler.
+ * @param {NotificationPayload} basePayload - Das generische Payload.
+ * @returns {Array<{ action: string, title: string }> | undefined} Aktionsliste oder undefined.
+ */
+export function formatNotificationActions(basePayload: NotificationPayload): Array<{ action: string; title: string }> | undefined {
+  if (Array.isArray(basePayload.actions) && basePayload.actions.length > 0) {
+    return basePayload.actions.map((act) => ({
+      action: act.action,
+      title: act.title,
+    }));
+  }
+  return undefined;
+}
+
+/**
  * Formatiert den Push-Payload speziell für Android-Geräte (vibrate, actions, icons).
  * @param {NotificationPayload} basePayload - Das generische Payload.
  * @returns {Record<string, unknown>} Das Android-optimierte Payload.
@@ -50,11 +65,9 @@ export function formatAndroidPayload(basePayload: NotificationPayload): Record<s
     },
   };
 
-  if (Array.isArray(basePayload.actions) && basePayload.actions.length > 0) {
-    cleanPayload.actions = basePayload.actions.map((act) => ({
-      action: act.action,
-      title: act.title,
-    }));
+  const actions = formatNotificationActions(basePayload);
+  if (actions) {
+    cleanPayload.actions = actions;
   }
 
   return cleanPayload;
