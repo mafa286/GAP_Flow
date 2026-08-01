@@ -12,6 +12,10 @@ interface PwaContext {
 }
 
 window.prueferPwaHelper = {
+  /**
+   * Prüft, ob das zugreifende Gerät ein iOS-Gerät (iPhone, iPad) ist.
+   * @returns {boolean} True, wenn iOS erkannt wurde.
+   */
   isIOS(): boolean {
     return (
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -19,6 +23,11 @@ window.prueferPwaHelper = {
     );
   },
 
+  /**
+   * Löst den nativen Android PWA-Installationsdialog aus.
+   * @param {PwaContext} ctx - Kontextobjekt der PWA-Steuerung.
+   * @returns {void}
+   */
   triggerAndroidInstallPrompt(ctx: PwaContext): void {
     if (ctx.deferredPrompt) {
       ctx.deferredPrompt.prompt();
@@ -32,6 +41,11 @@ window.prueferPwaHelper = {
     }
   },
 
+  /**
+   * Initialisiert das Tracking für erfolgreiche App-Installationen.
+   * @param {PwaContext} ctx - Kontextobjekt der PWA-Steuerung.
+   * @returns {void}
+   */
   setupInstallTracking(ctx: PwaContext): void {
     window.addEventListener('appinstalled', () => {
       if (!ctx.isCompiling && !ctx.appInstalledSuccessfully) {
