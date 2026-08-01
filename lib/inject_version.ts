@@ -8,7 +8,6 @@ const rootDir = path.join(__dirname, '..');
 
 const pkgPath = path.join(rootDir, 'package.json');
 const swPath = path.join(rootDir, 'public', 'sw.ts');
-const versionTsPath = path.join(rootDir, 'public', 'js', 'version.ts');
 
 try {
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -21,13 +20,6 @@ try {
     swContent = swContent.replace(/const CACHE_NAME = '.*?';/, `const CACHE_NAME = 'gap-flow-v${version}-${buildTime}';`);
     fs.writeFileSync(swPath, swContent);
     console.log(`[Inject-Version] Synchronized sw.ts to version v${version} (Build: ${buildTime})`);
-  }
-
-  if (fs.existsSync(versionTsPath)) {
-    let vContent = fs.readFileSync(versionTsPath, 'utf8');
-    vContent = vContent.replace(/export const GAP_FLOW_VERSION = '.*?';/, `export const GAP_FLOW_VERSION = '${version}';`);
-    fs.writeFileSync(versionTsPath, vContent);
-    console.log(`[Inject-Version] Synchronized version.ts to version v${version}`);
   }
 } catch (err) {
   const error = err as Error;
