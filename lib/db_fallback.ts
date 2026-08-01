@@ -1,5 +1,3 @@
-// Version Tracker: lib/db_fallback.ts (GAP-Flow v1.1.5)
-
 import fs from 'fs';
 import { SystemState } from './types';
 
