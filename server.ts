@@ -690,6 +690,9 @@ app.post('/api/examiner/push-subscription', authenticateExaminer, (req: Authenti
   }
 });
 
+/**
+ * Registriert einen neuen Prüfer an einer Unterstation und verknüpft ein fälschungssicheres Geräte-Token.
+ */
 app.post('/api/examiner/register', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
   const { firstName, lastName } = req.body || {};
   const sub = req.subStation!;
@@ -717,6 +720,9 @@ app.post('/api/examiner/register', authenticateExaminer, (req: AuthenticatedExam
   commitAndRespond(res, { success: true, deviceToken, examiner: examinerName });
 });
 
+/**
+ * Meldet den aktuellen Prüfer von der Unterstation ab und gibt die Station frei.
+ */
 app.post('/api/examiner/deregister', authenticateExaminer, (req: AuthenticatedExaminerRequest, res: Response) => {
   const clientDeviceToken = req.headers['x-device-token'];
   const sub = req.subStation!;
