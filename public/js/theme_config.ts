@@ -1,6 +1,10 @@
-// Stummschaltung der Tailwind-CDN-Produktionswarnung in der Browserkonsole
+/**
+ * Stummschaltung der Tailwind-CDN-Produktionswarnung in der Browserkonsole.
+ * @param {...unknown[]} args - Die Ausgabeparameter für console.warn.
+ * @returns {void}
+ */
 const originalConsoleWarn = console.warn;
-console.warn = function (...args: unknown[]) {
+console.warn = function (...args: unknown[]): void {
   if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
     return;
   }
