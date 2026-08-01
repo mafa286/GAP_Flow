@@ -1,5 +1,3 @@
-// Version Tracker: lib/file_processor.ts (GAP-Flow v1.1.65)
-
 import fs from 'fs';
 import path from 'path';
 import AdmZip from 'adm-zip';
