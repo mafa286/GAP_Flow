@@ -705,7 +705,12 @@ app.post('/api/admin/stations/batch', adminAuth, adminStationsController.batchSt
 app.get('/api/admin/system/repomix', adminAuth, fileProcessor.generateAndDownloadRepomix);
 app.get('/api/admin/system/logs', adminAuth, adminController.getSystemLogs);
 
-app.post('/api/admin/restart', adminAuth, (_req: Request, res: Response) => { res.json({ success: true }); setTimeout(() => { shutdown(); }, 1000); });
+app.post('/api/admin/restart', adminAuth, (_req: Request, res: Response) => {
+  res.json({ success: true });
+  setTimeout(() => {
+    shutdown();
+  }, 1000);
+});
 app.get('/api/admin/export', adminAuth, fileProcessor.exportCsv);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
