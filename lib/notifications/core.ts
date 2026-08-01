@@ -21,8 +21,12 @@ function generateAndSaveVapidKeys(db: sqlite3.Database | null, resolve: () => vo
   vapidPublicKey = keys.publicKey;
   vapidPrivateKey = keys.privateKey;
   if (db && !dbModule.getUseJsonFallback()) {
-    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey]);
-    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey]);
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_public_key', ?)", [vapidPublicKey], (err) => {
+      if (err) console.error('[WebPush Core] Fehler beim Speichern des VAPID Public Keys:', err.message);
+    });
+    db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('vapid_private_key', ?)", [vapidPrivateKey], (err) => {
+      if (err) console.error('[WebPush Core] Fehler beim Speichern des VAPID Private Keys:', err.message);
+    });
   }
   webpush.setVapidDetails(VAPID_SUBJECT, vapidPublicKey, vapidPrivateKey);
   console.log('[WebPush Core] Neues VAPID Schlüsselpaar generiert und aktiviert.');
@@ -177,7 +181,9 @@ export async function sendNotification(
           );
           if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
             console.log(`[WebPush Bereinigung] Entferne abgelaufene Subscription ${r.id} aus der Datenbank.`);
-            db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id]);
+            db.run('DELETE FROM push_subscriptions WHERE id = ?', [r.id], (err) => {
+              if (err) console.error('[WebPush Core] Fehler beim Löschen abgelaufener Subscription:', err.message);
+            });
           }
         });
     });
