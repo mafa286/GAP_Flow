@@ -3,7 +3,9 @@ interface Window {
   _dashboardThemeListenerBound?: boolean;
   gapFlowUtils?: any;
   gapFlowAudio?: any;
+  gapFlowChart?: any;
   prueferPwaHelper?: any;
+  prueferPush?: any;
   themeConfig?: any;
   createAdminPanel?: any;
   adminStationsPopups?: any;
