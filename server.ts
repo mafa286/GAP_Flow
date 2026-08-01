@@ -140,18 +140,6 @@ export function sanitizePhoneNumber(str: string, maxLength: number): string {
 }
 
 /**
- * Bereinigt Kontakt-Namen und erlaubt ausschließlich namenstypische Zeichen (Buchstaben, Zahlen, Leerzeichen, Komma, Bindestrich, Schrägstrich).
- * @param {string} str - Der zu bereinigende Name.
- * @param {number} maxLength - Die maximale zulässige Länge.
- * @returns {string} Bereinigter Name.
- */
-export function sanitizeContactName(str: string, maxLength: number): string {
-  if (typeof str !== 'string') return '';
-  let cleaned = str.trim().substring(0, maxLength);
-  cleaned = cleaned.replace(/[^a-zA-Z0-9\s,\-/äöüÄÖÜßéèàáíóúÉÈÀÁÍÓÚ]/g, '');
-  return cleaned.trim();
-}
-/**
  * Validiert, ob das übergebene Examiner-Token einer registrierten Unterstation zugewiesen ist.
  * @param {string} token - Das zu validierende Zugriffstoken.
  * @returns {boolean} True, wenn das Token gültig ist.
@@ -871,9 +859,9 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
         phonePruefungsleitungNumber: '',
       };
     }
-    systemState.settings.phoneLeitstelleName = sanitizeContactName(settings.phoneLeitstelleName || '', 32);
+    systemState.settings.phoneLeitstelleName = sanitizeName(settings.phoneLeitstelleName || '', 32);
     systemState.settings.phoneLeitstelleNumber = sanitizePhoneNumber(settings.phoneLeitstelleNumber || '', 24);
-    systemState.settings.phonePruefungsleitungName = sanitizeContactName(settings.phonePruefungsleitungName || '', 32);
+    systemState.settings.phonePruefungsleitungName = sanitizeName(settings.phonePruefungsleitungName || '', 32);
     systemState.settings.phonePruefungsleitungNumber = sanitizePhoneNumber(settings.phonePruefungsleitungNumber || '', 24);
     commitAndRespond(res, { success: true, settings: systemState.settings });
   } else {
