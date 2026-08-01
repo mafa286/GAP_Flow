@@ -103,9 +103,7 @@ interface ExaminerComponent {
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
   appVersion: string;
-  swVersion: string;
-  swCacheName: string;
-  
+
   forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
@@ -208,8 +206,6 @@ function examiner(): ExaminerComponent {
     get appVersion(): string {
       return (window as any).GAP_FLOW_VERSION ? `v${(window as any).GAP_FLOW_VERSION}` : 'v0.0';
     },
-    swVersion: '',
-    swCacheName: '',
 
     /**
      * Erzwingt ein Leeren des lokalen PWA-Caches und lädt die Anwendung frisch vom Server.
@@ -506,10 +502,7 @@ function examiner(): ExaminerComponent {
 
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
-          if (event.data && event.data.type === 'SW_VERSION_RESPONSE') {
-            this.swVersion = event.data.version || '';
-            this.swCacheName = event.data.cacheName || '';
-          } else if (event.data && event.data.type === 'PUSH_RECEIVED') {
+          if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const payload = event.data.payload || {};
             if (this.soundUnlocked) {
               this.playInfoSound();
