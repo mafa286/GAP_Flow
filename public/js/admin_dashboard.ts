@@ -224,7 +224,7 @@ window.adminPanel = function (): Record<string, unknown> {
       const self = this as unknown as AdminDashboardComponent;
       const names = new Set(Object.values(self.groups).map((g) => g.name));
       self.logs.forEach((log) => {
-        if (log.durationMinutes !== -3 && log.durationMinutes !== -4 && log.groupName) {
+        if (log.durationMinutes !== -3 && log.durationMinutes !== -4 && log.groupName && log.groupName !== 'System') {
           names.add(log.groupName);
         }
       });
