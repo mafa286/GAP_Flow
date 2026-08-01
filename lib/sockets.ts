@@ -141,9 +141,7 @@ export function init(
         timestamp: Date.now(),
       };
 
-      io?.to('room_admin_dashboard').emit('callbackRequested', notificationData);
-      io?.to('room_admin_stations').emit('callbackRequested', notificationData);
-      io?.to('room_admin_groups').emit('callbackRequested', notificationData);
+      io?.to(['room_admin_dashboard', 'room_admin_stations', 'room_admin_groups']).emit('callbackRequested', notificationData);
     });
   });
 
