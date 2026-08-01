@@ -31,13 +31,13 @@ export function loadJsonFallback(
     const rawData = fs.readFileSync(jsonBackupPath, 'utf8');
     const loaded = JSON.parse(rawData);
 
-    // Kompatibilität: "students" auf "anwaerter" abbilden
+    // Abwärtskompatibilität für ältere Datensätze
     if (loaded.students && !loaded.anwaerter) {
       loaded.anwaerter = loaded.students;
       delete loaded.students;
     }
 
-    // Schema-Härtung für Gruppen im JSON-Objekt
+    // Schema-Validierung und Standardwerte für Gruppen
     if (loaded.groups) {
       Object.keys(loaded.groups).forEach((gId) => {
         const group = loaded.groups[gId];
@@ -55,7 +55,7 @@ export function loadJsonFallback(
       });
     }
 
-    // Schema-Härtung für Anwärter im JSON-Objekt
+    // Schema-Validierung und Standardwerte für Anwärter
     if (loaded.anwaerter) {
       Object.keys(loaded.anwaerter).forEach((aId) => {
         const candidate = loaded.anwaerter[aId];
@@ -63,7 +63,7 @@ export function loadJsonFallback(
       });
     }
 
-    // Schema-Härtung für Stationen im JSON-Objekt
+    // Schema-Validierung und Standardwerte für Stationen
     if (loaded.stations) {
       Object.keys(loaded.stations).forEach((mId) => {
         const station = loaded.stations[mId];
