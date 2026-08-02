@@ -143,7 +143,7 @@ style.innerHTML = `
   .app-bg { background-color: var(--org-bg-app) !important; color: var(--org-text-main) !important; }
   .app-card { background-color: var(--org-bg-card) !important; border: 1px solid var(--org-border) !important; box-shadow: var(--org-shadow) !important; border-radius: 0.75rem !important; }
   .app-card-accent { background-color: var(--org-bg-card-accent) !important; border: 1px solid var(--org-border) !important; border-radius: 0.5rem !important; }
-  .app-overlay-modal { background-color: var(--org-overlay-bg) !important; backdrop-filter: blur(4px) !important; display: none; }
+  .app-overlay-modal { background-color: var(--org-overlay-bg) !important; backdrop-filter: blur(4px) !important; }
   .text-sig-danger { color: var(--sig-danger-text) !important; }
   .text-sig-warning { color: var(--sig-warning-text) !important; }
   .bg-sig-success-border { background-color: var(--sig-success-border) !important; }
@@ -151,7 +151,7 @@ style.innerHTML = `
   .card-sig-danger { background-color: var(--sig-danger-bg) !important; border-color: var(--sig-danger-border) !important; }
   .loader-spinner { border-color: var(--org-border) !important; border-top-color: var(--org-primary) !important; }
   .duration-100 { transition-duration: 100ms !important; }
-  .app-overlay-modal { background-color: var(--org-overlay-bg) !important; backdrop-filter: blur(6px) !important; display: none; }
+  .app-overlay-modal { background-color: var(--org-overlay-bg) !important; backdrop-filter: blur(6px) !important; }
 
   .text-main { color: var(--org-text-main) !important; }
   .text-muted { color: var(--org-text-muted) !important; }
