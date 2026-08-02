@@ -15,6 +15,9 @@ window.prueferPush = {
    * @returns {string} Erlaubnis-Status ('granted', 'denied', 'default', 'unsupported').
    */
   checkPermissions(): string {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return 'insecure-context';
+    }
     if ('Notification' in window) {
       return Notification.permission;
     }
@@ -27,6 +30,10 @@ window.prueferPush = {
    * @returns {Promise<string>} Aktualisierter Erlaubnis-Status.
    */
   async requestNotificationPermission(ctx: PushSubscriptionContext): Promise<string> {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      alert('⚠️ Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost! Über unverschlüsseltes HTTP (z. B. eine lokale IP-Adresse im WLAN) blockieren moderne Browser Benachrichtigungen aus Sicherheitsgründen.');
+      return 'insecure-context';
+    }
     if ('Notification' in window) {
       try {
         const res = await Notification.requestPermission();
@@ -140,6 +147,11 @@ window.prueferPush = {
    * @returns {Promise<void>}
    */
   async sendServerTestNotification(ctx: PushSubscriptionContext): Promise<void> {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      alert('⚠️ Web Push erfordert HTTPS oder localhost! Über unverschlüsseltes HTTP blockieren Browser Benachrichtigungen.');
+      return;
+    }
+
     if (!('serviceWorker' in navigator) || !('Notification' in window)) {
       alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
       return;
