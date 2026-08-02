@@ -55,5 +55,14 @@ npm install --include=dev --foreground-scripts
 echo "[GAP-Flow] Kompiliere native C++ Module (sqlite3)..."
 npm rebuild sqlite3
 
+echo "[GAP-Flow] Prüfe & Kompiliere Frontend..."
+mkdir -p data
+if npm run build:frontend > data/build_error.log 2>&1; then
+  echo "[GAP-Flow] ✅ Frontend-Kompilierung ERFOLGREICH!"
+  rm -f data/build_error.log
+else
+  echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des Frontend-Codes! Protokoll in data/build_error.log gespeichert."
+fi
+
 echo "[GAP-Flow] Starte GAP-Flow..."
-exec npm start
+exec npx tsx server.ts
