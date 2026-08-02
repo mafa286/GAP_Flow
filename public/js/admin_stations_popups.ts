@@ -196,6 +196,7 @@ window.adminStationsPopups = {
     modalPropToHide?: string
   ): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
+    if (self.isSubmitting) return;
     self.isSubmitting = true;
     try {
       const response = await fetch(`/api/admin/stations/${masterId}/sub_config`, {
@@ -292,7 +293,7 @@ window.adminStationsPopups = {
     errorLabel: string
   ): Promise<void> {
     const self = this as unknown as AdminStationsPopupsComponent;
-    if (!groupId) return;
+    if (self.isSubmitting || !groupId) return;
     self.isSubmitting = true;
     try {
       const response = await fetch(`/api/admin/corrections/${endpoint}`, {
