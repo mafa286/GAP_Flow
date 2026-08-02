@@ -86,12 +86,20 @@ window.prueferPush = {
       if (!reg) {
         reg = await navigator.serviceWorker.register('/sw.js');
       }
-      await navigator.serviceWorker.ready;
+
+      await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Service Worker Aktivierungs-Timeout (5s)')), 5000)
+        ),
+      ]);
+
       let sub = await reg.pushManager.getSubscription();
 
       const urlBase64ToUint8Array = (base64String: string) => {
-        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const cleanBase64Str = String(base64String || '').trim();
+        const padding = '='.repeat((4 - (cleanBase64Str.length % 4)) % 4);
+        const base64 = (cleanBase64Str + padding).replace(/-/g, '+').replace(/_/g, '/');
         const rawData = window.atob(base64);
         const outputArray = new Uint8Array(rawData.length);
         for (let i = 0; i < rawData.length; i += 1) {
