@@ -263,12 +263,14 @@ window.adminPanel = function (): Record<string, unknown> {
           body: JSON.stringify({ name: self.newAnwaerterName }),
         });
         if (!response.ok) {
-          throw new Error(`HTTP Status ${response.status}`);
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(errData.error || `HTTP Status ${response.status}`);
         }
         self.newAnwaerterName = '';
       } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler: Der Anwärter konnte nicht registriert werden. Bitte Verbindung prüfen.');
+        const error = e as Error;
+        console.error(error);
+        alert(`Fehler beim Registrieren des Anwärters: ${error.message}`);
       } finally {
         self.isSubmitting = false;
       }
@@ -407,13 +409,15 @@ window.adminPanel = function (): Record<string, unknown> {
           body: JSON.stringify({ name: groupNameToCreate, anwaerterIds: anwaerterIdsToCreate }),
         });
         if (!response.ok) {
-          throw new Error(`HTTP Status ${response.status}`);
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(errData.error || `HTTP Status ${response.status}`);
         }
       } catch (e) {
-        console.error(e);
+        const error = e as Error;
+        console.error(error);
         self.newGroupName = groupNameToCreate;
         self.selectedAnwaerterIds = anwaerterIdsToCreate;
-        alert('Netzwerk-Fehler: Gruppe konnte nicht erstellt werden. Bitte Verbindung prüfen.');
+        alert(`Fehler beim Erstellen der Gruppe: ${error.message}`);
       } finally {
         self.isSubmitting = false;
       }
