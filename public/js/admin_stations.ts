@@ -190,12 +190,14 @@ window.adminPanel = function (): Record<string, unknown> {
           body: JSON.stringify({ name: self.newStationName }),
         });
         if (!response.ok) {
-          throw new Error(`HTTP Status ${response.status}`);
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(errData.error || `HTTP Status ${response.status}`);
         }
         self.newStationName = 'Station';
       } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler: Die Station konnte nicht angelegt werden. Bitte Verbindung prüfen.');
+        const error = e as Error;
+        console.error(error);
+        alert(`Fehler beim Anlegen der Station: ${error.message}`);
       } finally {
         self.isSubmitting = false;
       }
