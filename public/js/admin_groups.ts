@@ -254,7 +254,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
     async addAnwaerter(): Promise<void> {
       const self = this as unknown as AdminGroupsComponent;
-      if (!self.newAnwaerterName) return;
+      if (self.isSubmitting || !self.newAnwaerterName) return;
       self.isSubmitting = true;
       try {
         const response = await fetch('/api/admin/anwaerter', {
@@ -393,7 +393,7 @@ window.adminPanel = function (): Record<string, unknown> {
 
     async createGroup(): Promise<void> {
       const self = this as unknown as AdminGroupsComponent;
-      if (!self.newGroupName || self.selectedAnwaerterIds.length === 0) return;
+      if (self.isSubmitting || !self.newGroupName || self.selectedAnwaerterIds.length === 0) return;
       self.isSubmitting = true;
 
       const groupNameToCreate = self.newGroupName;
