@@ -832,6 +832,7 @@ function examiner(): ExaminerComponent {
     },
 
     async deregisterExaminer(): Promise<void> {
+      if (this.isSubmitting) return;
       if (!confirm('Möchten Sie sich wirklich abmelden? Die Station wird augenblicklich für andere Geräte freigegeben.')) return;
       this.isSubmitting = true;
       try {
@@ -856,6 +857,7 @@ function examiner(): ExaminerComponent {
     },
 
     async executeTogglePause(state: boolean): Promise<void> {
+      if (this.isSubmitting) return;
       this.isSubmitting = true;
       try {
         const res = await this._postApi('pause', { paused: state });
