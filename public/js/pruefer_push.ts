@@ -31,22 +31,37 @@ window.prueferPush = {
    */
   async requestNotificationPermission(ctx: PushSubscriptionContext): Promise<string> {
     if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      alert('⚠️ Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost! Über unverschlüsseltes HTTP (z. B. eine lokale IP-Adresse im WLAN) blockieren moderne Browser Benachrichtigungen aus Sicherheitsgründen.');
+      alert('⚠️ Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost! Über unverschlüsseltes HTTP blockieren moderne Browser Benachrichtigungen aus Sicherheitsgründen.');
       return 'insecure-context';
     }
-    if ('Notification' in window) {
-      try {
-        const res = await Notification.requestPermission();
-        ctx.notificationPermissionStatus = res;
-        if (res === 'granted') {
-          await this.subscribeToWebPush(ctx);
-        }
-        return res;
-      } catch (e) {
-        console.error('Fehler beim Anfragen der Benachrichtigungsberechtigung:', e);
-      }
+
+    if (!('Notification' in window)) {
+      alert('⚠️ Benachrichtigungen werden von diesem Browser oder Gerät nicht unterstützt.');
+      return 'unsupported';
     }
-    return 'unsupported';
+
+    try {
+      const res = await Notification.requestPermission();
+      ctx.notificationPermissionStatus = res;
+
+      if (res === 'granted') {
+        const subSuccess = await this.subscribeToWebPush(ctx);
+        if (subSuccess) {
+          alert('✅ Benachrichtigungserlaubnis erteilt und Smartphone erfolgreich beim Push-Dienst registriert!');
+        } else {
+          alert('⚠️ Benachrichtigungserlaubnis erteilt, aber die Push-Registrierung auf dem Server schlug fehl. Bitte lade die Seite neu.');
+        }
+      } else if (res === 'denied') {
+        alert('⛔ Benachrichtigungen wurden im Browser oder Betriebssystem blockiert. Bitte schalte Benachrichtigungen in den Browser- / Android-Einstellungen frei.');
+      } else {
+        alert(`Hinweis: Status der Benachrichtigungserlaubnis ist "${res}".`);
+      }
+      return res;
+    } catch (e) {
+      const error = e as Error;
+      alert(`Fehler beim Anfragen der Benachrichtigungserlaubnis: ${error.message}`);
+      return 'error';
+    }
   },
 
   /**
@@ -55,14 +70,17 @@ window.prueferPush = {
    * @param {boolean} [forceFresh=false] - Zwingt die Erneuerung der Subscription.
    * @returns {Promise<void>}
    */
-  async subscribeToWebPush(ctx: PushSubscriptionContext, forceFresh = false): Promise<void> {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !ctx.token) return;
+  async subscribeToWebPush(ctx: PushSubscriptionContext, forceFresh = false): Promise<boolean> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !ctx.token) {
+      console.warn('[PWA Web Push] Abbruch: ServiceWorker, PushManager oder Token fehlt.');
+      return false;
+    }
 
     try {
       const keyRes = await fetch('/api/push/vapid-public-key');
-      if (!keyRes.ok) return;
+      if (!keyRes.ok) return false;
       const { publicKey } = await keyRes.json();
-      if (!publicKey) return;
+      if (!publicKey) return false;
 
       let reg = await navigator.serviceWorker.getRegistration();
       if (!reg) {
@@ -137,11 +155,14 @@ window.prueferPush = {
       });
       if (subRes.ok) {
         console.log('[PWA Web Push] Erfolgreich beim W3C Push-Dienst registriert:', sub.endpoint);
+        return true;
       } else {
         console.warn('[PWA Web Push] Server-Registrierung fehlgeschlagen, Status:', subRes.status);
+        return false;
       }
     } catch (e) {
       console.error('[PWA Web Push] Registrierungsfehler:', e);
+      return false;
     }
   },
 
@@ -157,7 +178,7 @@ window.prueferPush = {
     }
 
     if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-      alert('Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
+      alert('⚠️ Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
       return;
     }
 
@@ -167,26 +188,24 @@ window.prueferPush = {
     }
 
     if (!ctx.token) {
-      alert('Kein Token vorhanden. Bitte scanne zuerst den QR-Code deiner Station.');
+      alert('⚠️ Kein Stationstoken vorhanden. Bitte scanne zuerst den QR-Code deiner Station!');
       return;
     }
 
     try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (!reg || !reg.active) {
-        alert('Kein aktiver Service Worker geladen. Bitte lade die Seite einmal neu.');
+      const subSuccess = await this.subscribeToWebPush(ctx, true);
+      if (!subSuccess) {
+        alert('⚠️ Push-Subscription konnte auf dem Server nicht erneuert werden. Prüfe das Server-Log oder die Netzwerkverbindung.');
         return;
       }
-
-      await this.subscribeToWebPush(ctx, true);
 
       const response = await ctx._postApi('test-push');
 
       if (response.ok) {
-        alert('Befehl ausgeführt: Subscription wurde frisch bei Google FCM registriert und Test-Push wurde gesendet! Prüfe jetzt das Server-Log.');
+        alert('🚀 Echter Server-Push ausgelöst! Die Test-Benachrichtigung wurde über Google FCM an dein Smartphone gesendet.');
       } else {
         const errData = (await response.json().catch(() => ({}))) as { error?: string };
-        alert(`Server-Rückmeldung: ${errData.error || response.statusText}`);
+        alert(`Server-Rückmeldung (${response.status}): ${errData.error || response.statusText}`);
       }
     } catch (e) {
       const error = e as Error;
