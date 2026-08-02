@@ -64,7 +64,11 @@ window.prueferPush = {
       const { publicKey } = await keyRes.json();
       if (!publicKey) return;
 
-      const reg = await navigator.serviceWorker.ready;
+      let reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
+      }
+      await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
 
       const urlBase64ToUint8Array = (base64String: string) => {
