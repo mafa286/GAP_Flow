@@ -363,11 +363,13 @@ window.adminStationsPopups = {
         body: JSON.stringify({ subId }),
       });
       if (!response.ok) {
-        throw new Error(`HTTP Status ${response.status}`);
+        const errData = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errData.error || `HTTP Status ${response.status}`);
       }
     } catch (e) {
-      console.error(e);
-      alert('Netzwerk-Fehler: Die Prüfung konnte nicht abgeschlossen werden. Bitte Verbindung prüfen.');
+      const error = e as Error;
+      console.error(error);
+      alert(`Fehler beim Abschließen der Prüfung: ${error.message}`);
     } finally {
       self.isSubmitting = false;
     }
