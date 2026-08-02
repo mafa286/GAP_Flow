@@ -20,14 +20,22 @@ const ASSETS_TO_CACHE: string[] = [
 ];
 
 /**
- * Install-Event: Cacht die definierten Anwendungsdateien für den Offline-Betrieb.
+ * Install-Event: Cacht die definierten Anwendungsdateien für den Offline-Betrieb (ausfallsicher).
  * @param {any} event - Das native Service Worker Install-Event.
  * @returns {void}
  */
 sw.addEventListener('install', (event: any) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .then((cache) => {
+        return Promise.allSettled(
+          ASSETS_TO_CACHE.map((url) =>
+            cache.add(url).catch((err) => {
+              console.warn(`[SW Cache] Asset konnte nicht geladen werden: ${url}`, err);
+            })
+          )
+        );
+      })
       .then(() => sw.skipWaiting())
   );
 });
