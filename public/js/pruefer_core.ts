@@ -213,6 +213,7 @@ function examiner(): ExaminerComponent {
      * Erzwingt ein Leeren des lokalen PWA-Caches und lädt die Anwendung frisch vom Server.
      */
     async forceAppUpdate(): Promise<void> {
+      if (this.isSubmitting) return;
       if (!confirm('Soll der lokale PWA-Cache geleert und die App neu vom Server geladen werden?')) return;
       try {
         if ('serviceWorker' in navigator) {
@@ -237,6 +238,7 @@ function examiner(): ExaminerComponent {
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
     async sendServerTestNotification(): Promise<void> {
+      if (this.isSubmitting) return;
       if (window.prueferPush) {
         await window.prueferPush.sendServerTestNotification(this);
       }
@@ -280,6 +282,7 @@ function examiner(): ExaminerComponent {
      * @returns {Promise<void>}
      */
     async requestNotificationPermission(): Promise<void> {
+      if (this.isSubmitting) return;
       if (window.prueferPush) {
         this.notificationPermissionStatus = await window.prueferPush.requestNotificationPermission(this);
       }
@@ -797,6 +800,7 @@ function examiner(): ExaminerComponent {
     },
 
     async registerExaminer(): Promise<void> {
+      if (this.isSubmitting) return;
       const firstInput = document.querySelector('input[name="firstname"]') as HTMLInputElement | null;
       const lastInput = document.querySelector('input[name="lastname"]') as HTMLInputElement | null;
       if (firstInput && firstInput.value && !this.regFirstName) {
@@ -874,6 +878,7 @@ function examiner(): ExaminerComponent {
     },
 
     async triggerReadySetup(): Promise<void> {
+      if (this.isSubmitting) return;
       this.unlockSound();
       if (this.isPaused) {
         await this.executeTogglePause(false);
