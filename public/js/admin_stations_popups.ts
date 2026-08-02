@@ -103,6 +103,23 @@ window.adminStationsPopups = {
     return self.groups[groupId].name || '';
   },
 
+  /**
+   * Ermittelt alle aktiven Gruppen, die für eine manuelle Zuweisung an eine Unterstation infrage kommen.
+   * @param {string} masterId - ID der übergeordneten Hauptstation.
+   * @param {PopupSubStation} sub - Die betreffende Unterstation.
+   * @returns {StationGroup[]} Liste der auswählbaren Gruppen.
+   */
+  getAvailableGroupsForSubStation(masterId: string, sub: PopupSubStation): StationGroup[] {
+    const self = this as unknown as AdminStationsPopupsComponent;
+    if (!masterId || !self.groups) return [];
+    return Object.values(self.groups || {}).filter((g) => {
+      const isActive = g.active !== false;
+      const notCompleted = !(g.completedStations || []).includes(masterId);
+      const isNotCurrentlyAssignedToThisSub = sub ? sub.currentGroupId !== g.id : true;
+      return isActive && notCompleted && isNotCurrentlyAssignedToThisSub;
+    });
+  },
+
   getAvailableGroupsForManualAssign(): StationGroup[] {
     const self = this as unknown as AdminStationsPopupsComponent;
     if (!self.popupMasterId || !self.popupSubId || !self.stations || !self.stations[self.popupMasterId]) return [];
