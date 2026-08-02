@@ -398,7 +398,7 @@ function examiner(): ExaminerComponent {
           }
         };
 
-        window.addEventListener('load', () => {
+        const registerSw = () => {
           navigator.serviceWorker
             .register('/sw.js')
             .then((reg) => {
@@ -409,7 +409,13 @@ function examiner(): ExaminerComponent {
             .catch((err) => {
               console.error('[PWA] Service Worker Registrierung fehlgeschlagen:', err);
             });
-        });
+        };
+
+        if (document.readyState === 'complete') {
+          registerSw();
+        } else {
+          window.addEventListener('load', registerSw);
+        }
 
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible' && 'serviceWorker' in navigator) {
