@@ -307,6 +307,8 @@ interface AdminPanelBase {
     },
 
     async exportCSV(): Promise<void> {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
       try {
         const response = await fetch('/api/admin/export', {
           method: 'GET',
@@ -322,6 +324,8 @@ interface AdminPanelBase {
       } catch (e) {
         console.error(e);
         alert('Netzwerk-Fehler beim Exportieren.');
+      } finally {
+        this.isSubmitting = false;
       }
     },
 
