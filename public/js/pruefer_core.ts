@@ -238,7 +238,6 @@ function examiner(): ExaminerComponent {
      * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
      */
     async sendServerTestNotification(): Promise<void> {
-      if (this.isSubmitting) return;
       if (window.prueferPush) {
         await window.prueferPush.sendServerTestNotification(this);
       }
@@ -282,7 +281,6 @@ function examiner(): ExaminerComponent {
      * @returns {Promise<void>}
      */
     async requestNotificationPermission(): Promise<void> {
-      if (this.isSubmitting) return;
       if (window.prueferPush) {
         this.notificationPermissionStatus = await window.prueferPush.requestNotificationPermission(this);
       }
