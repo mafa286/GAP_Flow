@@ -41,7 +41,25 @@ window.prueferPush = {
     }
 
     try {
-      const res = await Notification.requestPermission();
+      // Kompatible Anforderung für alle Android Chrome- & WebView-Versionen (Callback & Promise)
+      let res: NotificationPermission;
+      if (typeof Notification.requestPermission === 'function') {
+        res = await new Promise<NotificationPermission>((resolve) => {
+          try {
+            const permissionPromise = Notification.requestPermission((permission) => {
+              if (permission) resolve(permission);
+            });
+            if (permissionPromise && typeof permissionPromise.then === 'function') {
+              permissionPromise.then(resolve);
+            }
+          } catch (_) {
+            Notification.requestPermission().then(resolve);
+          }
+        });
+      } else {
+        res = Notification.permission;
+      }
+
       ctx.notificationPermissionStatus = res;
 
       if (res === 'granted') {
@@ -49,10 +67,10 @@ window.prueferPush = {
         if (subSuccess) {
           alert('✅ Benachrichtigungserlaubnis erteilt und Smartphone erfolgreich beim Push-Dienst registriert!');
         } else {
-          alert('⚠️ Benachrichtigungserlaubnis erteilt, aber die Push-Registrierung auf dem Server schlug fehl. Bitte lade die Seite neu.');
+          alert('⚠️ Benachrichtigungserlaubnis im Browser erteilt.\n\nHinweis für lokale Netzwerke (THW-Feldnetz): Falls das lokale Netzwerk keine Internetverbindung zu Google FCM hat, erfolgen Benachrichtigungen automatisch in Echtzeit über den aktiven WebSocket-Kanal.');
         }
       } else if (res === 'denied') {
-        alert('⛔ Benachrichtigungen wurden im Browser oder Betriebssystem blockiert. Bitte schalte Benachrichtigungen in den Browser- / Android-Einstellungen frei.');
+        alert('⛔ Benachrichtigungen wurden im Browser oder Betriebssystem blockiert. Bitte schalte Benachrichtigungen in den Android-App- / Browser-Einstellungen frei.');
       } else {
         alert(`Hinweis: Status der Benachrichtigungserlaubnis ist "${res}".`);
       }
