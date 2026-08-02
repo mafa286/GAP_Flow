@@ -76,7 +76,7 @@ window.adminPanel = function (): Record<string, unknown> {
     async sendBroadcastMessage(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
       const text = self.broadcastText.trim();
-      if (!text) return;
+      if (self.isSubmitting || !text) return;
 
       self.isSubmitting = true;
       try {
@@ -111,6 +111,7 @@ window.adminPanel = function (): Record<string, unknown> {
      */
     async sendErgebnisbekanntgabe(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
+      if (self.isSubmitting) return;
       if (!confirm('Soll die Ergebnisbekanntgabe an alle Geräte ausgerufen werden?')) return;
 
       self.isSubmitting = true;
@@ -219,6 +220,7 @@ window.adminPanel = function (): Record<string, unknown> {
      */
     async triggerSystemRestart(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
+      if (self.isSubmitting) return;
       if (!confirm('Möchten Sie den Serverprozess wirklich neu starten?')) return;
 
       self.showUpdateStatusModal = true;
