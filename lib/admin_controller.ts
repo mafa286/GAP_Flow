@@ -246,15 +246,21 @@ export async function revertLog(req: Request, res: Response): Promise<void> {
  */
 export function getSystemLogs(req: Request, res: Response): void {
   try {
-    const dbDir = path.join(__dirname, '..', 'data');
-    const errorLogPath = path.join(dbDir, 'build_error.log');
+    const candidatePaths = [
+      path.join(process.cwd(), 'data', 'build_error.log'),
+      path.join(__dirname, '..', 'data', 'build_error.log'),
+      path.join(__dirname, 'data', 'build_error.log'),
+    ];
 
     let buildErrorLog = '';
     let hasBuildError = false;
 
-    if (fs.existsSync(errorLogPath)) {
-      buildErrorLog = fs.readFileSync(errorLogPath, 'utf-8');
-      hasBuildError = true;
+    for (const logPath of candidatePaths) {
+      if (fs.existsSync(logPath)) {
+        buildErrorLog = fs.readFileSync(logPath, 'utf-8');
+        hasBuildError = true;
+        break;
+      }
     }
 
     res.json({
