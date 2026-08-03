@@ -168,7 +168,6 @@ window.adminPanel = function (): Record<string, unknown> {
             body,
             targetSubId: self.popupCallbackTargetSubId,
             vibrate: [500, 150, 500, 150, 500],
-            actions: phoneNumber ? [{ action: 'call', title: '📞 Jetzt anrufen' }] : undefined,
             data: {
               phoneNumber: phoneNumber || undefined,
             },
