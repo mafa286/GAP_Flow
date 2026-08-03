@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import { execSync } from 'child_process';
 
 import { SystemState, Station, SubStation, Group, LogEntry } from './lib/types';
 import * as dbModule from './lib/db';
@@ -452,14 +453,20 @@ examinerController.init({
   sendWebPushNotification,
 });
 
-// Dynamisches Auslesen der zentralen Version aus package.json
-let appVersion = '1.0';
+// Dynamisches Auslesen der zentralen Version aus package.json & Git Commit-Count
+let appVersion = '0.0';
 try {
   const pkgPath = path.join(__dirname, 'package.json');
   if (fs.existsSync(pkgPath)) {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    appVersion = pkg.version || '1.0';
+    appVersion = pkg.version || '0.0';
   }
+  try {
+    const commitCount = execSync('git rev-list --count HEAD', { cwd: __dirname, encoding: 'utf8' }).trim();
+    if (commitCount && /^\d+$/.test(commitCount)) {
+      appVersion = `${appVersion}.${commitCount}`;
+    }
+  } catch (_) {}
 } catch (_) {}
 
 app.use((req: Request, res: Response, next: NextFunction) => {
