@@ -17,12 +17,21 @@ export interface AndroidPushOptions extends webpush.RequestOptions {
  * Bereitet die Android-spezifischen Web-Push-Optionen vor (High Urgency für Doze Mode).
  * @returns {AndroidPushOptions} Web-Push-Optionen.
  */
-export function getAndroidPushOptions(): AndroidPushOptions {
+/**
+ * Bereitet die Android-spezifischen Web-Push-Optionen vor (High Urgency für Doze Mode und Topic-Header für dedizierte Tag-Kanäle).
+ * @param {NotificationPayload} [basePayload] - Das generische Payload.
+ * @returns {AndroidPushOptions} Web-Push-Optionen.
+ */
+export function getAndroidPushOptions(basePayload?: NotificationPayload): AndroidPushOptions {
+  const rawTag = String(basePayload?.tag || basePayload?.type || 'gap-flow');
+  const cleanTopic = rawTag.replace(/[^a-zA-Z0-9\-_]/g, '').substring(0, 32) || 'gap-flow';
+
   return {
     TTL: 5400,
     urgency: 'high',
     headers: {
       Urgency: 'high',
+      Topic: cleanTopic,
     },
   };
 }
@@ -55,6 +64,7 @@ export function formatAndroidPayload(basePayload: NotificationPayload): Record<s
     badge: '/icon-192.png',
     tag: String(basePayload.tag || basePayload.type || 'gap-flow-android'),
     renotify: true,
+    timestamp: basePayload.timestamp ? Number(basePayload.timestamp) : Date.now(),
     vibrate: Array.isArray(basePayload.vibrate)
       ? basePayload.vibrate.map((v) => Math.abs(parseInt(String(v), 10) || 100))
       : [300, 100, 300],
