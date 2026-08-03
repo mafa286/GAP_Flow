@@ -35,6 +35,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         else
           echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
           git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
+          UPDATE_BUILD_FAILED=1
           echo "[GAP-Flow] Alter stabiler Stand wiederhergestellt. Fehlerprotokoll in data/build_error.log gespeichert."
         fi
       else
@@ -57,11 +58,16 @@ npm rebuild sqlite3
 
 echo "[GAP-Flow] Prüfe & Kompiliere Frontend..."
 mkdir -p data
-if npm run build:frontend > data/build_error.log 2>&1; then
-  echo "[GAP-Flow] ✅ Frontend-Kompilierung ERFOLGREICH!"
-  rm -f data/build_error.log
+if [ "$UPDATE_BUILD_FAILED" = "1" ]; then
+  npm run build:frontend >/dev/null 2>&1 || true
+  echo "[GAP-Flow] ✅ Fallback auf vorherigen stabilen Stand abgeschlossen."
 else
-  echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des Frontend-Codes! Protokoll in data/build_error.log gespeichert."
+  if npm run build:frontend > data/build_error.log 2>&1; then
+    echo "[GAP-Flow] ✅ Frontend-Kompilierung ERFOLGREICH!"
+    rm -f data/build_error.log
+  else
+    echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des Frontend-Codes! Protokoll in data/build_error.log gespeichert."
+  fi
 fi
 
 echo "[GAP-Flow] Starte GAP-Flow..."
