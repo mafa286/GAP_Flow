@@ -90,8 +90,13 @@ export async function sendNotification(
     return;
   }
 
-  let query = "SELECT * FROM push_subscriptions WHERE (role = ? OR ? = 'all')";
-  const params: unknown[] = [roleTarget, roleTarget];
+  let query = 'SELECT * FROM push_subscriptions WHERE 1=1';
+  const params: unknown[] = [];
+
+  if (roleTarget !== 'all') {
+    query += " AND (role = ? OR role = 'all')";
+    params.push(roleTarget);
+  }
 
   if (targetSubId) {
     query += " AND (targetId = ? OR targetId = '' OR targetId IS NULL)";
@@ -108,12 +113,12 @@ export async function sendNotification(
       return;
     }
 
-    // Deduplizierung: Pro Unterstation (targetId) nur die neueste Subscription verwenden,
+    // Deduplizierung: Pro physischem Endpoint nur die neueste Subscription verwenden,
     // um simultane Doppel-Pushs an dasselbe Gerät zu verhindern
-    const subMap = new Map<string, any>();
+    const subMap = new Map<string, Record<string, unknown>>();
     rows.forEach((r) => {
-      const key = r.targetId || r.endpoint;
-      if (!subMap.has(key) || (r.timestamp && r.timestamp > subMap.get(key).timestamp)) {
+      const key = r.endpoint;
+      if (!subMap.has(key) || (r.timestamp && r.timestamp > (subMap.get(key)?.timestamp as number || 0))) {
         subMap.set(key, r);
       }
     });
