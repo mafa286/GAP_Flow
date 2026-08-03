@@ -509,18 +509,19 @@
           </div>
           <p class="text-[10px] text-muted">Push-Meldungen bei neuen Gruppenzuweisungen im Standby.</p>
           <div class="flex flex-col gap-1.5 mt-2">
-              <button type="button" 
-                      @click="requestNotificationPermission()" 
-                      class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold">
-                🔔 Benachrichtigungen anfragen
-              </button>
-              <button type="button" 
-                      @click="sendServerTestNotification()" 
-                      :disabled="isSendingTestPush || testPushCooldown > 0"
-                      class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold disabled:opacity-40 disabled:cursor-not-allowed">
-                <span x-text="testPushCooldown > 0 ? '⏳ Bitte warten (' + testPushCooldown + 's)...' : '🧪 Server Web Push Test auslösen'"></span>
-              </button>
-            </div>
+            <button type="button" 
+                    x-show="notificationPermissionStatus !== 'granted'"
+                    @click="requestNotificationPermission()" 
+                    class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold">
+              🔔 Benachrichtigungen anfragen
+            </button>
+            <button type="button" 
+                    @click="sendServerTestNotification()" 
+                    :disabled="isSendingTestPush || testPushCooldown > 0"
+                    class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+              <span x-text="testPushCooldown > 0 ? '⏳ Bitte warten (' + testPushCooldown + 's)...' : '🧪 Server Web Push Test auslösen'"></span>
+            </button>
+          </div>
         </div>
       </div>
 
