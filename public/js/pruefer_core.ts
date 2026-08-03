@@ -250,15 +250,6 @@ function examiner(): ExaminerComponent {
     },
 
     /**
-     * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
-     */
-    async sendServerTestNotification(): Promise<void> {
-      if (window.prueferPush) {
-        await window.prueferPush.sendServerTestNotification(this);
-      }
-    },
-
-    /**
      * Sendet eine sofortige Rückrufanforderung an die Leitstelle oder Prüfungsleitung.
      * @param {'leitstelle' | 'pruefungsleitung'} target - Das Ziel der Rückrufanforderung.
      * @returns {void}
