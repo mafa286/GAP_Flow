@@ -31,6 +31,7 @@ export function formatWindowsPayload(basePayload: NotificationPayload): Record<s
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: String(basePayload.tag || basePayload.type || 'gap-flow-windows'),
+    timestamp: basePayload.timestamp ? Number(basePayload.timestamp) : Date.now(),
     data: {
       url: String(basePayload.url || '/pruefer.html'),
       os: 'windows',
