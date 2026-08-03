@@ -205,8 +205,17 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
+    swVersion: '',
+    /**
+     * Liefert die formatierte Versionsnummer (inkl. Git-Commit-Count und Service-Worker-Cache-Vergleich).
+     * @returns {string} Formatierte Versionsbezeichnung.
+     */
     get appVersion(): string {
-      return (window as any).GAP_FLOW_VERSION ? `v${(window as any).GAP_FLOW_VERSION}` : 'v0.0';
+      const serverVer = (window as any).GAP_FLOW_VERSION ? `v${(window as any).GAP_FLOW_VERSION}` : 'v0.0';
+      if (this.swVersion && (window as any).GAP_FLOW_VERSION && this.swVersion !== (window as any).GAP_FLOW_VERSION) {
+        return `${serverVer} (Cache: v${this.swVersion})`;
+      }
+      return serverVer;
     },
 
     /**
@@ -389,6 +398,9 @@ function examiner(): ExaminerComponent {
 
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+          if (event.data && event.data.type === 'SW_VERSION_RESPONSE') {
+            this.swVersion = event.data.version || '';
+          }
           if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const payload = event.data.payload || {};
             if (this.soundUnlocked) {
