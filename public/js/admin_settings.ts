@@ -9,6 +9,15 @@ interface CallbackItem {
   timestamp: number;
 }
 
+interface SubStationOption {
+  id: string;
+  masterId: string;
+  masterName: string;
+  examiner: string;
+  active: boolean;
+  hasPushSub: boolean;
+}
+
 interface AdminSettingsComponent {
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
@@ -22,13 +31,20 @@ interface AdminSettingsComponent {
   updateStep: string;
   updateErrorMessage: string;
   isGeneratingRepomix: boolean;
+  stations: Record<string, any>;
+  showCallbackPopup: boolean;
+  popupCallbackType: 'leitstelle' | 'pruefungsleitung';
+  popupCallbackTargetSubId: string;
 
   initSocket(): void;
   saveSettings(): Promise<void>;
   sendBroadcastMessage(): Promise<void>;
+  openCallbackPopup(type: 'leitstelle' | 'pruefungsleitung'): void;
+  sendTargetedCallback(): Promise<void>;
   sendLeitstelleCallback(): Promise<void>;
   sendPruefungsleitungCallback(): Promise<void>;
   sendErgebnisbekanntgabe(): Promise<void>;
+  getSubStationsList(): SubStationOption[];
   dismissCallback(index: number): void;
   triggerSystemRestart(): Promise<void>;
   downloadRepomix(): Promise<void>;
@@ -52,6 +68,10 @@ window.adminPanel = function (): Record<string, unknown> {
     updateStep: '',
     updateErrorMessage: '',
     isGeneratingRepomix: false,
+    stations: {} as Record<string, any>,
+    showCallbackPopup: false,
+    popupCallbackType: 'leitstelle' as 'leitstelle' | 'pruefungsleitung',
+    popupCallbackTargetSubId: '',
 
     initSocket(): void {
       const self = this as unknown as AdminSettingsComponent;
@@ -61,6 +81,7 @@ window.adminPanel = function (): Record<string, unknown> {
         self.phoneLeitstelleNumber = settings.phoneLeitstelleNumber || '';
         self.phonePruefungsleitungName = settings.phonePruefungsleitungName || '';
         self.phonePruefungsleitungNumber = settings.phonePruefungsleitungNumber || '';
+        self.stations = (state.stations || {}) as Record<string, any>;
       });
 
       if (window.adminSocket) {
@@ -109,12 +130,30 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Sendet eine dringende Rückrufanforderung der Leitstelle per Web-Push.
+     * Öffnet das Auswahl-Popup zur gezielten Rückrufanforderung an eine Unterstation.
+     * @param {'leitstelle' | 'pruefungsleitung'} type - Die Art der Anforderung.
+     * @returns {void}
+     */
+    openCallbackPopup(type: 'leitstelle' | 'pruefungsleitung'): void {
+      const self = this as unknown as AdminSettingsComponent;
+      self.popupCallbackType = type;
+      self.popupCallbackTargetSubId = '';
+      self.showCallbackPopup = true;
+    },
+
+    /**
+     * Sendet die gezielte Rückrufanforderung an die ausgewählte Unterstation per Web-Push.
      * @returns {Promise<void>}
      */
-    async sendLeitstelleCallback(): Promise<void> {
+    async sendTargetedCallback(): Promise<void> {
       const self = this as unknown as AdminSettingsComponent;
-      if (self.isSubmitting) return;
+      if (self.isSubmitting || !self.popupCallbackTargetSubId) return;
+
+      const isLeitstelle = self.popupCallbackType === 'leitstelle';
+      const title = isLeitstelle ? '🚨 Rückruf Leitstelle' : '🚨 Rückruf Prüfungsleitung';
+      const label = isLeitstelle ? 'Leitstelle' : 'Prüfungsleitung';
+      const body = `🚨 ${label.toUpperCase()} BITTET UM RÜCKRUF! Bitte ${label} kontaktieren.`;
+      const typeTag = isLeitstelle ? 'callback_leitstelle' : 'callback_pruefungsleitung';
 
       self.isSubmitting = true;
       try {
@@ -122,15 +161,18 @@ window.adminPanel = function (): Record<string, unknown> {
           method: 'POST',
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'callback_leitstelle',
-            tag: 'callback_leitstelle',
-            title: '🚨 Rückruf Leitstelle',
-            body: '🚨 LEITSTELLE BITTET UM RÜCKRUF! Bitte Leitstelle kontaktieren.',
+            type: typeTag,
+            tag: typeTag,
+            title,
+            body,
+            targetSubId: self.popupCallbackTargetSubId,
             vibrate: [500, 150, 500, 150, 500],
           }),
         });
         if (response.ok) {
-          alert('Rückrufanforderung der Leitstelle wurde gesendet.');
+          alert(`Rückrufanforderung der ${label} wurde erfolgreich an Station ${self.popupCallbackTargetSubId} gesendet.`);
+          self.showCallbackPopup = false;
+          self.popupCallbackTargetSubId = '';
         } else {
           const errData = (await response.json().catch(() => ({}))) as { error?: string };
           alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
@@ -144,38 +186,45 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
-     * Sendet eine dringende Rückrufanforderung der Prüfungsleitung per Web-Push.
+     * Wandelt das verschachtelte Stationsobjekt in eine flache Liste von Unterstationen um.
+     * @returns {SubStationOption[]} Liste der auswählbaren Unterstationen mit Push-Status.
+     */
+    getSubStationsList(): SubStationOption[] {
+      const self = this as unknown as AdminSettingsComponent;
+      const list: SubStationOption[] = [];
+
+      Object.values(self.stations || {}).forEach((master: any) => {
+        if (!master || !master.subStations) return;
+        Object.values(master.subStations).forEach((sub: any) => {
+          if (!sub) return;
+          list.push({
+            id: sub.id,
+            masterId: master.id,
+            masterName: master.name,
+            examiner: sub.examiner || '',
+            active: sub.active !== false && master.active !== false,
+            hasPushSub: !!sub.hasPushSub,
+          });
+        });
+      });
+
+      return list.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    },
+
+    /**
+     * Abwärtskompatibler Wrapper für Leitstellen-Rückrufe.
+     * @returns {Promise<void>}
+     */
+    async sendLeitstelleCallback(): Promise<void> {
+      this.openCallbackPopup('leitstelle');
+    },
+
+    /**
+     * Abwärtskompatibler Wrapper für Prüfungsleitungs-Rückrufe.
      * @returns {Promise<void>}
      */
     async sendPruefungsleitungCallback(): Promise<void> {
-      const self = this as unknown as AdminSettingsComponent;
-      if (self.isSubmitting) return;
-
-      self.isSubmitting = true;
-      try {
-        const response = await fetch('/api/admin/notify', {
-          method: 'POST',
-          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'callback_pruefungsleitung',
-            tag: 'callback_pruefungsleitung',
-            title: '🚨 Rückruf Prüfungsleitung',
-            body: '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF! Bitte Prüfungsleitung kontaktieren.',
-            vibrate: [500, 150, 500, 150, 500],
-          }),
-        });
-        if (response.ok) {
-          alert('Rückrufanforderung der Prüfungsleitung wurde gesendet.');
-        } else {
-          const errData = (await response.json().catch(() => ({}))) as { error?: string };
-          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Netzwerk-Fehler beim Senden der Rückrufanforderung.');
-      } finally {
-        self.isSubmitting = false;
-      }
+      this.openCallbackPopup('pruefungsleitung');
     },
 
     /**
