@@ -102,6 +102,7 @@ interface ExaminerComponent {
   phonePruefungsleitungName: string;
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
+  swVersion: string;
   appVersion: string;
 
   _postApi(endpoint: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<Response>;
