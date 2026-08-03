@@ -215,6 +215,14 @@ export function subConfig(req: Request, res: Response): void {
         if (sub.currentGroupId) {
           allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
         }
+        const db = dbModule.getDb();
+        if (db && !dbModule.getUseJsonFallback()) {
+          db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subId], (err) => {
+            if (err) {
+              console.error('[Push DB Fehler beim Löschen entfernter Subscription]', err.message);
+            }
+          });
+        }
       }
       writeSystemLog('System', subId, -13, cleanExaminer || 'Prüfer entfernt');
     }
