@@ -106,6 +106,9 @@ export function pushSubscription(req: AuthenticatedExaminerRequest, res: Respons
     } else {
       doInsert();
     }
+    if (req.subStation) {
+      req.subStation.hasPushSub = true;
+    }
   } else {
     res.json({ success: true });
   }
@@ -171,6 +174,7 @@ export function deregisterExaminer(req: AuthenticatedExaminerRequest, res: Respo
   sub.examiner = '';
   sub.deviceToken = null;
   sub.paused = true;
+  sub.hasPushSub = false;
 
   writeSystemLog('System', sub.id, -13, 'Abgemeldet');
 
