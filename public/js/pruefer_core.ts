@@ -103,6 +103,8 @@ interface ExaminerComponent {
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
   swVersion: string;
+  isSendingTestPush: boolean;
+  testPushCooldown: number;
   appVersion: string;
 
   _postApi(endpoint: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<Response>;
@@ -207,6 +209,9 @@ function examiner(): ExaminerComponent {
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
     swVersion: '',
+    isSendingTestPush: false,
+    testPushCooldown: 0,
+
     /**
      * Liefert die formatierte Versionsnummer (inkl. Git-Commit-Count und Service-Worker-Cache-Vergleich).
      * @returns {string} Formatierte Versionsbezeichnung.
@@ -293,8 +298,30 @@ function examiner(): ExaminerComponent {
     async requestNotificationPermission(): Promise<void> {
       if (window.prueferPush) {
         this.notificationPermissionStatus = await window.prueferPush.requestNotificationPermission(this);
-      } else {
-        alert('⚠️ Das Benachrichtigungsmodul (prueferPush) konnte auf Ihrem Gerät nicht geladen werden. Bitte laden Sie die Seite neu.');
+      }
+    },
+
+    /**
+     * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus (inkl. Cooldown & Anti-Spam-Sperre).
+     * @returns {Promise<void>}
+     */
+    async sendServerTestNotification(): Promise<void> {
+      if (this.isSendingTestPush || this.testPushCooldown > 0) return;
+
+      this.isSendingTestPush = true;
+      this.testPushCooldown = 6;
+
+      const cooldownInterval = setInterval(() => {
+        this.testPushCooldown -= 1;
+        if (this.testPushCooldown <= 0) {
+          clearInterval(cooldownInterval);
+          this.testPushCooldown = 0;
+          this.isSendingTestPush = false;
+        }
+      }, 1000);
+
+      if (window.prueferPush) {
+        await window.prueferPush.sendServerTestNotification(this);
       }
     },
 
