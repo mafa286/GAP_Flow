@@ -96,7 +96,6 @@ interface ExaminerComponent {
   showFunctionsMenu: boolean;
   showPermissionsModal: boolean;
   showGuideModal: boolean;
-  showNotificationSettingsModal: boolean;
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
   phonePruefungsleitungName: string;
@@ -202,7 +201,6 @@ function examiner(): ExaminerComponent {
     showFunctionsMenu: false,
     showPermissionsModal: false,
     showGuideModal: false,
-    showNotificationSettingsModal: false,
     phoneLeitstelleName: '',
     phoneLeitstelleNumber: '',
     phonePruefungsleitungName: '',
@@ -383,8 +381,9 @@ function examiner(): ExaminerComponent {
       document.addEventListener('touchend', silentUnlock);
 
       if (window.location.hash === '#settings-notifications') {
-        this.showNotificationSettingsModal = true;
-      }
+            this.checkPermissions();
+            this.showPermissionsModal = true;
+          }
 
       if (this.token) {
         this.fetchStatus();
