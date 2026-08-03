@@ -299,18 +299,6 @@ function examiner(): ExaminerComponent {
     },
 
     /**
-     * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
-     * @returns {Promise<void>}
-     */
-    async sendServerTestNotification(): Promise<void> {
-      if (window.prueferPush) {
-        await window.prueferPush.sendServerTestNotification(this);
-      } else {
-        alert('⚠️ Das Benachrichtigungsmodul (prueferPush) konnte auf Ihrem Gerät nicht geladen werden. Bitte laden Sie die Seite neu.');
-      }
-    },
-
-    /**
      * Registriert das Smartphone beim W3C Web Push Service für Push-Benachrichtigungen im Standby.
      */
     async subscribeToWebPush(forceFresh = false): Promise<void> {
