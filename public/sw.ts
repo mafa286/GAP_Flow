@@ -325,9 +325,23 @@ sw.addEventListener('notificationclick', (event: any) => {
   }
 
   if (action === 'call' && data.phoneNumber) {
-    if (sw.clients.openWindow) {
-      event.waitUntil(sw.clients.openWindow(`tel:${data.phoneNumber}`));
-    }
+    const phone = String(data.phoneNumber).trim();
+    event.waitUntil(
+      sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
+        for (const client of clientList) {
+          if (client.url.includes('pruefer.html') && 'focus' in client) {
+            if ('postMessage' in client) {
+              client.postMessage({ type: 'MAKE_CALL', phoneNumber: phone });
+            }
+            return client.focus();
+          }
+        }
+        if (sw.clients.openWindow) {
+          return sw.clients.openWindow(`/pruefer.html?call=${encodeURIComponent(phone)}`);
+        }
+        return null;
+      })
+    );
     return;
   }
 
