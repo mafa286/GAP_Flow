@@ -1,7 +1,7 @@
 /**
  * Modul für Web Push Subscriptions und Berechtigungen im Prüfer-Panel.
  */
-export interface PushSubscriptionContext {
+interface PushSubscriptionContext {
   token: string;
   subId: string;
   notificationPermissionStatus: string;
@@ -108,7 +108,7 @@ window.prueferPush = {
       await Promise.race([
         navigator.serviceWorker.ready,
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Service Worker Aktivierungs-Timeout (5s)')), 5000)
+          setTimeout(() => reject(new Error('Service Worker Aktivierungs-Timeout (10s)')), 10000)
         ),
       ]);
 
