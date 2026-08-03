@@ -407,6 +407,9 @@ function examiner(): ExaminerComponent {
           if (event.data && event.data.type === 'SW_VERSION_RESPONSE') {
             this.swVersion = event.data.version || '';
           }
+          if (event.data && event.data.type === 'MAKE_CALL' && event.data.phoneNumber) {
+            window.location.href = `tel:${String(event.data.phoneNumber).trim()}`;
+          }
           if (event.data && event.data.type === 'PUSH_RECEIVED') {
             const payload = event.data.payload || {};
             if (this.soundUnlocked) {
