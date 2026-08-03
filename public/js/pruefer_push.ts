@@ -32,42 +32,43 @@ window.prueferPush = {
   async requestNotificationPermission(ctx: PushSubscriptionContext): Promise<string> {
     if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       console.warn('[PWA Web Push] Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost.');
+      ctx.notificationPermissionStatus = 'insecure-context';
+      alert('Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost. Auf ungesicherten Verbindungen (HTTP über IP) werden Benachrichtigungen vom Browser blockiert.');
       return 'insecure-context';
     }
 
     if (!('Notification' in window)) {
       console.warn('[PWA Web Push] Benachrichtigungen werden von diesem Browser oder Gerät nicht unterstützt.');
+      ctx.notificationPermissionStatus = 'unsupported';
+      alert('Benachrichtigungen werden von diesem Browser oder Betriebssystem nicht unterstützt.');
       return 'unsupported';
     }
 
     try {
-      let res: NotificationPermission;
+      let res: NotificationPermission = Notification.permission;
       if (typeof Notification.requestPermission === 'function') {
-        res = await new Promise<NotificationPermission>((resolve) => {
-          try {
-            const permissionPromise = Notification.requestPermission((permission) => {
-              if (permission) resolve(permission);
-            });
-            if (permissionPromise && typeof permissionPromise.then === 'function') {
-              permissionPromise.then(resolve);
-            }
-          } catch (_) {
-            Notification.requestPermission().then(resolve);
-          }
-        });
-      } else {
-        res = Notification.permission;
+        try {
+          res = await Notification.requestPermission();
+        } catch (_) {
+          res = await new Promise<NotificationPermission>((resolve) => {
+            Notification.requestPermission((permission) => resolve(permission));
+          });
+        }
       }
 
       ctx.notificationPermissionStatus = res;
 
       if (res === 'granted') {
         await this.subscribeToWebPush(ctx);
+        alert('Benachrichtigungen wurden erfolgreich aktiviert! ✅');
+      } else if (res === 'denied') {
+        alert('Benachrichtigungen sind für diese Seite im Browser/Windows blockiert. ⛔\n\nBitte klicken Sie in der Adresszeile oder in den Windows-App-Einstellungen auf das Schloss-/Info-Symbol, um Benachrichtigungen manuell zuzulassen.');
       }
       return res;
     } catch (e) {
       const error = e as Error;
       console.error('[PWA Web Push] Fehler beim Anfragen der Benachrichtigungserlaubnis:', error.message);
+      alert(`Fehler beim Anfragen der Benachrichtigungen: ${error.message}`);
       return 'error';
     }
   },
@@ -152,7 +153,7 @@ window.prueferPush = {
 
       const detectOs = (): string => {
         if (ctx.isIOS()) return 'ios';
-        if (/Win/i.test(navigator.platform || '')) return 'windows';
+        if (/Win/i.test(navigator.platform || '') || /Windows/i.test(navigator.userAgent || '')) return 'windows';
         return 'android';
       };
 
