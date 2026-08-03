@@ -1,7 +1,7 @@
 /**
  * Modul zur Steuerung von Chart.js für das Admin-Dashboard.
  */
-export interface ChartStationData {
+interface ChartStationData {
   id: string;
   name: string;
   targetAvgDuration?: number;
@@ -15,7 +15,7 @@ export interface ChartStationData {
   subStations?: Record<string, { currentGroupId: string | null; startTime: number | null }>;
 }
 
-export interface CalcRowData {
+interface CalcRowData {
   id: string;
   name: string;
   avg: string;
