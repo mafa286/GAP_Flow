@@ -180,6 +180,7 @@ sw.addEventListener('push', (event: any) => {
     timestamp: (payload && payload.timestamp) ? Number(payload.timestamp) : Date.now(),
     data: {
       url: (payload && (payload.url || payload.data?.url)) ? String(payload.url || payload.data?.url) : '/pruefer.html',
+      ...(payload.data || {}),
     },
   };
 
