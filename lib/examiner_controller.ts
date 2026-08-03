@@ -159,6 +159,15 @@ export function deregisterExaminer(req: AuthenticatedExaminerRequest, res: Respo
     return;
   }
 
+  const db = dbModule.getDb();
+  if (db && !dbModule.getUseJsonFallback()) {
+    db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [sub.id], (err) => {
+      if (err) {
+        console.error('[Push DB Fehler beim Löschen abgemeldeter Subscription]', err.message);
+      }
+    });
+  }
+
   sub.examiner = '';
   sub.deviceToken = null;
   sub.paused = true;
