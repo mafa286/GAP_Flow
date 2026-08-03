@@ -155,7 +155,7 @@ export async function sendNotification(
         finalPayload = windowsHandler.formatWindowsPayload(basePayload);
       } else {
         // Standard Android Handler
-        pushOptions = androidHandler.getAndroidPushOptions();
+        pushOptions = androidHandler.getAndroidPushOptions(basePayload);
         finalPayload = androidHandler.formatAndroidPayload(basePayload);
       }
 
