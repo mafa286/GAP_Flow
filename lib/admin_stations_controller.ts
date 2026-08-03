@@ -211,19 +211,20 @@ export function subConfig(req: Request, res: Response): void {
       sub.examiner = cleanExaminer;
       sub.paused = true;
       if (!cleanExaminer) {
-        sub.deviceToken = null;
-        if (sub.currentGroupId) {
-          allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
-        }
-        const db = dbModule.getDb();
-        if (db && !dbModule.getUseJsonFallback()) {
-          db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subId], (err) => {
-            if (err) {
-              console.error('[Push DB Fehler beim Löschen entfernter Subscription]', err.message);
-            }
-          });
-        }
+      sub.deviceToken = null;
+      sub.hasPushSub = false;
+      if (sub.currentGroupId) {
+        allocatorModule.releaseGroupFromStation(sub.currentGroupId, systemState, getUniqueTimestamp);
       }
+      const db = dbModule.getDb();
+      if (db && !dbModule.getUseJsonFallback()) {
+        db.run('DELETE FROM push_subscriptions WHERE targetId = ?', [subId], (err) => {
+          if (err) {
+            console.error('[Push DB Fehler beim Löschen entfernter Subscription]', err.message);
+          }
+        });
+      }
+    }
       writeSystemLog('System', subId, -13, cleanExaminer || 'Prüfer entfernt');
     }
   }
