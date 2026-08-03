@@ -324,37 +324,21 @@ sw.addEventListener('notificationclick', (event: any) => {
     return;
   }
 
-  if (action === 'call' && data.phoneNumber) {
-    const phone = String(data.phoneNumber).trim();
-    event.waitUntil(
-      sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
-        for (const client of clientList) {
-          if (client.url.includes('pruefer.html') && 'focus' in client) {
-            if ('postMessage' in client) {
-              client.postMessage({ type: 'MAKE_CALL', phoneNumber: phone });
-            }
-            return client.focus();
-          }
-        }
-        if (sw.clients.openWindow) {
-          return sw.clients.openWindow(`/pruefer.html?call=${encodeURIComponent(phone)}`);
-        }
-        return null;
-      })
-    );
-    return;
-  }
+  const phone = data.phoneNumber ? String(data.phoneNumber).trim() : '';
+  const targetUrl = phone ? `/pruefer.html?call=${encodeURIComponent(phone)}` : (data.url || '/pruefer.html');
 
-  const rawUrl = data.url || '/pruefer.html';
   event.waitUntil(
     sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
       for (const client of clientList) {
         if (client.url.includes('pruefer.html') && 'focus' in client) {
+          if (phone && 'postMessage' in client) {
+            client.postMessage({ type: 'MAKE_CALL', phoneNumber: phone });
+          }
           return client.focus();
         }
       }
       if (sw.clients.openWindow) {
-        return sw.clients.openWindow(rawUrl);
+        return sw.clients.openWindow(targetUrl);
       }
       return null;
     })
