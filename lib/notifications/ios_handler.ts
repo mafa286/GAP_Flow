@@ -38,6 +38,7 @@ export function formatIosPayload(basePayload: NotificationPayload): Record<strin
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: String(basePayload.tag || basePayload.type || 'gap-flow-ios'),
+    timestamp: basePayload.timestamp ? Number(basePayload.timestamp) : Date.now(),
     data: {
       url: String(basePayload.url || '/pruefer.html'),
       os: 'ios',
