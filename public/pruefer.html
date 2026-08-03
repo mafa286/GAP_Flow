@@ -496,8 +496,9 @@
             </button>
             <button type="button" 
                     @click="sendServerTestNotification()" 
-                    class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold">
-              🧪 Server Web Push Test auslösen
+                    :disabled="isSendingTestPush || testPushCooldown > 0"
+                    class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+              <span x-text="testPushCooldown > 0 ? '⏳ Bitte warten (' + testPushCooldown + 's)...' : '🧪 Server Web Push Test auslösen'"></span>
             </button>
           </div>
         </div>
@@ -561,8 +562,9 @@
               </button>
               <button type="button" 
                       @click="sendServerTestNotification()" 
-                      class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold">
-                🧪 Server Web Push Test auslösen
+                      :disabled="isSendingTestPush || testPushCooldown > 0"
+                      class="w-full py-1.5 btn-brand text-[10px] uppercase font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+                <span x-text="testPushCooldown > 0 ? '⏳ Bitte warten (' + testPushCooldown + 's)...' : '🧪 Server Web Push Test auslösen'"></span>
               </button>
             </div>
         </div>
