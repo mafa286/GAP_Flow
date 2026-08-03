@@ -283,6 +283,20 @@ function examiner(): ExaminerComponent {
     async requestNotificationPermission(): Promise<void> {
       if (window.prueferPush) {
         this.notificationPermissionStatus = await window.prueferPush.requestNotificationPermission(this);
+      } else {
+        alert('⚠️ Das Benachrichtigungsmodul (prueferPush) konnte auf Ihrem Gerät nicht geladen werden. Bitte laden Sie die Seite neu.');
+      }
+    },
+
+    /**
+     * Führt einen direkten lokalen Benachrichtigungstest im PWA-Kontext aus.
+     * @returns {Promise<void>}
+     */
+    async sendServerTestNotification(): Promise<void> {
+      if (window.prueferPush) {
+        await window.prueferPush.sendServerTestNotification(this);
+      } else {
+        alert('⚠️ Das Benachrichtigungsmodul (prueferPush) konnte auf Ihrem Gerät nicht geladen werden. Bitte laden Sie die Seite neu.');
       }
     },
 
