@@ -692,11 +692,6 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
     }
   }
 
-  let notificationActions = Array.isArray(actions) ? actions : [];
-  if (notificationActions.length === 0 && phoneNumber) {
-    notificationActions = [{ action: 'call', title: '📞 Jetzt anrufen' }];
-  }
-
   const notificationPayload = {
     type: type || 'broadcast',
     tag: tag || type || 'broadcast',
@@ -708,7 +703,7 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
     url: '/pruefer.html',
     vibrate: Array.isArray(vibrate) ? vibrate : [300, 100, 300],
     timestamp: getUniqueTimestamp(),
-    actions: notificationActions.length > 0 ? notificationActions : undefined,
+    actions: Array.isArray(actions) && actions.length > 0 ? actions : undefined,
     data: {
       subId: cleanTargetSubId || '',
       phoneNumber: phoneNumber || undefined,
