@@ -154,6 +154,7 @@ window.adminPanel = function (): Record<string, unknown> {
       const label = isLeitstelle ? 'Leitstelle' : 'Prüfungsleitung';
       const body = `🚨 ${label.toUpperCase()} BITTET UM RÜCKRUF! Bitte ${label} kontaktieren.`;
       const typeTag = isLeitstelle ? 'callback_leitstelle' : 'callback_pruefungsleitung';
+      const phoneNumber = isLeitstelle ? self.phoneLeitstelleNumber : self.phonePruefungsleitungNumber;
 
       self.isSubmitting = true;
       try {
@@ -167,6 +168,10 @@ window.adminPanel = function (): Record<string, unknown> {
             body,
             targetSubId: self.popupCallbackTargetSubId,
             vibrate: [500, 150, 500, 150, 500],
+            actions: phoneNumber ? [{ action: 'call', title: '📞 Jetzt anrufen' }] : undefined,
+            data: {
+              phoneNumber: phoneNumber || undefined,
+            },
           }),
         });
         if (response.ok) {
