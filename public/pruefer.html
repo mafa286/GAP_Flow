@@ -505,7 +505,7 @@
             <span class="font-black text-main flex items-center gap-1.5">🔔 System-Push</span>
             <span class="font-mono font-bold text-[10px]"
                   :style="notificationPermissionStatus === 'granted' ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-warning-text) !important;'"
-                  x-text="notificationPermissionStatus === 'granted' ? 'Erlaubt ✅' : (notificationPermissionStatus === 'denied' ? 'Blockiert ⛔' : 'Inaktiv ⏳')"></span>
+                  x-text="notificationPermissionStatus === 'granted' ? 'Erlaubt ✅' : (notificationPermissionStatus === 'denied' ? 'Blockiert ⛔' : (notificationPermissionStatus === 'insecure-context' ? 'Ungesichert (HTTP) ⚠️' : 'Inaktiv ⏳'))"></span>
           </div>
           <p class="text-[10px] text-muted">Push-Meldungen bei neuen Gruppenzuweisungen im Standby.</p>
           <div class="flex flex-col gap-1.5 mt-2">
