@@ -370,6 +370,16 @@ function examiner(): ExaminerComponent {
         }
       }
 
+      const callFromUrl = params.get('call');
+      if (callFromUrl) {
+        const cleanPhone = decodeURIComponent(callFromUrl).trim();
+        const cleanUrl = window.location.pathname + window.location.search.replace(/([?&])call=[^&]*&?/, '$1').replace(/[?&]$/, '');
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+        setTimeout(() => {
+          window.location.href = `tel:${cleanPhone}`;
+        }, 300);
+      }
+
       const silentUnlock = () => {
         document.removeEventListener('click', silentUnlock);
         document.removeEventListener('touchend', silentUnlock);
