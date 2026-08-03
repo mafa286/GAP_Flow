@@ -177,6 +177,7 @@ sw.addEventListener('push', (event: any) => {
     badge: `${origin}/icon-192.png`,
     tag: safeTag,
     renotify: true,
+    timestamp: (payload && payload.timestamp) ? Number(payload.timestamp) : Date.now(),
     data: {
       url: (payload && (payload.url || payload.data?.url)) ? String(payload.url || payload.data?.url) : '/pruefer.html',
     },
@@ -237,6 +238,7 @@ sw.addEventListener('push', (event: any) => {
           badge: options.badge,
           tag: safeTag,
           renotify: true,
+          timestamp: options.timestamp,
           data: options.data,
         };
         await sw.registration.showNotification(title, cleanOptions);
@@ -248,6 +250,9 @@ sw.addEventListener('push', (event: any) => {
             body: options.body,
             icon: options.icon,
             badge: options.badge,
+            tag: safeTag,
+            renotify: true,
+            timestamp: options.timestamp,
             data: options.data,
           };
           await sw.registration.showNotification(title, minimalOptions);
