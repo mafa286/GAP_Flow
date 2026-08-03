@@ -34,6 +34,9 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
           rm -f data/build_error.log
         else
           echo "[GAP-Flow] ❌ FEHLER beim Kompilieren des neuen Standes! Setze zurück auf $OLD_COMMIT..."
+          echo "------------------- FEHLERPROTOKOLL DES UPDATES -------------------"
+          cat data/build_error.log || true
+          echo "-------------------------------------------------------------------"
           git reset --hard "$OLD_COMMIT" >/dev/null 2>&1 || true
           UPDATE_BUILD_FAILED=1
           echo "[GAP-Flow] Alter stabiler Stand wiederhergestellt. Fehlerprotokoll in data/build_error.log gespeichert."
