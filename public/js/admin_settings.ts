@@ -26,6 +26,8 @@ interface AdminSettingsComponent {
   initSocket(): void;
   saveSettings(): Promise<void>;
   sendBroadcastMessage(): Promise<void>;
+  sendLeitstelleCallback(): Promise<void>;
+  sendPruefungsleitungCallback(): Promise<void>;
   sendErgebnisbekanntgabe(): Promise<void>;
   dismissCallback(index: number): void;
   triggerSystemRestart(): Promise<void>;
@@ -85,6 +87,7 @@ window.adminPanel = function (): Record<string, unknown> {
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'broadcast',
+            tag: 'broadcast',
             title: '📢 Rundruf der Prüfungsleitung',
             body: text,
             vibrate: [300, 100, 300, 100, 300],
@@ -106,6 +109,76 @@ window.adminPanel = function (): Record<string, unknown> {
     },
 
     /**
+     * Sendet eine dringende Rückrufanforderung der Leitstelle per Web-Push.
+     * @returns {Promise<void>}
+     */
+    async sendLeitstelleCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (self.isSubmitting) return;
+
+      self.isSubmitting = true;
+      try {
+        const response = await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'callback_leitstelle',
+            tag: 'callback_leitstelle',
+            title: '🚨 Rückruf Leitstelle',
+            body: '🚨 LEITSTELLE BITTET UM RÜCKRUF! Bitte Leitstelle kontaktieren.',
+            vibrate: [500, 150, 500, 150, 500],
+          }),
+        });
+        if (response.ok) {
+          alert('Rückrufanforderung der Leitstelle wurde gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Netzwerk-Fehler beim Senden der Rückrufanforderung.');
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
+     * Sendet eine dringende Rückrufanforderung der Prüfungsleitung per Web-Push.
+     * @returns {Promise<void>}
+     */
+    async sendPruefungsleitungCallback(): Promise<void> {
+      const self = this as unknown as AdminSettingsComponent;
+      if (self.isSubmitting) return;
+
+      self.isSubmitting = true;
+      try {
+        const response = await fetch('/api/admin/notify', {
+          method: 'POST',
+          headers: { Authorization: self.password, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'callback_pruefungsleitung',
+            tag: 'callback_pruefungsleitung',
+            title: '🚨 Rückruf Prüfungsleitung',
+            body: '🚨 PRÜFUNGSLEITUNG BITTET UM RÜCKRUF! Bitte Prüfungsleitung kontaktieren.',
+            vibrate: [500, 150, 500, 150, 500],
+          }),
+        });
+        if (response.ok) {
+          alert('Rückrufanforderung der Prüfungsleitung wurde gesendet.');
+        } else {
+          const errData = (await response.json().catch(() => ({}))) as { error?: string };
+          alert(`Fehler beim Senden: ${errData.error || response.statusText} (Status ${response.status})`);
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Netzwerk-Fehler beim Senden der Rückrufanforderung.');
+      } finally {
+        self.isSubmitting = false;
+      }
+    },
+
+    /**
      * Sendet den Sammelaufruf zur offiziellen Ergebnisbekanntgabe an alle Mobilgeräte.
      * @returns {Promise<void>}
      */
@@ -121,6 +194,7 @@ window.adminPanel = function (): Record<string, unknown> {
           headers: { Authorization: self.password, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'result_announcement',
+            tag: 'result_announcement',
             title: '🏆 ERGEBNISBEKANNTGABE!',
             body: 'Alle Ergebnisse sind ausgewertet! Bitte alle in den Sammelraum für die Ergebnisbekanntgabe.',
             vibrate: [300, 100, 300, 100, 300, 100, 600],
