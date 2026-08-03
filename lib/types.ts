@@ -24,6 +24,7 @@ export interface SubStation {
   deviceToken?: string | null;
   pausedAt?: number;
   pauseDurationMinutes?: number;
+  hasPushSub?: boolean;
 }
 
 /**
