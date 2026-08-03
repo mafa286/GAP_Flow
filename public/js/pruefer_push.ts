@@ -31,17 +31,16 @@ window.prueferPush = {
    */
   async requestNotificationPermission(ctx: PushSubscriptionContext): Promise<string> {
     if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      alert('⚠️ Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost! Über unverschlüsseltes HTTP blockieren moderne Browser Benachrichtigungen aus Sicherheitsgründen.');
+      console.warn('[PWA Web Push] Web Push erfordert eine sichere Verbindung (HTTPS) oder localhost.');
       return 'insecure-context';
     }
 
     if (!('Notification' in window)) {
-      alert('⚠️ Benachrichtigungen werden von diesem Browser oder Gerät nicht unterstützt.');
+      console.warn('[PWA Web Push] Benachrichtigungen werden von diesem Browser oder Gerät nicht unterstützt.');
       return 'unsupported';
     }
 
     try {
-      // Kompatible Anforderung für alle Android Chrome- & WebView-Versionen (Callback & Promise)
       let res: NotificationPermission;
       if (typeof Notification.requestPermission === 'function') {
         res = await new Promise<NotificationPermission>((resolve) => {
@@ -63,21 +62,12 @@ window.prueferPush = {
       ctx.notificationPermissionStatus = res;
 
       if (res === 'granted') {
-        const subSuccess = await this.subscribeToWebPush(ctx);
-        if (subSuccess) {
-          alert('✅ Benachrichtigungserlaubnis erteilt und Smartphone erfolgreich beim Push-Dienst registriert!');
-        } else {
-          alert('⚠️ Benachrichtigungserlaubnis im Browser erteilt.\n\nHinweis für lokale Netzwerke (THW-Feldnetz): Falls das lokale Netzwerk keine Internetverbindung zu Google FCM hat, erfolgen Benachrichtigungen automatisch in Echtzeit über den aktiven WebSocket-Kanal.');
-        }
-      } else if (res === 'denied') {
-        alert('⛔ Benachrichtigungen wurden im Browser oder Betriebssystem blockiert. Bitte schalte Benachrichtigungen in den Android-App- / Browser-Einstellungen frei.');
-      } else {
-        alert(`Hinweis: Status der Benachrichtigungserlaubnis ist "${res}".`);
+        await this.subscribeToWebPush(ctx);
       }
       return res;
     } catch (e) {
       const error = e as Error;
-      alert(`Fehler beim Anfragen der Benachrichtigungserlaubnis: ${error.message}`);
+      console.error('[PWA Web Push] Fehler beim Anfragen der Benachrichtigungserlaubnis:', error.message);
       return 'error';
     }
   },
@@ -199,43 +189,36 @@ window.prueferPush = {
    */
   async sendServerTestNotification(ctx: PushSubscriptionContext): Promise<void> {
     if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      alert('⚠️ Web Push erfordert HTTPS oder localhost! Über unverschlüsseltes HTTP blockieren Browser Benachrichtigungen.');
+      console.warn('[PWA Web Push] Web Push erfordert HTTPS oder localhost.');
       return;
     }
 
     if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-      alert('⚠️ Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
+      console.warn('[PWA Web Push] Service Worker oder Benachrichtigungen werden auf diesem Gerät nicht unterstützt.');
       return;
     }
 
     if (Notification.permission !== 'granted') {
-      alert(`Hinweis: Benachrichtigungserlaubnis steht auf "${Notification.permission}". Bitte tippe zuerst auf "🔔 Benachrichtigungen anfragen"!`);
+      console.warn(`[PWA Web Push] Benachrichtigungserlaubnis steht auf "${Notification.permission}".`);
       return;
     }
 
     if (!ctx.token) {
-      alert('⚠️ Kein Stationstoken vorhanden. Bitte scanne zuerst den QR-Code deiner Station!');
+      console.warn('[PWA Web Push] Kein Stationstoken vorhanden.');
       return;
     }
 
     try {
       const subSuccess = await this.subscribeToWebPush(ctx, true);
       if (!subSuccess) {
-        alert('⚠️ Push-Subscription konnte auf dem Server nicht erneuert werden. Prüfe das Server-Log oder die Netzwerkverbindung.');
+        console.warn('[PWA Web Push] Push-Subscription konnte auf dem Server nicht erneuert werden.');
         return;
       }
 
-      const response = await ctx._postApi('test-push');
-
-      if (response.ok) {
-        alert('🚀 Echter Server-Push ausgelöst! Die Test-Benachrichtigung wurde über Google FCM an dein Smartphone gesendet.');
-      } else {
-        const errData = (await response.json().catch(() => ({}))) as { error?: string };
-        alert(`Server-Rückmeldung (${response.status}): ${errData.error || response.statusText}`);
-      }
+      await ctx._postApi('test-push');
     } catch (e) {
       const error = e as Error;
-      alert(`Fehler beim Senden des Server Web Push Tests: ${error.message}`);
+      console.error('[PWA Web Push] Fehler beim Senden des Server Web Push Tests:', error.message);
     }
   },
 };
