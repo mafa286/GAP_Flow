@@ -680,8 +680,22 @@ app.post('/api/admin/settings', adminAuth, (req: Request, res: Response) => {
 });
 
 app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
-  const { type, tag, title, body, vibrate, targetSubId } = req.body || {};
+  const { type, tag, title, body, vibrate, targetSubId, actions, data: extraData } = req.body || {};
   const cleanTargetSubId = targetSubId && targetSubId !== 'all' ? String(targetSubId).trim() : undefined;
+
+  let phoneNumber = extraData?.phoneNumber || '';
+  if (!phoneNumber && systemState.settings) {
+    if (type === 'callback_leitstelle' || tag === 'callback_leitstelle') {
+      phoneNumber = systemState.settings.phoneLeitstelleNumber || '';
+    } else if (type === 'callback_pruefungsleitung' || tag === 'callback_pruefungsleitung') {
+      phoneNumber = systemState.settings.phonePruefungsleitungNumber || '';
+    }
+  }
+
+  let notificationActions = Array.isArray(actions) ? actions : [];
+  if (notificationActions.length === 0 && phoneNumber) {
+    notificationActions = [{ action: 'call', title: '📞 Jetzt anrufen' }];
+  }
 
   const notificationPayload = {
     type: type || 'broadcast',
@@ -694,8 +708,11 @@ app.post('/api/admin/notify', adminAuth, (req: Request, res: Response) => {
     url: '/pruefer.html',
     vibrate: Array.isArray(vibrate) ? vibrate : [300, 100, 300],
     timestamp: getUniqueTimestamp(),
+    actions: notificationActions.length > 0 ? notificationActions : undefined,
     data: {
       subId: cleanTargetSubId || '',
+      phoneNumber: phoneNumber || undefined,
+      ...(extraData || {}),
     },
   };
 
