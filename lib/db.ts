@@ -235,9 +235,21 @@ export async function loadStateFromDb(
             active: r.active !== 0,
             reservedGroupId: r.reservedGroupId || null,
             deviceToken: r.deviceToken || null,
+            hasPushSub: false,
           };
         }
       });
+
+      const pushRows = await dbAll<{ targetId: string }>("SELECT DISTINCT targetId FROM push_subscriptions WHERE targetId IS NOT NULL AND targetId != ''");
+      if (pushRows && pushRows.length > 0) {
+        const activePushTargetIds = new Set(pushRows.map((r) => r.targetId));
+        Object.values(systemState.stations || {}).forEach((master) => {
+          if (!master || !master.subStations) return;
+          Object.values(master.subStations).forEach((sub) => {
+            sub.hasPushSub = activePushTargetIds.has(sub.id);
+          });
+        });
+      }
 
       const logRows = await dbAll<LogEntry & { cancelled: number }>('SELECT * FROM logs ORDER BY timestamp DESC LIMIT 1000');
       const loadedLogs: LogEntry[] = (logRows || []).map((r) => ({
