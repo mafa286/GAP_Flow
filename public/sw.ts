@@ -6,9 +6,7 @@ const sw = self as any;
 let disabledNotificationTags: string[] = [];
 
 const SW_VERSION = '0.0.536';
-
-const SW_VERSION = '1.3.0';
-const CACHE_NAME = 'gap-flow-v1.3.0';
+const CACHE_NAME = 'gap-flow-v0.0.536-1785793651987';
 const ASSETS_TO_CACHE: string[] = [
   '/pruefer.html',
   '/icon-192.png',
