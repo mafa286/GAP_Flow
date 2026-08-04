@@ -173,6 +173,10 @@ sw.addEventListener('push', (event: any) => {
   const title = (payload && payload.title) ? String(payload.title) : 'GAP-Flow Benachrichtigung';
   const body = (payload && payload.body) ? String(payload.body) : 'Neue Benachrichtigung aus dem Prüfungsleitstand.';
 
+  const safeMsgId = (payload && (payload.msgId || payload.data?.msgId))
+    ? String(payload.msgId || payload.data?.msgId).trim()
+    : '';
+
   // Stelle sicher, dass tag NIEMALS leer ist (renotify: true erfordert zwingend einen nicht-leeren String!)
   const safeTag = (payload && (payload.tag || payload.type) && String(payload.tag || payload.type).trim())
     ? String(payload.tag || payload.type).trim()
@@ -198,7 +202,7 @@ sw.addEventListener('push', (event: any) => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                msgId: payload?.msgId || payload?.data?.msgId || '',
+                msgId: safeMsgId,
                 tag: safeTag,
                 subId: payload?.subId || payload?.data?.subId || '',
                 os: payload?.data?.os || 'android',
@@ -290,7 +294,7 @@ sw.addEventListener('push', (event: any) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              msgId: payload?.msgId || payload?.data?.msgId || '',
+              msgId: safeMsgId,
               tag: safeTag,
               subId: payload?.subId || payload?.data?.subId || '',
               os: payload?.data?.os || 'android',
