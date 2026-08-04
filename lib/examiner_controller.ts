@@ -230,13 +230,27 @@ export async function testPush(req: AuthenticatedExaminerRequest, res: Response)
  * @returns {void}
  */
 export function pushAck(req: AuthenticatedExaminerRequest, res: Response): void {
-  const { tag, subId, os } = req.body || {};
-  console.log(`[WebPush ACK Empfangen] Service Worker auf dem Smartphone (${os || 'Gerät'}) hat Push-Tag "${tag || 'unbekannt'}" an Station ${subId || 'alle'} erfolgreich empfangen!`);
+  const { msgId, tag, subId, os, status, errorMsg } = req.body || {};
+  const ackStatus = (status === 'disabled_on_device' || status === 'failed' || status === 'delivered') ? status : 'delivered';
 
-  const ackData = {
+  console.log(`[WebPush ACK Empfangen] Service Worker (${os || 'Gerät'}) für Station ${subId || 'alle'} [MsgID: ${msgId || 'N/A'}]: Status = ${ackStatus}`);
+
+  notificationCore.updatePushLogAck({
+    msgId: msgId ? String(msgId) : undefined,
     tag: String(tag || ''),
     subId: String(subId || ''),
     os: String(os || 'android'),
+    status: ackStatus,
+    errorMsg: errorMsg ? String(errorMsg) : undefined,
+  });
+
+  const ackData = {
+    msgId: String(msgId || ''),
+    tag: String(tag || ''),
+    subId: String(subId || ''),
+    os: String(os || 'android'),
+    status: ackStatus,
+    errorMsg: errorMsg ? String(errorMsg) : undefined,
     timestamp: Date.now(),
   };
 
