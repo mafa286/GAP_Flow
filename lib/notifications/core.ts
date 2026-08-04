@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { NotificationPayload } from '../types';
+import { NotificationPayload, PushLogEntry } from '../types';
 import * as dbModule from '../db';
 import * as androidHandler from './android_handler';
 import * as iosHandler from './ios_handler';
@@ -8,6 +8,38 @@ import * as windowsHandler from './windows_handler';
 const VAPID_SUBJECT = 'mailto:leitstand@gap-flow.de';
 let vapidPublicKey = '';
 let vapidPrivateKey = '';
+const pushLogsMemory: PushLogEntry[] = [];
+
+/**
+ * Liefert die protokolierten Push-Benachrichtigungen für das Admin-Dashboard.
+ * @returns {PushLogEntry[]} Liste der Push-Protokolleinträge.
+ */
+export function getPushLogs(): PushLogEntry[] {
+  return pushLogsMemory;
+}
+
+/**
+ * Aktualisiert den Zustellungs-Status (ACK) einer Push-Benachrichtigung.
+ * @param {{ msgId?: string, tag?: string, subId?: string, os?: string, status: 'delivered' | 'disabled_on_device' | 'failed', errorMsg?: string }} ack - Das ACK-Objekt.
+ * @returns {void}
+ */
+export function updatePushLogAck(ack: {
+  msgId?: string;
+  tag?: string;
+  subId?: string;
+  os?: string;
+  status: 'delivered' | 'disabled_on_device' | 'failed';
+  errorMsg?: string;
+}): void {
+  const entry = pushLogsMemory.find((p) => ack.msgId && p.msgId === ack.msgId) ||
+    pushLogsMemory.find((p) => p.tag === ack.tag && p.targetSubId === ack.subId && p.status === 'pending');
+
+  if (entry) {
+    entry.status = ack.status;
+    if (ack.os) entry.os = ack.os;
+    if (ack.errorMsg) entry.errorMsg = ack.errorMsg;
+  }
+}
 
 import sqlite3 from 'sqlite3';
 
@@ -126,7 +158,24 @@ export async function sendNotification(
 
     const pushTitle = String(basePayload.title || 'Benachrichtigung');
     const pushType = String(basePayload.tag || basePayload.type || 'standard');
-    console.log(`[WebPush Core Start] Sende "${pushTitle}" (Typ: ${pushType}) an ${deduplicatedRows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
+    const msgId = basePayload.msgId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    basePayload.msgId = msgId;
+
+    const pushLogEntry: PushLogEntry = {
+      msgId,
+      timestamp: Date.now(),
+      title: pushTitle,
+      tag: pushType,
+      targetSubId: targetSubId || '',
+      roleTarget,
+      status: 'pending',
+    };
+    pushLogsMemory.unshift(pushLogEntry);
+    if (pushLogsMemory.length > 200) {
+      pushLogsMemory.pop();
+    }
+
+    console.log(`[WebPush Core Start] Sende "${pushTitle}" (ID: ${msgId}, Typ: ${pushType}) an ${deduplicatedRows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
 
     const sharedVapidDetails = {
       subject: VAPID_SUBJECT,
