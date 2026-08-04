@@ -58,6 +58,7 @@ export function formatNotificationActions(basePayload: NotificationPayload): Arr
  */
 export function formatAndroidPayload(basePayload: NotificationPayload): Record<string, unknown> {
   const cleanPayload: Record<string, unknown> = {
+    msgId: basePayload.msgId || '',
     title: String(basePayload.title || 'GAP-Flow Benachrichtigung'),
     body: String(basePayload.body || ''),
     icon: '/icon-192.png',
@@ -69,6 +70,7 @@ export function formatAndroidPayload(basePayload: NotificationPayload): Record<s
       ? basePayload.vibrate.map((v) => Math.abs(parseInt(String(v), 10) || 100))
       : [300, 100, 300],
     data: {
+      msgId: basePayload.msgId || '',
       url: String(basePayload.url || '/pruefer.html'),
       os: 'android',
       ...(basePayload.data || {}),
