@@ -132,6 +132,7 @@ export function initializeSystem(
           db?.run(`CREATE TABLE IF NOT EXISTS logs (timestamp INTEGER, groupName TEXT, stationId TEXT, durationMinutes REAL, cancelled INTEGER DEFAULT 0, examiner TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)`);
           db?.run(`CREATE TABLE IF NOT EXISTS push_subscriptions (id TEXT PRIMARY KEY, endpoint TEXT UNIQUE, keys_p256dh TEXT, keys_auth TEXT, role TEXT, targetId TEXT, os TEXT DEFAULT 'android', timestamp INTEGER)`);
+          db?.run(`CREATE TABLE IF NOT EXISTS push_logs (msgId TEXT PRIMARY KEY, timestamp INTEGER, title TEXT, tag TEXT, targetSubId TEXT, roleTarget TEXT, status TEXT, errorMsg TEXT, os TEXT)`);
 
           db?.run('ALTER TABLE groups ADD COLUMN paused INTEGER DEFAULT 0', () => {});
           db?.run('ALTER TABLE groups ADD COLUMN active INTEGER DEFAULT 1', () => {});
@@ -259,6 +260,9 @@ export async function loadStateFromDb(
       })).reverse();
 
       systemState.logs = loadedLogs;
+
+      const pushLogRows = await dbAll<{ msgId: string; timestamp: number; title: string; tag: string; targetSubId: string; roleTarget: string; status: 'pending' | 'delivered' | 'disabled_on_device' | 'failed'; errorMsg?: string; os?: string }>('SELECT * FROM push_logs ORDER BY timestamp DESC LIMIT 200');
+      systemState.pushLogs = (pushLogRows || []).reverse();
 
       const maxRow = await dbGet<{ maxTs: number }>('SELECT MAX(timestamp) as maxTs FROM logs');
       lastSavedLogTimestamp = (maxRow && maxRow.maxTs) ? maxRow.maxTs : 0;
@@ -484,6 +488,16 @@ export function saveStateToStoragePromise(
           db?.run(`DELETE FROM sub_stations WHERE id NOT IN (${placeholders})`, subStationIds, checkErr);
         } else {
           db?.run('DELETE FROM sub_stations', checkErr);
+        }
+
+        if (clonedState.pushLogs && clonedState.pushLogs.length > 0) {
+          clonedState.pushLogs.forEach((pLog) => {
+            db?.run(
+              'INSERT OR REPLACE INTO push_logs (msgId, timestamp, title, tag, targetSubId, roleTarget, status, errorMsg, os) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [pLog.msgId, pLog.timestamp, pLog.title, pLog.tag, pLog.targetSubId || '', pLog.roleTarget || 'all', pLog.status, pLog.errorMsg || '', pLog.os || ''],
+              checkErr
+            );
+          });
         }
 
         const currentLogs = clonedState.logs || [];
