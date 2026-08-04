@@ -5,6 +5,7 @@ import { AuthenticatedExaminerRequest } from '../server';
 import * as dbModule from './db';
 import * as socketsModule from './sockets';
 import * as stateFilters from './state_filters';
+import * as notificationCore from './notifications/core';
 
 /**
  * Konfigurationsobjekt zur Initialisierung des Examiner-Controllers.
