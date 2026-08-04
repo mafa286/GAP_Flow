@@ -115,6 +115,11 @@ interface ExaminerComponent {
   toggleNotificationTag(tagKey: string): void;
   requestCallbackWithPhone(target: 'leitstelle' | 'pruefungsleitung'): void;
   forceAppUpdate(): Promise<void>;
+  openGuideModal(): void;
+  closeGuideModal(): void;
+  openPermissionsModal(): void;
+  closePermissionsModal(): void;
+  closeFunctionsMenu(): void;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
   sendServerTestNotification(): Promise<void>;
@@ -355,6 +360,51 @@ function examiner(): ExaminerComponent {
       if (window.prueferPush) {
         this.notificationPermissionStatus = window.prueferPush.checkPermissions();
       }
+    },
+
+    /**
+     * Öffnet das Anleitungs-Modal und schließt das Hauptmenü.
+     */
+    openGuideModal(): void {
+      this.showPermissionsModal = false;
+      this.showGuideModal = true;
+      this.showFunctionsMenu = false;
+    },
+
+    /**
+     * Schließt das Anleitungs-Modal und kehrt ins Hauptmenü zurück.
+     */
+    closeGuideModal(): void {
+      this.showGuideModal = false;
+      this.showFunctionsMenu = true;
+    },
+
+    /**
+     * Öffnet das Berechtigungs-Modal und schließt das Hauptmenü.
+     */
+    openPermissionsModal(): void {
+      this.checkPermissions();
+      this.showGuideModal = false;
+      this.showPermissionsModal = true;
+      this.showFunctionsMenu = false;
+    },
+
+    /**
+     * Schließt das Berechtigungs-Modal und kehrt ins Hauptmenü zurück.
+     */
+    closePermissionsModal(): void {
+      this.showPermissionsModal = false;
+      this.showFunctionsMenu = true;
+    },
+
+    /**
+     * Schließt das Hauptmenü und setzt alle Untermenü-Zustände sauber zurück.
+     */
+    closeFunctionsMenu(): void {
+      this.showFunctionsMenu = false;
+      this.showGuideModal = false;
+      this.showPermissionsModal = false;
+      this.activeMenuSection = null;
     },
 
     /**
