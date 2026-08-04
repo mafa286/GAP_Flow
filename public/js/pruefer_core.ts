@@ -96,17 +96,24 @@ interface ExaminerComponent {
   showFunctionsMenu: boolean;
   showPermissionsModal: boolean;
   showGuideModal: boolean;
+  callbackPhoneNumber: string;
+  activeMenuSection: string | null;
+  activeGuideTopic: number | null;
   phoneLeitstelleName: string;
   phoneLeitstelleNumber: string;
   phonePruefungsleitungName: string;
   phonePruefungsleitungNumber: string;
   notificationPermissionStatus: string;
+  notificationTags: Record<string, boolean>;
   swVersion: string;
   isSendingTestPush: boolean;
   testPushCooldown: number;
   appVersion: string;
 
   _postApi(endpoint: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<Response>;
+  syncDisabledTagsWithSW(): void;
+  toggleNotificationTag(tagKey: string): void;
+  requestCallbackWithPhone(target: 'leitstelle' | 'pruefungsleitung'): void;
   forceAppUpdate(): Promise<void>;
   checkPermissions(): void;
   requestNotificationPermission(): Promise<void>;
