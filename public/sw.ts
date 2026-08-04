@@ -3,6 +3,9 @@
 
 // Globale Typ-Anpassung für den Service Worker im DOM-Kontext
 const sw = self as any;
+let disabledNotificationTags: string[] = [];
+
+const SW_VERSION = '0.0.536';
 
 const SW_VERSION = '1.3.0';
 const CACHE_NAME = 'gap-flow-v1.3.0';
@@ -62,6 +65,12 @@ sw.addEventListener('activate', (event: any) => {
  * Message-Event: Beantwortet Versionsanfragen der PWA-Clientansicht.
  */
 sw.addEventListener('message', (event: any) => {
+  if (event.data && event.data.type === 'SET_DISABLED_TAGS') {
+    if (Array.isArray(event.data.disabledTags)) {
+      disabledNotificationTags = event.data.disabledTags;
+    }
+  }
+
   if (event.data && event.data.type === 'GET_VERSION') {
     const response = {
       type: 'SW_VERSION_RESPONSE',
@@ -171,6 +180,40 @@ sw.addEventListener('push', (event: any) => {
     ? String(payload.tag || payload.type).trim()
     : 'gap-flow-notification';
 
+  const getCategory = (t: string): string => {
+    if (t.startsWith('allocation')) return 'allocation';
+    if (t.startsWith('inactivity')) return 'inactivity';
+    if (t.startsWith('overtime')) return 'overtime';
+    if (t.startsWith('test-push')) return 'test-push';
+    return t;
+  };
+
+  const tagCategory = getCategory(safeTag);
+  const isTagDisabled = disabledNotificationTags.includes(tagCategory) || disabledNotificationTags.includes(safeTag);
+
+  if (isTagDisabled) {
+    event.waitUntil(
+      (async () => {
+        try {
+          if (typeof fetch === 'function') {
+            await fetch('/api/examiner/push-ack', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                msgId: payload?.msgId || payload?.data?.msgId || '',
+                tag: safeTag,
+                subId: payload?.subId || payload?.data?.subId || '',
+                os: payload?.data?.os || 'android',
+                status: 'disabled_on_device',
+              }),
+            });
+          }
+        } catch (_) {}
+      })()
+    );
+    return;
+  }
+
   const options: any = {
     body,
     icon: `${origin}/icon-192.png`,
@@ -198,56 +241,23 @@ sw.addEventListener('push', (event: any) => {
   }
 
   const pushExecution = (async () => {
-    // 1. Sofortiges ACK-Signal an den Server senden (Ganz am Anfang)
-    try {
-      if (typeof fetch === 'function') {
-        await fetch('/api/examiner/push-ack', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tag: safeTag,
-            subId: payload?.subId || payload?.data?.subId || '',
-            os: payload?.data?.os || 'android',
-          }),
-        });
-      }
-    } catch (ackErr) {
-      console.warn('[SW Push ACK Fehler]', ackErr);
-    }
+      let ackStatus = 'delivered';
+      let ackErrorMsg = '';
 
-    // 2. In-App-Signal an alle geöffneten PWA-Fenster senden
-    try {
-      const clientList = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      for (const client of clientList) {
-        if ('postMessage' in client) {
-          client.postMessage({ type: 'PUSH_RECEIVED', payload });
-        }
-      }
-    } catch (_) {}
-
-    // 3. Ausfallfreies Anzeigen der echten Benachrichtigung (3-Stufen-Sicherheit)
-    try {
-      // Stufe 1: Volles Rendering mit Vibrate & Actions
-      await sw.registration.showNotification(title, options);
-    } catch (err1) {
-      console.warn('[SW showNotification Stufe 1 fehlgeschlagen, versuche Stufe 2]', err1);
       try {
-        // Stufe 2: Ohne Actions & Vibrate (falls Android Chrome Option-Felder verweigert)
-        const cleanOptions: any = {
-          body: options.body,
-          icon: options.icon,
-          badge: options.badge,
-          tag: safeTag,
-          renotify: true,
-          timestamp: options.timestamp,
-          data: options.data,
-        };
-        await sw.registration.showNotification(title, cleanOptions);
-      } catch (err2) {
-        console.warn('[SW showNotification Stufe 2 fehlgeschlagen, versuche Stufe 3 Minimal]', err2);
+        const clientList = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of clientList) {
+          if ('postMessage' in client) {
+            client.postMessage({ type: 'PUSH_RECEIVED', payload });
+          }
+        }
+      } catch (_) {}
+
+      try {
+        await sw.registration.showNotification(title, options);
+      } catch (err1: any) {
         try {
-          // Stufe 3: Minimal-Optionen
-          const minimalOptions: any = {
+          const cleanOptions: any = {
             body: options.body,
             icon: options.icon,
             badge: options.badge,
@@ -256,13 +266,45 @@ sw.addEventListener('push', (event: any) => {
             timestamp: options.timestamp,
             data: options.data,
           };
-          await sw.registration.showNotification(title, minimalOptions);
-        } catch (err3) {
-          console.error('[SW showNotification Stufe 3 gescheitert]', err3);
+          await sw.registration.showNotification(title, cleanOptions);
+        } catch (err2: any) {
+          try {
+            const minimalOptions: any = {
+              body: options.body,
+              icon: options.icon,
+              badge: options.badge,
+              tag: safeTag,
+              renotify: true,
+              timestamp: options.timestamp,
+              data: options.data,
+            };
+            await sw.registration.showNotification(title, minimalOptions);
+          } catch (err3: any) {
+            ackStatus = 'failed';
+            ackErrorMsg = String(err3?.message || err3 || 'Anzeige fehlgeschlagen');
+          }
         }
       }
-    }
-  })();
+
+      try {
+        if (typeof fetch === 'function') {
+          await fetch('/api/examiner/push-ack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              msgId: payload?.msgId || payload?.data?.msgId || '',
+              tag: safeTag,
+              subId: payload?.subId || payload?.data?.subId || '',
+              os: payload?.data?.os || 'android',
+              status: ackStatus,
+              errorMsg: ackErrorMsg,
+            }),
+          });
+        }
+      } catch (ackErr) {
+        console.warn('[SW Push ACK Fehler]', ackErr);
+      }
+    })();
 
   event.waitUntil(pushExecution);
 });
