@@ -84,6 +84,12 @@ export function loadJsonFallback(
       loaded.firstAssignmentTime = null;
     }
 
+    if (loaded.pushLogs && Array.isArray(loaded.pushLogs)) {
+      systemState.pushLogs = loaded.pushLogs;
+    } else if (!systemState.pushLogs) {
+      systemState.pushLogs = [];
+    }
+
     if (loaded.settings) {
       systemState.settings = {
         phoneLeitstelleName: loaded.settings.phoneLeitstelleName || '',
