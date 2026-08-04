@@ -201,11 +201,25 @@ function examiner(): ExaminerComponent {
     showFunctionsMenu: false,
     showPermissionsModal: false,
     showGuideModal: false,
+    callbackPhoneNumber: '',
+    activeMenuSection: null as string | null,
+    activeGuideTopic: 1 as number | null,
     phoneLeitstelleName: '',
     phoneLeitstelleNumber: '',
     phonePruefungsleitungName: '',
     phonePruefungsleitungNumber: '',
     notificationPermissionStatus: 'default',
+    notificationTags: {
+      allocation: true,
+      inactivity: true,
+      overtime: true,
+      'exam-finished': true,
+      broadcast: true,
+      callback_leitstelle: true,
+      callback_pruefungsleitung: true,
+      result_announcement: true,
+      'test-push': true,
+    } as Record<string, boolean>,
     swVersion: '',
     isSendingTestPush: false,
     testPushCooldown: 0,
@@ -223,16 +237,69 @@ function examiner(): ExaminerComponent {
     },
 
     /**
-     * Erzwingt ein Leeren des lokalen PWA-Caches und lädt die Anwendung frisch vom Server.
+     * Synchronisiert die inaktiven Benachrichtigungs-Kategorien mit dem Service Worker.
+     */
+    syncDisabledTagsWithSW(): void {
+      const disabledTags = Object.keys(this.notificationTags).filter((k) => !this.notificationTags[k]);
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SET_DISABLED_TAGS',
+          disabledTags,
+        });
+      }
+    },
+
+    /**
+     * Toggelt eine Benachrichtigungs-Kategorie und speichert den Status lokal.
+     */
+    toggleNotificationTag(tagKey: string): void {
+      if (tagKey in this.notificationTags) {
+        this.notificationTags[tagKey] = !this.notificationTags[tagKey];
+        localStorage.setItem('notification_tags', JSON.stringify(this.notificationTags));
+        this.syncDisabledTagsWithSW();
+      }
+    },
+
+    /**
+     * Sendet eine Rückrufanforderung inklusive angegebener Telefonnummer an den Leitstand.
+     */
+    requestCallbackWithPhone(target: 'leitstelle' | 'pruefungsleitung'): void {
+      const targetName = target === 'pruefungsleitung' ? 'Prüfungsleitung' : 'Leitstelle';
+      const userPhone = this.callbackPhoneNumber.trim();
+
+      if (!confirm(`Möchten Sie einen dringenden Rückruf durch die ${targetName} anfordern?`)) return;
+
+      if (window.examinerSocket && window.examinerSocket.connected) {
+        window.examinerSocket.emit('requestCallback', {
+          target,
+          subId: this.subId,
+          examinerName: this.examinerName,
+          phoneNumber: userPhone || (target === 'pruefungsleitung' ? this.phonePruefungsleitungNumber : this.phoneLeitstelleNumber) || 'Keine Nummer angegeben',
+        });
+        alert(`🚨 Rückrufwunsch an die ${targetName} wurde gesendet!\n(Telefonnummer: ${userPhone || 'Standard'})`);
+      } else {
+        alert('Keine Verbindung zum Server. Rückrufwunsch konnte nicht übermittelt werden.');
+      }
+    },
+
+    /**
+     * Prüft auf neue App-Versionen im Hintergrund und führt ein nahtloses Update durch.
      */
     async forceAppUpdate(): Promise<void> {
       if (this.isSubmitting) return;
-      if (!confirm('Soll der lokale PWA-Cache geleert und die App neu vom Server geladen werden?')) return;
+      this.isSubmitting = true;
+      this.freezeUI = true;
+      this.renderLock = true;
+
       try {
         if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            await reg.update();
+          }
           const regs = await navigator.serviceWorker.getRegistrations();
-          for (const reg of regs) {
-            await reg.unregister();
+          for (const r of regs) {
+            await r.unregister();
           }
         }
         if ('caches' in window) {
@@ -244,7 +311,10 @@ function examiner(): ExaminerComponent {
       } catch (e) {
         console.error('Fehler beim Leeren des Caches:', e);
       }
-      window.location.reload();
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 400);
     },
 
     /**
@@ -390,10 +460,19 @@ function examiner(): ExaminerComponent {
       document.addEventListener('click', silentUnlock);
       document.addEventListener('touchend', silentUnlock);
 
+      const storedTags = localStorage.getItem('notification_tags');
+      if (storedTags) {
+        try {
+          const parsed = JSON.parse(storedTags);
+          this.notificationTags = { ...this.notificationTags, ...parsed };
+        } catch (_) {}
+      }
+      this.syncDisabledTagsWithSW();
+
       if (window.location.hash === '#settings-notifications') {
-            this.checkPermissions();
-            this.showPermissionsModal = true;
-          }
+        this.checkPermissions();
+        this.showPermissionsModal = true;
+      }
 
       if (this.token) {
         this.fetchStatus();
