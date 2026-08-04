@@ -35,8 +35,15 @@ interface AdminSettingsComponent {
   showCallbackPopup: boolean;
   popupCallbackType: 'leitstelle' | 'pruefungsleitung';
   popupCallbackTargetSubId: string;
+  showPushLogsModal: boolean;
+  pushLogs: Array<Record<string, unknown>>;
 
   initSocket(): void;
+  fetchPushLogs(): Promise<void>;
+  openPushLogsModal(): void;
+  formatLogTime(ts: number): string;
+  getPushStatusBadgeClass(status: string): string;
+  getPushStatusText(status: string, errorMsg?: string): string;
   saveSettings(): Promise<void>;
   sendBroadcastMessage(): Promise<void>;
   openCallbackPopup(type: 'leitstelle' | 'pruefungsleitung'): void;
