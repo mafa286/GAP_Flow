@@ -26,6 +26,7 @@ export function getWindowsPushOptions(): WindowsPushOptions {
 export function formatWindowsPayload(basePayload: NotificationPayload): Record<string, unknown> {
   return {
     ...basePayload,
+    msgId: basePayload.msgId || '',
     title: String(basePayload.title || 'GAP-Flow Benachrichtigung'),
     body: String(basePayload.body || ''),
     icon: '/icon-192.png',
@@ -33,6 +34,7 @@ export function formatWindowsPayload(basePayload: NotificationPayload): Record<s
     tag: String(basePayload.tag || basePayload.type || 'gap-flow-windows'),
     timestamp: basePayload.timestamp ? Number(basePayload.timestamp) : Date.now(),
     data: {
+      msgId: basePayload.msgId || '',
       url: String(basePayload.url || '/pruefer.html'),
       os: 'windows',
       ...(basePayload.data || {}),
