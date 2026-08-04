@@ -156,7 +156,8 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Obere Zeile: 3 Einzel-Aktionen (1/3, 1/3, 1/3) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Dringender Rückruf Leitstelle -->
           <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
             <div>
@@ -195,28 +196,36 @@
               🏆 Ergebnisbekanntgabe ausrufen
             </button>
           </div>
+        </div>
 
-          <!-- Benachrichtigungs-Log Button -->
-          <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+        <!-- Untere Zeile: Rundruf (2/3 Breite) und Benachrichtigungs-Log (1/3 Breite) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Rundruf an alle Prüfer (2/3 Breite) -->
+          <div class="md:col-span-2 p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">📢 Rundruf an alle Prüfer</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Senden Sie eine Textnachricht als Push-Meldung an die Displays aller verbundenen Prüfer-Geräte.
+              </p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 pt-1">
+              <input type="text" x-model="broadcastText" placeholder="z. B. Verpflegung: Nach der aktuellen Gruppe zur Pause an die Verpflegungsstelle!" class="flex-1 px-3 py-2 input-text text-sm">
+              <button @click="sendBroadcastMessage()" :disabled="isSubmitting || !broadcastText.trim()" class="px-6 py-2 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow shrink-0">
+                📢 Senden
+              </button>
+            </div>
+          </div>
+
+          <!-- Benachrichtigungs-Log Button (1/3 Breite) -->
+          <div class="md:col-span-1 p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
             <div>
               <h3 class="text-sm font-bold text-brand uppercase">📋 Benachrichtigungs-Log</h3>
               <p class="text-[10px] text-muted leading-normal mt-1">
-                Übersicht aller gesendeten Push-Benachrichtigungen und deren Zustellungs-Status (ACK) je Gerät.
+                Übersicht aller gesendeten Push-Meldungen und deren Zustellungs-Status (ACK) je Gerät.
               </p>
             </div>
             <button @click="openPushLogsModal()" class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow">
               📋 Log-Protokoll öffnen
-            </button>
-          </div>
-        </div>
-
-        <!-- Rundruf Nachrichting -->
-        <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main">
-          <h3 class="text-sm font-bold text-brand uppercase">📢 Rundruf an alle Prüfer</h3>
-          <div class="flex gap-3">
-            <input type="text" x-model="broadcastText" placeholder="z. B. Verpflegung: Nach der aktuellen Gruppe zur Pause an die Verpflegungsstelle!" class="flex-1 px-3 py-2 input-text text-sm">
-            <button @click="sendBroadcastMessage()" :disabled="isSubmitting || !broadcastText.trim()" class="px-6 py-2 btn-brand text-xs font-black uppercase tracking-wider disabled:opacity-50 shadow">
-              📢 Senden
             </button>
           </div>
         </div>
