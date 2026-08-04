@@ -723,6 +723,9 @@ app.post('/api/admin/stations/batch', adminAuth, adminStationsController.batchSt
 
 app.get('/api/admin/system/repomix', adminAuth, fileProcessor.generateAndDownloadRepomix);
 app.get('/api/admin/system/logs', adminAuth, adminController.getSystemLogs);
+app.get('/api/admin/push/logs', adminAuth, (_req: Request, res: Response) => {
+  res.json({ success: true, logs: notificationCore.getPushLogs() });
+});
 
 app.post('/api/admin/restart', adminAuth, (_req: Request, res: Response) => {
   res.json({ success: true });
