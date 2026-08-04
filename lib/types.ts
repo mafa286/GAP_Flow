@@ -88,6 +88,21 @@ export interface SystemSettings {
 }
 
 /**
+ * Log-Eintrag für Push-Benachrichtigungen und deren Zustellungs-Status (ACK).
+ */
+export interface PushLogEntry {
+  msgId: string;
+  timestamp: number;
+  title: string;
+  tag: string;
+  targetSubId: string;
+  roleTarget: string;
+  status: 'pending' | 'delivered' | 'disabled_on_device' | 'failed';
+  errorMsg?: string;
+  os?: string;
+}
+
+/**
  * Der zentrale In-Memory-Systemzustand.
  */
 export interface SystemState {
@@ -95,6 +110,7 @@ export interface SystemState {
   groups: Record<string, Group>;
   stations: Record<string, Station>;
   logs: LogEntry[];
+  pushLogs?: PushLogEntry[];
   autoAllocationActive: boolean;
   firstAssignmentTime: number | null;
   isCleared: boolean;
@@ -110,6 +126,7 @@ export interface SystemState {
  */
 export function resetSystemState(state: SystemState): void {
   state.logs = [];
+  state.pushLogs = [];
   state.firstAssignmentTime = null;
   state.pendingLogCancellations = [];
   state.isCleared = true;
@@ -155,6 +172,7 @@ export interface NotificationAction {
  * Einheitliches Payload-Format für Push-Benachrichtigungen.
  */
 export interface NotificationPayload {
+  msgId?: string;
   title: string;
   body: string;
   icon?: string;
