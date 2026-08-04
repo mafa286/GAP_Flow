@@ -195,6 +195,19 @@
               🏆 Ergebnisbekanntgabe ausrufen
             </button>
           </div>
+
+          <!-- Benachrichtigungs-Log Button -->
+          <div class="p-4 app-card-accent space-y-3 rounded-lg border border-main flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-brand uppercase">📋 Benachrichtigungs-Log</h3>
+              <p class="text-[10px] text-muted leading-normal mt-1">
+                Übersicht aller gesendeten Push-Benachrichtigungen und deren Zustellungs-Status (ACK) je Gerät.
+              </p>
+            </div>
+            <button @click="openPushLogsModal()" class="w-full py-2.5 btn-brand text-xs font-black uppercase tracking-wider shadow">
+              📋 Log-Protokoll öffnen
+            </button>
+          </div>
         </div>
 
         <!-- Rundruf Nachrichting -->
@@ -249,6 +262,59 @@
               <span x-show="isGeneratingRepomix" class="animate-pulse">⏳ Generiere XML...</span>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: BENACHRICHTIGUNGS-LOG -->
+    <div x-show="showPushLogsModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-6 app-overlay-modal" x-cloak>
+      <div class="app-card p-6 max-w-2xl w-full space-y-4 border-main max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center border-b border-main pb-3 shrink-0">
+          <h3 class="text-base font-black text-brand uppercase tracking-wide flex items-center gap-2">
+            <span>📋</span> Push-Benachrichtigungs-Protokoll
+          </h3>
+          <button @click="showPushLogsModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 pr-1">
+          <table class="w-full text-left text-xs divide-y border-main">
+            <thead class="app-card-accent font-bold">
+              <tr>
+                <th class="px-2.5 py-2 text-muted">Uhrzeit</th>
+                <th class="px-2.5 py-2 text-muted">Titel / Tag</th>
+                <th class="px-2.5 py-2 text-muted">Ziel</th>
+                <th class="px-2.5 py-2 text-muted">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y border-main font-semibold">
+              <template x-for="pLog in pushLogs" :key="pLog.msgId">
+                <tr class="hover:opacity-85">
+                  <td class="px-2.5 py-2 text-muted font-mono whitespace-nowrap text-[10px]" x-text="formatLogTime(pLog.timestamp)"></td>
+                  <td class="px-2.5 py-2 text-main">
+                    <span class="block font-bold" x-text="pLog.title"></span>
+                    <span class="text-[9px] text-muted font-mono" x-text="pLog.tag"></span>
+                  </td>
+                  <td class="px-2.5 py-2 text-muted" x-text="pLog.targetSubId ? 'Station ' + pLog.targetSubId : 'Alle (' + pLog.roleTarget + ')'"></td>
+                  <td class="px-2.5 py-2">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black inline-block"
+                          :class="getPushStatusBadgeClass(pLog.status)"
+                          x-text="getPushStatusText(pLog.status, pLog.errorMsg)"></span>
+                  </td>
+                </tr>
+              </template>
+              <template x-if="pushLogs.length === 0">
+                <tr>
+                  <td colspan="4" class="text-center italic py-6 text-muted">Keine Push-Benachrichtigungen aufgezeichnet.</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pt-2 border-t border-main flex justify-between items-center shrink-0">
+          <button @click="fetchPushLogs()" class="px-3 py-1.5 app-card-accent text-xs font-bold rounded">🔄 Aktualisieren</button>
+          <button @click="showPushLogsModal = false" class="px-4 py-2 btn-brand text-xs font-bold">Schließen</button>
         </div>
       </div>
     </div>
