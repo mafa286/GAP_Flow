@@ -65,6 +65,8 @@ window.adminPanel = function (): Record<string, unknown> {
     incomingCallbacks: [] as CallbackItem[],
     isSubmitting: false,
     showUpdateStatusModal: false,
+    showPushLogsModal: false,
+    pushLogs: [] as Array<Record<string, unknown>>,
     updateStep: '',
     updateErrorMessage: '',
     isGeneratingRepomix: false,
@@ -89,7 +91,60 @@ window.adminPanel = function (): Record<string, unknown> {
           const item = data as CallbackItem;
           self.incomingCallbacks.unshift(item);
         });
+
+        window.adminSocket.on('pushAckReceived', (ackData: unknown) => {
+          const ack = ackData as { msgId?: string, tag?: string, subId?: string, os?: string, status: string, errorMsg?: string };
+          const entry = self.pushLogs.find((p: any) => ack.msgId && p.msgId === ack.msgId) ||
+            self.pushLogs.find((p: any) => p.tag === ack.tag && p.targetSubId === ack.subId && p.status === 'pending');
+          if (entry) {
+            entry.status = ack.status;
+            if (ack.os) entry.os = ack.os;
+            if (ack.errorMsg) entry.errorMsg = ack.errorMsg;
+          }
+        });
       }
+    },
+
+    /**
+     * Lädt das Benachrichtigungs-Log-Protokoll vom Server.
+     */
+    async fetchPushLogs(): Promise<void> {
+      const self = this as unknown as any;
+      try {
+        const res = await fetch('/api/admin/push/logs', {
+          headers: { Authorization: self.password },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          self.pushLogs = data.logs || [];
+        }
+      } catch (e) {
+        console.error('Fehler beim Laden des Push-Logs:', e);
+      }
+    },
+
+    openPushLogsModal(): void {
+      const self = this as unknown as any;
+      self.fetchPushLogs();
+      self.showPushLogsModal = true;
+    },
+
+    formatLogTime(ts: number): string {
+      return window.gapFlowUtils ? window.gapFlowUtils.formatTime(ts) : `${ts}`;
+    },
+
+    getPushStatusBadgeClass(status: string): string {
+      if (status === 'delivered') return 'sig-badge-green';
+      if (status === 'disabled_on_device') return 'sig-badge-orange';
+      if (status === 'pending') return 'badge-group-active animate-pulse';
+      return 'sig-badge-red';
+    },
+
+    getPushStatusText(status: string, errorMsg?: string): string {
+      if (status === 'delivered') return '✔ Zugestellt';
+      if (status === 'disabled_on_device') return '⏸ Deaktiviert auf Gerät';
+      if (status === 'pending') return '⏳ Ausstehend';
+      return `❌ Fehler${errorMsg ? ': ' + errorMsg : ''}`;
     },
 
     /**
