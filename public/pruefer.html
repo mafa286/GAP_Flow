@@ -391,76 +391,109 @@
   <!-- MODAL: FUNKTIONS / MENÜ DIALOG -->
   <div x-show="showFunctionsMenu" 
        class="fixed inset-0 z-[60] flex items-center justify-center p-6 app-overlay-modal" x-cloak>
-    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main">
-      <div class="flex justify-between items-center border-b border-main pb-3">
+    <div class="app-card p-6 max-w-sm w-full space-y-4 text-center border-main max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-main pb-3 shrink-0">
         <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
           <span>⚙</span> Station-Funktionen
         </h3>
         <button @click="showFunctionsMenu = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
       </div>
 
-      <div class="space-y-2.5 pt-2">
-        <!-- Leitstelle / App-Admin anrufen -->
-        <button @click="openCallLink(phoneLeitstelleNumber, 'Leitstelle / App-Admin')"
-                class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
-          <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
-            <span>📞</span>
-            <span>Leitstelle / App-Admin</span>
-          </div>
-          <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
-                x-text="phoneLeitstelleName ? phoneLeitstelleName : 'Kein Name hinterlegt'"></span>
-        </button>
-
-        <!-- Prüfungsleitung anrufen -->
-        <button @click="openCallLink(phonePruefungsleitungNumber, 'Prüfungsleitung')"
-                class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
-          <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
-            <span>📞</span>
-            <span>Prüfungsleitung</span>
-          </div>
-          <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
-                x-text="phonePruefungsleitungName ? phonePruefungsleitungName : 'Kein Name hinterlegt'"></span>
-        </button>
-
-        <!-- Dringender Rückrufwunsch an Leitstelle -->
-        <button @click="showFunctionsMenu = false; requestCallback('leitstelle');"
-                class="w-full py-2.5 btn-sig-orange flex items-center justify-center gap-2 shadow transition active:scale-95">
-          <span class="text-xs font-black uppercase tracking-wider">🚨 Rückruf Leitstelle anfordern</span>
-        </button>
-
-        <!-- Dringender Rückrufwunsch an Prüfungsleitung -->
-        <button @click="showFunctionsMenu = false; requestCallback('pruefungsleitung');"
-                class="w-full py-2.5 btn-sig-orange flex items-center justify-center gap-2 shadow transition active:scale-95">
-          <span class="text-xs font-black uppercase tracking-wider">🚨 Rückruf Prüfungsleitung anfordern</span>
-        </button>
-        
-        <!-- Berechtigungen prüfen -->
-        <button @click="showFunctionsMenu = false; checkPermissions(); showPermissionsModal = true;"
-                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-main transition">
-          <span>🛡️</span> Berechtigungen prüfen
-        </button>
-
-        <!-- Anleitung der Prüfer App -->
+      <div class="space-y-2.5 pt-2 overflow-y-auto pr-1 flex-1">
+        <!-- 1. Collapsible: Anleitung & App-Infos -->
         <button @click="showFunctionsMenu = false; showGuideModal = true;"
-                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-main transition">
-          <span>📖</span> Anleitung der Prüfer-App
+                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between px-4 border border-main transition rounded-lg">
+          <span class="flex items-center gap-2">📖 Anleitung Information der APP</span>
+          <span>➔</span>
         </button>
 
-        <!-- Cache Leeren & App neu laden -->
+        <!-- 2. Accordion: Orga anrufen -->
+        <div class="app-card-accent border border-main rounded-lg overflow-hidden">
+          <button @click="activeMenuSection = activeMenuSection === 'orga' ? null : 'orga'"
+                  class="w-full py-3 px-4 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between transition hover:opacity-85">
+            <span class="flex items-center gap-2">📞 Orga anrufen</span>
+            <span x-text="activeMenuSection === 'orga' ? '▲' : '▼'"></span>
+          </button>
+          
+          <div x-show="activeMenuSection === 'orga'" class="p-3 pt-1 space-y-2 border-t border-main animate-fade-in">
+            <!-- Leitstelle / App-Support -->
+            <button @click="openCallLink(phoneLeitstelleNumber, 'Leitstelle / APP-Support')"
+                    class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
+              <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+                <span>📞</span>
+                <span>Leitstelle / APP-Support</span>
+              </div>
+              <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
+                    x-text="phoneLeitstelleName ? phoneLeitstelleName : 'Kein Name hinterlegt'"></span>
+            </button>
+
+            <!-- Prüfungsleitung -->
+            <button @click="openCallLink(phonePruefungsleitungNumber, 'Prüfungsleitung')"
+                    class="w-full py-2.5 btn-brand flex flex-col items-center justify-center shadow transition active:scale-95">
+              <div class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+                <span>📞</span>
+                <span>Prüfungsleitung</span>
+              </div>
+              <span class="text-[11px] font-normal opacity-90 tracking-normal normal-case mt-0.5"
+                    x-text="phonePruefungsleitungName ? phonePruefungsleitungName : 'Kein Name hinterlegt'"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Accordion: Rückrufbitte senden -->
+        <div class="app-card-accent border border-main rounded-lg overflow-hidden">
+          <button @click="activeMenuSection = activeMenuSection === 'callback' ? null : 'callback'"
+                  class="w-full py-3 px-4 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between transition hover:opacity-85">
+            <span class="flex items-center gap-2">🚨 Rückrufbitte senden</span>
+            <span x-text="activeMenuSection === 'callback' ? '▲' : '▼'"></span>
+          </button>
+
+          <div x-show="activeMenuSection === 'callback'" class="p-3 pt-2 space-y-3 border-t border-main text-left animate-fade-in">
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Telefonnummer für Rückruf</label>
+              <input type="tel" 
+                     x-model="callbackPhoneNumber" 
+                     placeholder="z. B. 0151 1234567" 
+                     class="w-full px-3 py-2 input-text text-xs font-mono">
+              <p class="text-[9px] text-muted leading-tight mt-1">
+                ℹ️ <strong>Hinweis:</strong> Die Telefonnummer wird erst übertragen, wenn auch ein Rückruf angefordert wird, vorher nicht!
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-muted uppercase mb-1">Rückruf anfordern von:</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button @click="requestCallbackWithPhone('leitstelle')"
+                        class="py-2.5 btn-sig-orange text-[10px] font-black uppercase tracking-wider shadow">
+                  Leitstelle / APP-Support
+                </button>
+                <button @click="requestCallbackWithPhone('pruefungsleitung')"
+                        class="py-2.5 btn-sig-orange text-[10px] font-black uppercase tracking-wider shadow">
+                  Prüfungsleitung
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Collapsible: Berechtigungen & Benachrichtigungen -->
+        <button @click="showFunctionsMenu = false; checkPermissions(); showPermissionsModal = true;"
+                class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between px-4 border border-main transition rounded-lg">
+          <span class="flex items-center gap-2">🛡️ Berechtigungen &amp; Benachrichtigungen</span>
+          <span>➔</span>
+        </button>
+
+        <!-- 5. Action: Cache leeren & App neu laden -->
         <button @click="forceAppUpdate()"
-                class="w-full py-2.5 btn-sig-orange font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow transition active:scale-95">
+                class="w-full py-2.5 btn-sig-orange font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow transition active:scale-95 rounded-lg">
           <span>🔄</span> Cache leeren &amp; App neu laden
         </button>
       </div>
 
       <!-- Unauffällige Versions-Anzeige -->
-      <div class="pt-3 border-t border-main text-[10px] text-muted text-center font-mono">
+      <div class="pt-3 border-t border-main text-[10px] text-muted text-center font-mono shrink-0">
         <span>GAP-Flow System-Release: <strong class="text-brand" x-text="appVersion"></strong></span>
       </div>
-
-      <button @click="showFunctionsMenu = false" class="w-full py-2 mt-1 app-card-accent text-muted font-bold text-xs uppercase tracking-wider">
-        Schließen
-      </button>
     </div>
   </div>
 
@@ -499,16 +532,57 @@
           <p class="text-[10px] text-muted">Direktwahl für Leitstelle und Prüfungsleitung über Smartphone-Modem.</p>
         </div>
 
-        <!-- Benachrichtigungen Status -->
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
+        <!-- Benachrichtigungen Status & Toggles -->
+        <div class="p-3 app-card-accent rounded-lg border border-main space-y-2">
           <div class="flex justify-between items-center">
             <span class="font-black text-main flex items-center gap-1.5">🔔 System-Push</span>
             <span class="font-mono font-bold text-[10px]"
                   :style="notificationPermissionStatus === 'granted' ? 'color: var(--sig-success-text) !important;' : 'color: var(--sig-warning-text) !important;'"
                   x-text="notificationPermissionStatus === 'granted' ? 'Erlaubt ✅' : (notificationPermissionStatus === 'denied' ? 'Blockiert ⛔' : (notificationPermissionStatus === 'insecure-context' ? 'Ungesichert (HTTP) ⚠️' : 'Inaktiv ⏳'))"></span>
           </div>
-          <p class="text-[10px] text-muted">Push-Meldungen bei neuen Gruppenzuweisungen im Standby.</p>
-          <div class="flex flex-col gap-1.5 mt-2">
+          <p class="text-[10px] text-muted">Aktivierte Benachrichtigungs-Kategorien (lokale Einstellung):</p>
+          
+          <!-- Tag Toggles Grid -->
+          <div class="space-y-1.5 pt-1 text-[11px]">
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">📥 Neue Zuteilung</span>
+              <input type="checkbox" :checked="notificationTags['allocation']" @change="toggleNotificationTag('allocation')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">⏳ Inaktivitäts-Erinnerung</span>
+              <input type="checkbox" :checked="notificationTags['inactivity']" @change="toggleNotificationTag('inactivity')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">⏱️ Richtzeit-Hinweis</span>
+              <input type="checkbox" :checked="notificationTags['overtime']" @change="toggleNotificationTag('overtime')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">🏆 Alle Prüfungen beendet</span>
+              <input type="checkbox" :checked="notificationTags['exam-finished']" @change="toggleNotificationTag('exam-finished')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">📢 Rundruf der Prüfungsleitung</span>
+              <input type="checkbox" :checked="notificationTags['broadcast']" @change="toggleNotificationTag('broadcast')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">🚨 Rückruf Leitstelle</span>
+              <input type="checkbox" :checked="notificationTags['callback_leitstelle']" @change="toggleNotificationTag('callback_leitstelle')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">🚨 Rückruf Prüfungsleitung</span>
+              <input type="checkbox" :checked="notificationTags['callback_pruefungsleitung']" @change="toggleNotificationTag('callback_pruefungsleitung')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">🏆 Ergebnisbekanntgabe</span>
+              <input type="checkbox" :checked="notificationTags['result_announcement']" @change="toggleNotificationTag('result_announcement')" class="rounded text-brand focus:ring-0">
+            </label>
+            <label class="flex items-center justify-between p-1 rounded hover:opacity-85 cursor-pointer">
+              <span class="font-semibold text-main">🧪 Web Push Test</span>
+              <input type="checkbox" :checked="notificationTags['test-push']" @change="toggleNotificationTag('test-push')" class="rounded text-brand focus:ring-0">
+            </label>
+          </div>
+
+          <div class="flex flex-col gap-1.5 mt-2 pt-2 border-t border-main">
             <button type="button" 
                     x-show="notificationPermissionStatus !== 'granted'"
                     @click="requestNotificationPermission()" 
@@ -523,7 +597,6 @@
             </button>
           </div>
         </div>
-      </div>
 
       <button @click="showPermissionsModal = false" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
         Schließen
@@ -542,25 +615,53 @@
         <button @click="showGuideModal = false" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
       </div>
 
-      <div class="space-y-3 pt-2 text-left text-xs overflow-y-auto pr-1 flex-1 leading-relaxed">
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
-          <span class="font-black text-brand block">1️⃣ Automatische Zuteilung</span>
-          <p class="text-muted text-[11px]">Sobald Sie Ihre Station freischalten („Station bereit“), teilt Ihnen die System-Engine automatisch das nächste geeignete Prüfungsteam aus dem Sammelraum zu.</p>
+      <div class="space-y-2.5 pt-2 text-left text-xs overflow-y-auto pr-1 flex-1 leading-relaxed">
+        <!-- Topic 1 -->
+        <div class="app-card-accent rounded-lg border border-main overflow-hidden">
+          <button @click="activeGuideTopic = activeGuideTopic === 1 ? null : 1" 
+                  class="w-full p-3 font-black text-brand text-xs uppercase tracking-wider flex justify-between items-center text-left hover:opacity-85">
+            <span>1️⃣ Automatische Zuteilung</span>
+            <span x-text="activeGuideTopic === 1 ? '▲' : '▼'"></span>
+          </button>
+          <div x-show="activeGuideTopic === 1" class="px-3 pb-3 text-muted text-[11px] border-t border-main pt-2 animate-fade-in">
+            Sobald Sie Ihre Station freischalten („Station bereit“), teilt Ihnen die System-Engine automatisch das nächste geeignete Prüfungsteam aus dem Sammelraum zu.
+          </div>
         </div>
 
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
-          <span class="font-black text-brand block">2️⃣ Prüfung durchführen & Abschließen</span>
-          <p class="text-muted text-[11px]">Prüfen Sie das Team. Nach Beendigung tippen Sie auf <strong class="text-main">„Prüfung abschließen“</strong>. Es startet ein 7-Sekunden-Countdown, in dem Sie die Aktion abbrechen oder eine Pause vormerken können.</p>
+        <!-- Topic 2 -->
+        <div class="app-card-accent rounded-lg border border-main overflow-hidden">
+          <button @click="activeGuideTopic = activeGuideTopic === 2 ? null : 2" 
+                  class="w-full p-3 font-black text-brand text-xs uppercase tracking-wider flex justify-between items-center text-left hover:opacity-85">
+            <span>2️⃣ Prüfung durchführen &amp; Abschließen</span>
+            <span x-text="activeGuideTopic === 2 ? '▲' : '▼'"></span>
+          </button>
+          <div x-show="activeGuideTopic === 2" class="px-3 pb-3 text-muted text-[11px] border-t border-main pt-2 animate-fade-in">
+            Prüfen Sie das Team. Nach Beendigung tippen Sie auf <strong class="text-main">„Prüfung abschließen“</strong>. Es startet ein 7-Sekunden-Countdown, in dem Sie die Aktion abbrechen oder eine Pause vormerken können.
+          </div>
         </div>
 
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
-          <span class="font-black text-brand block">3️⃣ Pausensteuerung & Prüferwechsel</span>
-          <p class="text-muted text-[11px]">Nutzen Sie <strong class="text-main">„Station pausieren“</strong> für Unterbrechungen. Bei Schichtende tippen Sie oben rechts auf <strong class="text-main">„Abmelden“</strong>, um das Gerät sauber freizugeben.</p>
+        <!-- Topic 3 -->
+        <div class="app-card-accent rounded-lg border border-main overflow-hidden">
+          <button @click="activeGuideTopic = activeGuideTopic === 3 ? null : 3" 
+                  class="w-full p-3 font-black text-brand text-xs uppercase tracking-wider flex justify-between items-center text-left hover:opacity-85">
+            <span>3️⃣ Pausensteuerung &amp; Prüferwechsel</span>
+            <span x-text="activeGuideTopic === 3 ? '▲' : '▼'"></span>
+          </button>
+          <div x-show="activeGuideTopic === 3" class="px-3 pb-3 text-muted text-[11px] border-t border-main pt-2 animate-fade-in">
+            Nutzen Sie <strong class="text-main">„Station pausieren“</strong> für Unterbrechungen. Bei Schichtende tippen Sie oben rechts auf <strong class="text-main">„Abmelden“</strong>, um das Gerät sauber freizugeben.
+          </div>
         </div>
 
-        <div class="p-3 app-card-accent rounded-lg border border-main space-y-1">
-          <span class="font-black text-brand block">4️⃣ Offline-Resilienz im Funkloch</span>
-          <p class="text-muted text-[11px]">Sollte der Empfang im Gelände abbrechen, speichert das System Ihre Eingaben zwischen und synchronisiert automatisch, sobald die Verbindung wieder hergestellt ist.</p>
+        <!-- Topic 4 -->
+        <div class="app-card-accent rounded-lg border border-main overflow-hidden">
+          <button @click="activeGuideTopic = activeGuideTopic === 4 ? null : 4" 
+                  class="w-full p-3 font-black text-brand text-xs uppercase tracking-wider flex justify-between items-center text-left hover:opacity-85">
+            <span>4️⃣ Offline-Resilienz im Funkloch</span>
+            <span x-text="activeGuideTopic === 4 ? '▲' : '▼'"></span>
+          </button>
+          <div x-show="activeGuideTopic === 4" class="px-3 pb-3 text-muted text-[11px] border-t border-main pt-2 animate-fade-in">
+            Sollte der Empfang im Gelände abbrechen, speichert das System Ihre Eingaben zwischen und synchronisiert automatisch, sobald die Verbindung wieder hergestellt ist.
+          </div>
         </div>
       </div>
 
