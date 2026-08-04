@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { NotificationPayload, PushLogEntry } from '../types';
+import { NotificationPayload, PushLogEntry, SystemState } from '../types';
 import * as dbModule from '../db';
 import * as androidHandler from './android_handler';
 import * as iosHandler from './ios_handler';
@@ -8,18 +8,31 @@ import * as windowsHandler from './windows_handler';
 const VAPID_SUBJECT = 'mailto:leitstand@gap-flow.de';
 let vapidPublicKey = '';
 let vapidPrivateKey = '';
-const pushLogsMemory: PushLogEntry[] = [];
+let systemStateRef: SystemState;
 
 /**
- * Liefert die protokolierten Push-Benachrichtigungen für das Admin-Dashboard.
- * @returns {PushLogEntry[]} Liste der Push-Protokolleinträge.
+ * Initialisiert das Benachrichtigungs-Modul mit dem In-Memory-Systemzustand.
+ * @param {SystemState} state - Der zentrale Systemzustand.
+ * @returns {void}
  */
-export function getPushLogs(): PushLogEntry[] {
-  return pushLogsMemory;
+export function initNotifications(state: SystemState): void {
+  systemStateRef = state;
+  if (!systemStateRef.pushLogs) {
+    systemStateRef.pushLogs = [];
+  }
 }
 
 /**
- * Aktualisiert den Zustellungs-Status (ACK) einer Push-Benachrichtigung.
+ * Liefert die protokollierten Push-Benachrichtigungen für das Admin-Dashboard.
+ * @returns {PushLogEntry[]} Liste der Push-Protokolleinträge.
+ */
+export function getPushLogs(): PushLogEntry[] {
+  if (!systemStateRef || !systemStateRef.pushLogs) return [];
+  return systemStateRef.pushLogs;
+}
+
+/**
+ * Aktualisiert den Zustellungs-Status (ACK) einer Push-Benachrichtigung und speichert die Änderung.
  * @param {{ msgId?: string, tag?: string, subId?: string, os?: string, status: 'delivered' | 'disabled_on_device' | 'failed', errorMsg?: string }} ack - Das ACK-Objekt.
  * @returns {void}
  */
@@ -31,13 +44,25 @@ export function updatePushLogAck(ack: {
   status: 'delivered' | 'disabled_on_device' | 'failed';
   errorMsg?: string;
 }): void {
-  const entry = pushLogsMemory.find((p) => ack.msgId && p.msgId === ack.msgId) ||
-    pushLogsMemory.find((p) => p.tag === ack.tag && p.targetSubId === ack.subId && p.status === 'pending');
+  const logs = getPushLogs();
+  const entry = logs.find((p) => ack.msgId && p.msgId === ack.msgId) ||
+    logs.find((p) => p.tag === ack.tag && p.targetSubId === ack.subId && p.status === 'pending');
 
   if (entry) {
     entry.status = ack.status;
     if (ack.os) entry.os = ack.os;
     if (ack.errorMsg) entry.errorMsg = ack.errorMsg;
+
+    const db = dbModule.getDb();
+    if (db && !dbModule.getUseJsonFallback()) {
+      db.run(
+        'UPDATE push_logs SET status = ?, os = ?, errorMsg = ? WHERE msgId = ?',
+        [entry.status, entry.os || '', entry.errorMsg || '', entry.msgId],
+        (err) => {
+          if (err) console.error('[Push Log DB Error]', err.message);
+        }
+      );
+    }
   }
 }
 
@@ -170,9 +195,14 @@ export async function sendNotification(
       roleTarget,
       status: 'pending',
     };
-    pushLogsMemory.unshift(pushLogEntry);
-    if (pushLogsMemory.length > 200) {
-      pushLogsMemory.pop();
+    if (systemStateRef) {
+      if (!systemStateRef.pushLogs) {
+        systemStateRef.pushLogs = [];
+      }
+      systemStateRef.pushLogs.unshift(pushLogEntry);
+      if (systemStateRef.pushLogs.length > 200) {
+        systemStateRef.pushLogs.pop();
+      }
     }
 
     console.log(`[WebPush Core Start] Sende "${pushTitle}" (ID: ${msgId}, Typ: ${pushType}) an ${deduplicatedRows.length} Abonnenten (Ziel-Rolle: ${roleTarget}, Ziel-Station: ${targetSubId || 'alle'})`);
