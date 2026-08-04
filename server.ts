@@ -581,6 +581,8 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction): void
   }
 };
 
+notificationCore.initNotifications(systemState);
+
 /**
  * Delegiert VAPID Key Initialisierung an das Benachrichtigungs-Modul.
  */
