@@ -396,12 +396,12 @@
         <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
           <span>⚙</span> Station-Funktionen
         </h3>
-        <button @click="closeFunctionsMenu()" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+        <button @click="showFunctionsMenu = false; showGuideModal = false; showPermissionsModal = false;" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
       </div>
 
       <div class="space-y-2.5 pt-2 overflow-y-auto pr-1 flex-1">
         <!-- 1. Collapsible: Anleitung & App-Infos -->
-        <button @click="openGuideModal()"
+        <button @click="showGuideModal = true; showPermissionsModal = false; showFunctionsMenu = false;"
                 class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between px-4 border border-main transition rounded-lg">
           <span class="flex items-center gap-2">📖 Anleitung Information der APP</span>
           <span>➔</span>
@@ -477,7 +477,7 @@
         </div>
 
         <!-- 4. Collapsible: Berechtigungen & Benachrichtigungen -->
-        <button @click="openPermissionsModal()"
+        <button @click="checkPermissions(); showPermissionsModal = true; showGuideModal = false; showFunctionsMenu = false;"
                 class="w-full py-3 app-card-accent hover:opacity-85 text-main font-bold text-xs uppercase tracking-wider flex items-center justify-between px-4 border border-main transition rounded-lg">
           <span class="flex items-center gap-2">🛡️ Berechtigungen &amp; Benachrichtigungen</span>
           <span>➔</span>
@@ -505,7 +505,7 @@
         <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
           <span>🛡️</span> Berechtigungs-Check
         </h3>
-        <button @click="closePermissionsModal()" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+        <button @click="showPermissionsModal = false; showFunctionsMenu = true;" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
       </div>
 
       <div class="space-y-3 pt-2 text-left text-xs">
@@ -597,11 +597,7 @@
             </button>
           </div>
         </div>
-
-      <button @click="closePermissionsModal()" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider">
-        Zurück ins Menü
-      </button>
-    </div>
+      </div>
   </div>
 
   <!-- MODAL: ANLEITUNG DER PRÜFER APP -->
@@ -612,7 +608,7 @@
         <h3 class="text-base font-black text-main uppercase tracking-wide flex items-center gap-2">
           <span>📖</span> Prüfer-Kurzanleitung
         </h3>
-        <button @click="closeGuideModal()" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
+        <button @click="showGuideModal = false; showFunctionsMenu = true;" class="text-muted font-black text-lg p-1 hover:text-main">✕</button>
       </div>
 
       <div class="space-y-2.5 pt-2 text-left text-xs overflow-y-auto pr-1 flex-1 leading-relaxed">
@@ -664,10 +660,6 @@
           </div>
         </div>
       </div>
-
-      <button @click="closeGuideModal()" class="w-full py-2.5 btn-brand text-xs font-bold uppercase tracking-wider shrink-0 mt-2">
-        Zurück ins Menü
-      </button>
     </div>
   </div>
 
