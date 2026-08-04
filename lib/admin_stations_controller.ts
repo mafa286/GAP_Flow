@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { SystemState, Station, SubStation, LogEntry, resetSystemState } from './types';
+import * as dbModule from './db';
 import * as allocatorModule from './allocator';
 
 /**
